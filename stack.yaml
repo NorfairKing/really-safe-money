@@ -1,0 +1,60 @@
+resolver: lts-19.6
+packages:
+- really-safe-money
+- really-safe-money-gen
+extra-deps:
+- github: NorfairKing/sydtest
+  commit: cf1bb414f0c0ce7bbf64659da94b8cd890c9e536
+  subdirs:
+    - sydtest
+    - sydtest-discover
+- github: NorfairKing/autodocodec
+  commit: a60fbd4db121c0529f9ceb68c58c289daa693db2
+  subdirs:
+    - autodocodec
+    - autodocodec-yaml
+    - autodocodec-schema
+- github: NorfairKing/validity
+  commit: d88be911a7e2a84f6c089e9269aaed8d10a74acd
+  subdirs:
+    - genvalidity
+    - genvalidity-aeson
+    - genvalidity-bytestring
+    - genvalidity-containers
+    - genvalidity-criterion
+    - genvalidity-hspec
+    - genvalidity-hspec-aeson
+    - genvalidity-hspec-binary
+    - genvalidity-hspec-cereal
+    - genvalidity-hspec-hashable
+    - genvalidity-hspec-optics
+    - genvalidity-hspec-persistent
+    - genvalidity-path
+    - genvalidity-persistent
+    - genvalidity-property
+    - genvalidity-scientific
+    - genvalidity-sydtest
+    - genvalidity-sydtest-aeson
+    - genvalidity-sydtest-hashable
+    - genvalidity-sydtest-lens
+    - genvalidity-sydtest-persistent
+    - genvalidity-text
+    - genvalidity-time
+    - genvalidity-unordered-containers
+    - genvalidity-uuid
+    - genvalidity-vector
+    - validity
+    - validity-aeson
+    - validity-bytestring
+    - validity-containers
+    - validity-path
+    - validity-persistent
+    - validity-primitive
+    - validity-scientific
+    - validity-text
+    - validity-time
+    - validity-unordered-containers
+    - validity-uuid
+    - validity-vector
+
+

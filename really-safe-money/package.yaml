@@ -1,0 +1,12 @@
+name: really-safe-money
+version: 0.0.0.0
+github: "NorfairKing/really-safe-money"
+license: AllRightsReserved
+
+description:         Please see the README on GitHub at <https://github.com/NorfairKing/really-safe-money#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src

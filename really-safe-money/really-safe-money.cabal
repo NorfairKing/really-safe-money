@@ -1,0 +1,28 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.7.
+--
+-- see: https://github.com/sol/hpack
+
+name:           really-safe-money
+version:        0.0.0.0
+description:    Please see the README on GitHub at <https://github.com/NorfairKing/really-safe-money#readme>
+homepage:       https://github.com/NorfairKing/really-safe-money#readme
+bug-reports:    https://github.com/NorfairKing/really-safe-money/issues
+license:        AllRightsReserved
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/NorfairKing/really-safe-money
+
+library
+  exposed-modules:
+      Money
+  other-modules:
+      Paths_really_safe_money
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010

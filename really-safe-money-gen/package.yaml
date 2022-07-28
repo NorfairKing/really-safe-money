@@ -1,0 +1,23 @@
+name: really-safe-money-gen
+version: 0.0.0.0
+github: "NorfairKing/really-safe-money"
+license: AllRightsReserved
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+tests:
+  really-safe-money-test:
+    main: Spec.hs
+    build-tools: sydtest-discover
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - really-safe-money
+    - sydtest
