@@ -8,7 +8,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 
-module Money.Amount
+module Money.AmountOf
   ( Amount (..),
     zero,
     toMinimalQuantisations,
@@ -17,6 +17,7 @@ module Money.Amount
     toDouble,
     fromRational,
     toRational,
+    Currency (..),
     add,
     AdditionFailure (..),
     subtract,
@@ -31,36 +32,35 @@ module Money.Amount
 where
 
 import Data.Int
+import Data.Proxy
 import Data.Validity
-import Data.Word
 import GHC.Generics (Generic)
 import GHC.TypeLits
+import Money.Currency as Currency
 import Prelude hiding (fromRational, subtract, toRational)
 
--- | An amount of money of an unspecified currency. May be negative.
---
--- If the currency is statically known, you are better off using 'AmountOf' in 'Money.AmountOf'.
+-- | An amount of money. May be negative.
 --
 -- The underlying representation is 'Int64'.
--- This supports 2^64 (about 1E18) minimal quantisations.
+-- This supports 1E18 minimal quantisations.
 -- For example:
 --
 -- * 10 quadrillion USD ((much) more than the M1 money supply as of 2022)
 -- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2022)
 -- * 10 billion BTC (more than the 21 million that can exist)
-newtype Amount = Amount
+newtype Amount currency = Amount
   { toMinimalQuantisations :: Int64
   }
   deriving (Show, Eq, Generic)
 
-instance Validity Amount
+instance Validity (Amount currency)
 
 instance
   TypeError
     ( 'Text "This would require that Amounts of money are an instance of Num"
         ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
     ) =>
-  Num Amount
+  Num (Amount currency)
   where
   (+) = error "unreachable"
   (*) = error "unreachable"
@@ -70,23 +70,23 @@ instance
   negate = error "unreachable"
   (-) = error "unreachable"
 
-zero :: Amount
+zero :: Amount currency
 zero = Amount 0
 
-fromMinimalQuantisations :: Int64 -> Amount
+fromMinimalQuantisations :: Int64 -> Amount currency
 fromMinimalQuantisations = Amount
 
-fromDouble :: Word32 -> Double -> Maybe Amount
-fromDouble quantisationFactor d = Just $ Amount $ round d * fromIntegral quantisationFactor
+fromDouble :: forall currency. Currency currency => Double -> Maybe (Amount currency)
+fromDouble d = Just $ Amount $ round d * fromIntegral (quantisationFactor (Proxy @currency))
 
-toDouble :: Word32 -> Amount -> Double
-toDouble quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
+toDouble :: forall currency. Currency currency => Amount currency -> Double
+toDouble a = fromIntegral (toMinimalQuantisations a) / fromIntegral (quantisationFactor (Proxy @currency))
 
-fromRational :: Word32 -> Rational -> Maybe Amount
-fromRational quantisationFactor r = Just $ Amount $ round r * fromIntegral quantisationFactor
+fromRational :: forall currency. Currency currency => Rational -> Maybe (Amount currency)
+fromRational r = Just $ Amount $ round r * fromIntegral (quantisationFactor (Proxy @currency))
 
-toRational :: Word32 -> Amount -> Rational
-toRational quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
+toRational :: forall currency. Currency currency => Amount currency -> Rational
+toRational a = fromIntegral (toMinimalQuantisations a) / fromIntegral (quantisationFactor (Proxy @currency))
 
 data AdditionFailure = AdditionFailure
   deriving (Show, Eq, Generic)
@@ -98,9 +98,7 @@ instance Validity AdditionFailure
 -- This operation may fail with an 'AdditionFailure' for the following reasons:
 --
 -- TODO
---
--- WARNING: This function can be used to accidentally add up two amounts of different currencies.
-add :: Amount -> Amount -> Either AdditionFailure Amount
+add :: Amount currency -> Amount currency -> Either AdditionFailure (Amount currency)
 add (Amount a1) (Amount a2) = Right $ Amount $ a1 + a2
 
 data SubtractionFailure = SubtractionFailure
@@ -108,9 +106,7 @@ data SubtractionFailure = SubtractionFailure
 
 instance Validity SubtractionFailure
 
---
--- WARNING: This function can be used to accidentally subtract two amounts of different currencies.
-subtract :: Amount -> Amount -> Either SubtractionFailure Amount
+subtract :: Amount currency -> Amount currency -> Either SubtractionFailure (Amount currency)
 subtract = undefined
 
 data MultiplicationFailure = MultiplicationFailure
@@ -121,8 +117,8 @@ instance Validity MultiplicationFailure
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Int32 ->
-  Amount ->
-  Either MultiplicationFailure Amount
+  Amount currency ->
+  Either MultiplicationFailure (Amount currency)
 multiply = undefined
 
 data DivisionFailure = DivisionFailure
@@ -132,9 +128,9 @@ instance Validity DivisionFailure
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
-  Amount ->
+  Amount currency ->
   Int32 ->
-  Either DivisionFailure Amount
+  Either DivisionFailure (Amount currency)
 divide = undefined
 
 data FractionFailure = FractionFailure
@@ -143,7 +139,7 @@ data FractionFailure = FractionFailure
 instance Validity FractionFailure
 
 fraction ::
-  Amount ->
+  Amount currency ->
   Rational ->
-  Either FractionFailure (Amount, Rational)
+  Either FractionFailure (Amount currency, Rational)
 fraction = undefined

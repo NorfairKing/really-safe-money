@@ -19,6 +19,7 @@ source-repository head
 library
   exposed-modules:
       Money.Amount
+      Money.AmountOf
       Money.Currency
   other-modules:
       Paths_really_safe_money

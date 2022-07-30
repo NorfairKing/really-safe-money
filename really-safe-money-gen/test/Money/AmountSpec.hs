@@ -1,24 +1,18 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Money.AmountSpec (spec) where
 
-import Data.Proxy
-import Data.Typeable
 import GHC.Real
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
-import Money.Currency (Currency (..))
-import qualified Money.Currency as Currency
 import Test.Syd
 import Test.Syd.Validity
-import Test.Syd.Validity.Utils
 
 spec :: Spec
-spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
+spec = do
   describe "fromMinimalQuantisations" $
     it "produces valid amounts" $
       producesValid Amount.fromMinimalQuantisations
@@ -32,126 +26,130 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
         Amount.fromMinimalQuantisations (Amount.toMinimalQuantisations amount) `shouldBe` amount
 
   describe "fromDouble" $ do
-    let from = Amount.fromDouble :: Double -> Maybe (Amount currency)
-
     it "produces valid amounts" $
-      producesValid from
+      producesValid2 Amount.fromDouble
 
     it "succeeds on 0" $
-      from 0.0 `shouldBe` Just (Amount 0)
+      forAllValid $ \quantisationFactor ->
+        Amount.fromDouble quantisationFactor 0.0 `shouldBe` Just (Amount 0)
 
     it "succeeds on 1" $
-      from 1 `shouldBe` Just (Amount (fromIntegral (quantisationFactor p)))
+      forAllValid $ \quantisationFactor ->
+        Amount.fromDouble quantisationFactor 1
+          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
 
     it "succeeds on -1" $
-      from (-1) `shouldBe` Just (Amount (-(fromIntegral (quantisationFactor p))))
+      forAllValid $ \quantisationFactor ->
+        Amount.fromDouble quantisationFactor (-1)
+          `shouldBe` Just (Amount (-(fromIntegral quantisationFactor)))
 
     it "fails on NaN" $
-      let nan = read "NaN" :: Double
-       in from nan `shouldBe` Nothing
+      forAllValid $ \quantisationFactor ->
+        let nan = read "NaN" :: Double
+         in Amount.fromDouble quantisationFactor nan `shouldBe` Nothing
 
     it "fails on +Infinity" $
-      let pinf = read "Infinity"
-       in from pinf `shouldBe` Nothing
+      forAllValid $ \quantisationFactor ->
+        let pinf = read "Infinity"
+         in Amount.fromDouble quantisationFactor pinf `shouldBe` Nothing
 
     it "fails on -Infinity" $
-      let minf = read "-Infinity"
-       in from minf `shouldBe` Nothing
+      forAllValid $ \quantisationFactor ->
+        let minf = read "-Infinity"
+         in Amount.fromDouble quantisationFactor minf `shouldBe` Nothing
 
     it "roundtrips with toDouble" $
-      forAllValid $ \amount ->
-        from (Amount.toDouble amount) `shouldBe` Just (amount :: Amount currency)
+      forAllValid $ \quantisationFactor ->
+        forAllValid $ \amount ->
+          Amount.fromDouble
+            quantisationFactor
+            (Amount.toDouble quantisationFactor amount)
+            `shouldBe` Just amount
 
   describe "toDouble" $ do
-    let to = Amount.toDouble :: Amount currency -> Double
     it "produces valid Doubles" $
-      producesValid to
+      producesValid2 Amount.toDouble
 
   describe "fromRational" $ do
-    let from = Amount.fromRational :: Rational -> Maybe (Amount currency)
-
     it "produces valid Amounts" $
-      producesValid from
+      producesValid2 Amount.fromRational
 
     it "succeeds on 0" $
-      from 0.0 `shouldBe` Just (Amount 0)
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRational quantisationFactor 0.0 `shouldBe` Just (Amount 0)
 
     it "succeeds on 1" $
-      from 1 `shouldBe` Just (Amount (fromIntegral (quantisationFactor p)))
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRational quantisationFactor 1
+          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
 
     it "succeeds on -1" $
-      from (-1) `shouldBe` Just (Amount (-(fromIntegral (quantisationFactor p))))
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRational quantisationFactor (-1)
+          `shouldBe` Just (Amount (-(fromIntegral quantisationFactor)))
 
     xit "fails on NaN" $ do
-      let !nan = 0 :% 0 :: Rational
-      from nan `shouldBe` Nothing
+      forAllValid $ \quantisationFactor ->
+        let nan = 0 :% 0 :: Rational
+         in Amount.fromRational quantisationFactor nan `shouldBe` Nothing
 
-    xit "fails on +Infinity" $ do
-      let !pinf = 1 :% 0 :: Rational
-      from pinf `shouldBe` Nothing
+    xit "fails on +Infinity" $
+      forAllValid $ \quantisationFactor ->
+        let pinf = 1 :% 0 :: Rational
+         in Amount.fromRational quantisationFactor pinf `shouldBe` Nothing
 
-    xit "fails on -Infinity" $ do
-      let !minf = -1 :% 0 :: Rational
-      from minf `shouldBe` Nothing
+    xit "fails on -Infinity" $
+      forAllValid $ \quantisationFactor ->
+        let minf = -1 :% 0 :: Rational
+         in Amount.fromRational quantisationFactor minf `shouldBe` Nothing
 
     it "roundtrips with toRational" $
-      forAllValid $ \amount ->
-        from (Amount.toRational amount) `shouldBe` Just (amount :: Amount currency)
-  describe "toRational" $ do
-    let to = Amount.toRational :: Amount currency -> Rational
-    it "produces valid Rationals" $
-      producesValid to
+      forAllValid $ \quantisationFactor ->
+        forAllValid $ \amount ->
+          Amount.fromRational quantisationFactor (Amount.toRational quantisationFactor amount)
+            `shouldBe` Just amount
 
-  let zero = Amount.zero @currency
+  describe "toRational" $ do
+    it "produces valid Rationals" $
+      producesValid2 Amount.toRational
+
   describe "zero" $
     it "is valid" $
-      shouldBeValid zero
+      shouldBeValid Amount.zero
 
   describe "add" $ do
-    let add = Amount.add @currency
     it "produces valid amounts" $
-      producesValid2 add
+      producesValid2 Amount.add
 
     it "has a left-identity: zero" $
       forAllValid $ \a ->
-        add Amount.zero a `shouldBe` Right a
+        Amount.add Amount.zero a `shouldBe` Right a
 
     it "has a right-identity: zero" $
       forAllValid $ \a ->
-        add a Amount.zero `shouldBe` Right a
+        Amount.add a Amount.zero `shouldBe` Right a
 
     it "is associative" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 ->
           forAllValid $ \a3 -> do
-            let l = add <$> add a1 a2 <*> pure a3
-            let r = add <$> pure a1 <*> add a2 a3
+            let l = Amount.add <$> Amount.add a1 a2 <*> pure a3
+            let r = Amount.add <$> pure a1 <*> Amount.add a2 a3
             l `shouldBe` r
 
     it "is commutative" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 ->
-          add a1 a2 `shouldBe` add a2 a1
+          Amount.add a1 a2 `shouldBe` Amount.add a2 a1
 
   describe "multiply" $ do
-    let multiply = Amount.multiply @currency
-
     it "produces valid amounts" $
-      producesValid2 multiply
+      producesValid2 Amount.multiply
 
     it "has an identity: 1" $
       forAllValid $ \a ->
-        multiply 1 a `shouldBe` Right a
+        Amount.multiply 1 a `shouldBe` Right a
 
     it "is absorbed by 0" $
       forAllValid $ \a ->
-        multiply 0 a `shouldBe` Right zero
-
-forallCurrencies :: (forall currency. Currency currency => Proxy currency -> Spec) -> Spec
-forallCurrencies func = do
-  let d :: forall currency. (Typeable currency, Currency currency) => Proxy currency -> Spec
-      d p = describe (nameOf @currency) $ func p
-  d (Proxy @Currency.USD)
-  d (Proxy @Currency.CHF)
-  d (Proxy @Currency.BTC)
-  d (Proxy @Currency.ADA)
+        Amount.multiply 0 a `shouldBe` Right Amount.zero
