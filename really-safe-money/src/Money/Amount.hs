@@ -4,11 +4,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 
 module Money.Amount
   ( Amount (..),
+    zero,
     toMinimalQuantisations,
     fromMinimalQuantisations,
     fromDouble,
@@ -54,7 +56,10 @@ newtype Amount currency = Amount
 instance Validity (Amount currency)
 
 instance
-  TypeError ('Text "Amounts of money cannot be an instance of Num, don't do it.") =>
+  TypeError
+    ( 'Text "This would require that Amounts of money are an instance of Num"
+        ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
+    ) =>
   Num (Amount currency)
   where
   (+) = error "unreachable"
@@ -64,6 +69,9 @@ instance
   fromInteger = error "unreachable"
   negate = error "unreachable"
   (-) = error "unreachable"
+
+zero :: Amount currency
+zero = Amount 0
 
 fromMinimalQuantisations :: Int64 -> Amount currency
 fromMinimalQuantisations = Amount
@@ -81,17 +89,32 @@ toRational :: forall currency. Currency currency => Amount currency -> Rational
 toRational a = fromIntegral (toMinimalQuantisations a) / fromIntegral (quantisationFactor (Proxy @currency))
 
 data AdditionFailure = AdditionFailure
+  deriving (Show, Eq, Generic)
 
+instance Validity AdditionFailure
+
+-- | Add two amounts of money.
+--
+-- This operation may fail with an 'AdditionFailure' for the following reasons:
+--
+-- TODO
 add :: Amount currency -> Amount currency -> Either AdditionFailure (Amount currency)
-add = undefined
+add (Amount a1) (Amount a2) = Right $ Amount $ a1 + a2
 
 data SubtractionFailure = SubtractionFailure
+  deriving (Show, Eq, Generic)
+
+instance Validity SubtractionFailure
 
 subtract :: Amount currency -> Amount currency -> Either SubtractionFailure (Amount currency)
 subtract = undefined
 
 data MultiplicationFailure = MultiplicationFailure
+  deriving (Show, Eq, Generic)
 
+instance Validity MultiplicationFailure
+
+-- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Int32 ->
   Amount currency ->
@@ -99,14 +122,21 @@ multiply ::
 multiply = undefined
 
 data DivisionFailure = DivisionFailure
+  deriving (Show, Eq, Generic)
 
+instance Validity DivisionFailure
+
+-- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   Amount currency ->
   Int32 ->
-  Either DivisionFailure (Amount currency, Amount currency)
+  Either DivisionFailure (Amount currency)
 divide = undefined
 
 data FractionFailure = FractionFailure
+  deriving (Show, Eq, Generic)
+
+instance Validity FractionFailure
 
 fraction ::
   Amount currency ->
