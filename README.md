@@ -1,5 +1,9 @@
 # Really safe money
 
+## Status
+
+Not ready for anything.
+Come back no sooner than when this has a passing CI.
 
 ## Features
 
