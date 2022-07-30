@@ -5,9 +5,12 @@ license: AllRightsReserved
 
 dependencies:
 - base >= 4.7 && < 5
+- really-safe-money
 
 library:
   source-dirs: src
+  dependencies:
+  - genvalidity
 
 tests:
   really-safe-money-test:
@@ -19,5 +22,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - really-safe-money
+    - genvalidity-sydtest
+    - really-safe-money-gen
     - sydtest

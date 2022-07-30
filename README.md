@@ -1,5 +1,6 @@
 # Really safe money
 
-## Ideas
+## License
 
-Compile-time versions of calculations for when we know one side at compile-time.
+All rights reserved.
+Contact me if you would like to use this library.

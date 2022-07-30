@@ -10,3 +10,5 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+  - validity
