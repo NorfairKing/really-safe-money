@@ -4,6 +4,7 @@
 
 module Money.AmountSpec (spec) where
 
+import Control.Arrow (left)
 import GHC.Real
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
@@ -153,3 +154,19 @@ spec = do
     it "is absorbed by 0" $
       forAllValid $ \a ->
         Amount.multiply 0 a `shouldBe` Right Amount.zero
+
+    -- A x (B + C) == A x B + A x C
+    it "is distributive with add" $
+      forAllValid $ \a ->
+        forAllValid $ \b ->
+          forAllValid $ \c -> do
+            let l :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
+                l = do
+                  d <- left Left (Amount.add b c)
+                  left Right $ Amount.multiply a d
+            let r :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
+                r = do
+                  d <- left Right (Amount.multiply a b)
+                  e <- left Right (Amount.multiply a c)
+                  left Left $ Amount.add d e
+            l `shouldBe` r
