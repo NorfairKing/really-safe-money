@@ -3,6 +3,7 @@
 module Money.AmountOf.Gen where
 
 import Data.GenValidity
+import Money.Amount.Gen ()
 import Money.AmountOf
 
-instance GenValid (Amount currency)
+instance GenValid (AmountOf currency)

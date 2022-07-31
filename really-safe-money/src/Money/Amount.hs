@@ -49,7 +49,7 @@ import Prelude hiding (fromRational, subtract, toRational)
 -- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2022)
 -- * 10 billion BTC (more than the 21 million that can exist)
 newtype Amount = Amount
-  { toMinimalQuantisations :: Int64
+  { unAmount :: Int64
   }
   deriving (Show, Eq, Generic)
 
@@ -72,6 +72,9 @@ instance
 
 zero :: Amount
 zero = Amount 0
+
+toMinimalQuantisations :: Amount -> Int64
+toMinimalQuantisations = unAmount
 
 fromMinimalQuantisations :: Int64 -> Amount
 fromMinimalQuantisations = Amount

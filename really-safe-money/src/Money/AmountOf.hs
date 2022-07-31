@@ -9,7 +9,7 @@
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 
 module Money.AmountOf
-  ( Amount (..),
+  ( AmountOf (..),
     zero,
     toMinimalQuantisations,
     fromMinimalQuantisations,
@@ -19,15 +19,15 @@ module Money.AmountOf
     toRational,
     Currency (..),
     add,
-    AdditionFailure (..),
+    Amount.AdditionFailure (..),
     subtract,
-    SubtractionFailure (..),
+    Amount.SubtractionFailure (..),
     multiply,
-    MultiplicationFailure (..),
+    Amount.MultiplicationFailure (..),
     divide,
-    DivisionFailure (..),
+    Amount.DivisionFailure (..),
     fraction,
-    FractionFailure (..),
+    Amount.FractionFailure (..),
   )
 where
 
@@ -36,6 +36,8 @@ import Data.Proxy
 import Data.Validity
 import GHC.Generics (Generic)
 import GHC.TypeLits
+import Money.Amount (Amount)
+import qualified Money.Amount as Amount
 import Money.Currency as Currency
 import Prelude hiding (fromRational, subtract, toRational)
 
@@ -48,19 +50,19 @@ import Prelude hiding (fromRational, subtract, toRational)
 -- * 10 quadrillion USD ((much) more than the M1 money supply as of 2022)
 -- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2022)
 -- * 10 billion BTC (more than the 21 million that can exist)
-newtype Amount currency = Amount
-  { toMinimalQuantisations :: Int64
+newtype AmountOf currency = AmountOf
+  { unAmountOf :: Amount
   }
   deriving (Show, Eq, Generic)
 
-instance Validity (Amount currency)
+instance Validity (AmountOf currency)
 
 instance
   TypeError
     ( 'Text "This would require that Amounts of money are an instance of Num"
         ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
     ) =>
-  Num (Amount currency)
+  Num (AmountOf currency)
   where
   (+) = error "unreachable"
   (*) = error "unreachable"
@@ -70,76 +72,54 @@ instance
   negate = error "unreachable"
   (-) = error "unreachable"
 
-zero :: Amount currency
-zero = Amount 0
+zero :: AmountOf currency
+zero = AmountOf Amount.zero
 
-fromMinimalQuantisations :: Int64 -> Amount currency
-fromMinimalQuantisations = Amount
+toMinimalQuantisations :: AmountOf currency -> Int64
+toMinimalQuantisations = Amount.toMinimalQuantisations . unAmountOf
 
-fromDouble :: forall currency. Currency currency => Double -> Maybe (Amount currency)
-fromDouble d = Just $ Amount $ round d * fromIntegral (quantisationFactor (Proxy @currency))
+fromMinimalQuantisations :: Int64 -> AmountOf currency
+fromMinimalQuantisations = AmountOf . Amount.fromMinimalQuantisations
 
-toDouble :: forall currency. Currency currency => Amount currency -> Double
-toDouble a = fromIntegral (toMinimalQuantisations a) / fromIntegral (quantisationFactor (Proxy @currency))
+fromDouble :: forall currency. Currency currency => Double -> Maybe (AmountOf currency)
+fromDouble = fmap AmountOf . Amount.fromDouble (quantisationFactor (Proxy @currency))
 
-fromRational :: forall currency. Currency currency => Rational -> Maybe (Amount currency)
-fromRational r = Just $ Amount $ round r * fromIntegral (quantisationFactor (Proxy @currency))
+toDouble :: forall currency. Currency currency => AmountOf currency -> Double
+toDouble = Amount.toDouble (quantisationFactor (Proxy @currency)) . unAmountOf
 
-toRational :: forall currency. Currency currency => Amount currency -> Rational
-toRational a = fromIntegral (toMinimalQuantisations a) / fromIntegral (quantisationFactor (Proxy @currency))
+fromRational :: forall currency. Currency currency => Rational -> Maybe (AmountOf currency)
+fromRational = fmap AmountOf . Amount.fromRational (quantisationFactor (Proxy @currency))
 
-data AdditionFailure = AdditionFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity AdditionFailure
+toRational :: forall currency. Currency currency => AmountOf currency -> Rational
+toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . unAmountOf
 
 -- | Add two amounts of money.
 --
 -- This operation may fail with an 'AdditionFailure' for the following reasons:
 --
 -- TODO
-add :: Amount currency -> Amount currency -> Either AdditionFailure (Amount currency)
-add (Amount a1) (Amount a2) = Right $ Amount $ a1 + a2
+add :: AmountOf currency -> AmountOf currency -> Either Amount.AdditionFailure (AmountOf currency)
+add (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.add a1 a2
 
-data SubtractionFailure = SubtractionFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity SubtractionFailure
-
-subtract :: Amount currency -> Amount currency -> Either SubtractionFailure (Amount currency)
-subtract = undefined
-
-data MultiplicationFailure = MultiplicationFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity MultiplicationFailure
+subtract :: AmountOf currency -> AmountOf currency -> Either Amount.SubtractionFailure (AmountOf currency)
+subtract (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.subtract a1 a2
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Int32 ->
-  Amount currency ->
-  Either MultiplicationFailure (Amount currency)
+  AmountOf currency ->
+  Either Amount.MultiplicationFailure (AmountOf currency)
 multiply = undefined
-
-data DivisionFailure = DivisionFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity DivisionFailure
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
-  Amount currency ->
+  AmountOf currency ->
   Int32 ->
-  Either DivisionFailure (Amount currency)
+  Either Amount.DivisionFailure (AmountOf currency)
 divide = undefined
 
-data FractionFailure = FractionFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity FractionFailure
-
 fraction ::
-  Amount currency ->
+  AmountOf currency ->
   Rational ->
-  Either FractionFailure (Amount currency, Rational)
+  Either Amount.FractionFailure (AmountOf currency, Rational)
 fraction = undefined

@@ -8,8 +8,9 @@ module Money.AmountOfSpec (spec) where
 import Data.Proxy
 import Data.Typeable
 import GHC.Real
-import Money.AmountOf (Amount (..))
-import qualified Money.AmountOf as Amount
+import Money.Amount (Amount (..))
+import Money.AmountOf (AmountOf (..))
+import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency (Currency (..))
 import qualified Money.Currency as Currency
@@ -21,30 +22,30 @@ spec :: Spec
 spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
   describe "fromMinimalQuantisations" $
     it "produces valid amounts" $
-      producesValid Amount.fromMinimalQuantisations
+      producesValid AmountOf.fromMinimalQuantisations
 
   describe "toMinimalQuantisations" $ do
     it "produces valid Int64s" $
-      producesValid Amount.toMinimalQuantisations
+      producesValid AmountOf.toMinimalQuantisations
 
     it "roundtrips with fromMinimalQuantisations" $
       forAllValid $ \amount ->
-        Amount.fromMinimalQuantisations (Amount.toMinimalQuantisations amount) `shouldBe` amount
+        AmountOf.fromMinimalQuantisations (AmountOf.toMinimalQuantisations amount) `shouldBe` amount
 
   describe "fromDouble" $ do
-    let from = Amount.fromDouble :: Double -> Maybe (Amount currency)
+    let from = AmountOf.fromDouble :: Double -> Maybe (AmountOf currency)
 
     it "produces valid amounts" $
       producesValid from
 
     it "succeeds on 0" $
-      from 0.0 `shouldBe` Just (Amount 0)
+      from 0.0 `shouldBe` Just (AmountOf (Amount 0))
 
     it "succeeds on 1" $
-      from 1 `shouldBe` Just (Amount (fromIntegral (quantisationFactor p)))
+      from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor p))))
 
     it "succeeds on -1" $
-      from (-1) `shouldBe` Just (Amount (-(fromIntegral (quantisationFactor p))))
+      from (-1) `shouldBe` Just (AmountOf (Amount (-(fromIntegral (quantisationFactor p)))))
 
     it "fails on NaN" $
       let nan = read "NaN" :: Double
@@ -60,27 +61,27 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
     it "roundtrips with toDouble" $
       forAllValid $ \amount ->
-        from (Amount.toDouble amount) `shouldBe` Just (amount :: Amount currency)
+        from (AmountOf.toDouble amount) `shouldBe` Just (amount :: AmountOf currency)
 
   describe "toDouble" $ do
-    let to = Amount.toDouble :: Amount currency -> Double
+    let to = AmountOf.toDouble :: AmountOf currency -> Double
     it "produces valid Doubles" $
       producesValid to
 
   describe "fromRational" $ do
-    let from = Amount.fromRational :: Rational -> Maybe (Amount currency)
+    let from = AmountOf.fromRational :: Rational -> Maybe (AmountOf currency)
 
     it "produces valid Amounts" $
       producesValid from
 
     it "succeeds on 0" $
-      from 0.0 `shouldBe` Just (Amount 0)
+      from 0.0 `shouldBe` Just (AmountOf (Amount 0))
 
     it "succeeds on 1" $
-      from 1 `shouldBe` Just (Amount (fromIntegral (quantisationFactor p)))
+      from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor p))))
 
     it "succeeds on -1" $
-      from (-1) `shouldBe` Just (Amount (-(fromIntegral (quantisationFactor p))))
+      from (-1) `shouldBe` Just (AmountOf (Amount (-(fromIntegral (quantisationFactor p)))))
 
     xit "fails on NaN" $ do
       let !nan = 0 :% 0 :: Rational
@@ -96,29 +97,30 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
     it "roundtrips with toRational" $
       forAllValid $ \amount ->
-        from (Amount.toRational amount) `shouldBe` Just (amount :: Amount currency)
+        from (AmountOf.toRational amount) `shouldBe` Just (amount :: AmountOf currency)
+
   describe "toRational" $ do
-    let to = Amount.toRational :: Amount currency -> Rational
+    let to = AmountOf.toRational :: AmountOf currency -> Rational
     it "produces valid Rationals" $
       producesValid to
 
-  let zero = Amount.zero @currency
+  let zero = AmountOf.zero @currency
   describe "zero" $
     it "is valid" $
       shouldBeValid zero
 
   describe "add" $ do
-    let add = Amount.add @currency
+    let add = AmountOf.add @currency
     it "produces valid amounts" $
       producesValid2 add
 
     it "has a left-identity: zero" $
       forAllValid $ \a ->
-        add Amount.zero a `shouldBe` Right a
+        add AmountOf.zero a `shouldBe` Right a
 
     it "has a right-identity: zero" $
       forAllValid $ \a ->
-        add a Amount.zero `shouldBe` Right a
+        add a AmountOf.zero `shouldBe` Right a
 
     it "is associative" $
       forAllValid $ \a1 ->
@@ -134,7 +136,7 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
           add a1 a2 `shouldBe` add a2 a1
 
   describe "multiply" $ do
-    let multiply = Amount.multiply @currency
+    let multiply = AmountOf.multiply @currency
 
     it "produces valid amounts" $
       producesValid2 multiply
