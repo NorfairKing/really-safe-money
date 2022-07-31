@@ -109,17 +109,19 @@ multiply ::
   Int32 ->
   AmountOf currency ->
   Either Amount.MultiplicationFailure (AmountOf currency)
-multiply = undefined
+multiply f (AmountOf a) = AmountOf <$> Amount.multiply f a
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   AmountOf currency ->
   Int32 ->
   Either Amount.DivisionFailure (AmountOf currency)
-divide = undefined
+divide (AmountOf a) i = AmountOf <$> Amount.divide a i
 
 fraction ::
   AmountOf currency ->
   Rational ->
   Either Amount.FractionFailure (AmountOf currency, Rational)
-fraction = undefined
+fraction (AmountOf a) f = do
+  (a', r) <- Amount.fraction a f
+  pure (AmountOf a', r)
