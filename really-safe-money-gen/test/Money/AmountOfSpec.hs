@@ -122,13 +122,15 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
       forAllValid $ \a ->
         add a AmountOf.zero `shouldBe` Right a
 
-    it "is associative" $
+    it "is associative when both succeed" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 ->
           forAllValid $ \a3 -> do
-            let l = add <$> add a1 a2 <*> pure a3
-            let r = add <$> pure a1 <*> add a2 a3
-            l `shouldBe` r
+            let errOrL = add <$> add a1 a2 <*> pure a3
+            let errOrR = add <$> pure a1 <*> add a2 a3
+            case (,) <$> errOrR <*> errOrR of
+              Left _ -> pure () -- Fine
+              Right (l, r) -> l `shouldBe` r
 
     it "is commutative" $
       forAllValid $ \a1 ->

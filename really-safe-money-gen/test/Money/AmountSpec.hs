@@ -152,13 +152,15 @@ spec = do
       forAllValid $ \a ->
         Amount.add a Amount.zero `shouldBe` Right a
 
-    it "is associative" $
+    it "is associative when both succeed" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 ->
           forAllValid $ \a3 -> do
-            let l = Amount.add <$> Amount.add a1 a2 <*> pure a3
-            let r = Amount.add <$> pure a1 <*> Amount.add a2 a3
-            l `shouldBe` r
+            let errOrL = Amount.add <$> Amount.add a1 a2 <*> pure a3
+            let errOrR = Amount.add <$> pure a1 <*> Amount.add a2 a3
+            case (,) <$> errOrL <*> errOrR of
+              Left _ -> pure () -- Fine.
+              Right (l, r) -> l `shouldBe` r
 
     it "is commutative" $
       forAllValid $ \a1 ->

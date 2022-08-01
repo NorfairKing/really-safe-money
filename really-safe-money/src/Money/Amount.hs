@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -91,7 +92,11 @@ fromRational quantisationFactor r = Just $ Amount $ round r * fromIntegral quant
 toRational :: Word32 -> Amount -> Rational
 toRational quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
 
-data AdditionFailure = AdditionFailure
+data AdditionFailure
+  = -- | Overflow over the maxBound, with the real result
+    OverflowMaxbound !Integer
+  | -- | Overflow under the minBound, with the real result
+    OverflowMinbound !Integer
   deriving (Show, Eq, Generic)
 
 instance Validity AdditionFailure
@@ -104,7 +109,16 @@ instance Validity AdditionFailure
 --
 -- WARNING: This function can be used to accidentally add up two amounts of different currencies.
 add :: Amount -> Amount -> Either AdditionFailure Amount
-add (Amount a1) (Amount a2) = Right $ Amount $ a1 + a2
+add (Amount a1) (Amount a2) =
+  let i1 = fromIntegral a1 :: Integer
+      i2 = fromIntegral a2 :: Integer
+      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
+      minBoundI = fromIntegral (minBound :: Int64) :: Integer
+      i = i1 + i2
+   in if
+          | i > maxBoundI -> Left $ OverflowMaxbound i
+          | i < minBoundI -> Left $ OverflowMinbound i
+          | otherwise -> Right (Amount (fromInteger i))
 
 data SubtractionFailure = SubtractionFailure
   deriving (Show, Eq, Generic)
