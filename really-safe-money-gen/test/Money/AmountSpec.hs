@@ -5,6 +5,7 @@
 module Money.AmountSpec (spec) where
 
 import Control.Arrow (left)
+import Data.Either
 import GHC.Real
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
@@ -119,6 +120,27 @@ spec = do
       shouldBeValid Amount.zero
 
   describe "add" $ do
+    it "fails for maxBound + 1" $
+      -- TODO specific failure
+      Amount.add (Amount maxBound) (Amount 1)
+        `shouldSatisfy` isLeft
+
+    it "fails for maxBound + maxBound" $
+      -- TODO specific failure
+      Amount.add (Amount maxBound) (Amount maxBound)
+        `shouldSatisfy` isLeft
+
+    it "fails for minBound - 1" $
+      -- TODO specific failure
+      Amount.add (Amount maxBound) (Amount 1)
+        `shouldSatisfy` isLeft
+
+    -- TODO how to write this test? Maybe we need a 'subtract' as well.
+    xit "fails for minBound - minBound" $
+      -- TODO specific failure
+      Amount.add (Amount minBound) (Amount $ -minBound)
+        `shouldSatisfy` isLeft
+
     it "produces valid amounts" $
       producesValid2 Amount.add
 
@@ -170,3 +192,31 @@ spec = do
                   e <- left Right (Amount.multiply a c)
                   left Left $ Amount.add d e
             l `shouldBe` r
+
+  describe "divide" $ do
+    it "produces valid amounts" $
+      producesValid2 Amount.divide
+
+    it "fails with a zero divisor" $
+      forAllValid $ \a ->
+        -- TODO specific failure
+        Amount.divide a 0 `shouldSatisfy` isLeft
+
+    it "succeeds when dividing by 1" $
+      forAllValid $ \a ->
+        Amount.divide a 1 `shouldBe` Right a
+
+    it "Correctly divides 10 by 3" $
+      Amount.divide (Amount 10) 3 `shouldBe` Right (Amount 3)
+
+  describe "fraction" $ do
+    it "produces valid amounts" $
+      producesValid2 Amount.fraction
+
+    it "Correctly fractions 100 with 1 % 100" $
+      Amount.fraction (Amount 100) (1 % 100)
+        `shouldBe` Right (Amount 1, 1 % 100)
+
+    it "Correctly fractions 101 with 1 % 100" $
+      Amount.fraction (Amount 101) (1 % 100)
+        `shouldBe` Right (Amount 1, 1 % 101)
