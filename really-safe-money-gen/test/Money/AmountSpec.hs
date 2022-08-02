@@ -156,6 +156,18 @@ spec = do
         forAllValid $ \a2 ->
           Amount.add a1 a2 `shouldBe` Amount.add a2 a1
 
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 -> do
+          let errOrAmount = Amount.add a1 a2
+          case errOrAmount of
+            Left _ -> pure () -- Fine.
+            Right (Amount amountResult) -> do
+              let integerResult =
+                    toInteger (Amount.toMinimalQuantisations a1)
+                      + toInteger (Amount.toMinimalQuantisations a2)
+              toInteger amountResult `shouldBe` integerResult
+
   describe "subtract" $ do
     it "fails for minBound - 1" $
       -- TODO specific failure
@@ -166,6 +178,18 @@ spec = do
       -- TODO specific failure
       Amount.subtract (Amount minBound) (Amount minBound)
         `shouldSatisfy` isLeft
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 -> do
+          let errOrAmount = Amount.subtract a1 a2
+          case errOrAmount of
+            Left _ -> pure () -- Fine.
+            Right (Amount amountResult) -> do
+              let integerResult =
+                    toInteger (Amount.toMinimalQuantisations a1)
+                      - toInteger (Amount.toMinimalQuantisations a2)
+              toInteger amountResult `shouldBe` integerResult
 
   describe "multiply" $ do
     it "produces valid amounts" $
@@ -197,6 +221,18 @@ spec = do
               Left _ -> pure () -- Fine
               Right (l, r) -> l `shouldBe` r
 
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \f ->
+        forAllValid $ \a -> do
+          let errOrAmount = Amount.multiply f a
+          case errOrAmount of
+            Left _ -> pure () -- Fine.
+            Right (Amount amountResult) -> do
+              let integerResult =
+                    toInteger f
+                      * toInteger (Amount.toMinimalQuantisations a)
+              toInteger amountResult `shouldBe` integerResult
+
   describe "divide" $ do
     it "produces valid amounts" $
       producesValid2 Amount.divide
@@ -212,6 +248,18 @@ spec = do
 
     it "Correctly divides 10 by 3" $
       Amount.divide (Amount 10) 3 `shouldBe` Right (Amount 3)
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a ->
+        forAllValid $ \d -> do
+          let errOrAmount = Amount.divide a d
+          case errOrAmount of
+            Left _ -> pure () -- Fine.
+            Right (Amount amountResult) -> do
+              let integerResult =
+                    toInteger (Amount.toMinimalQuantisations a)
+                      `div` toInteger d
+              toInteger amountResult `shouldBe` integerResult
 
   describe "fraction" $ do
     it "produces valid amounts" $

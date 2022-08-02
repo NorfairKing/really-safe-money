@@ -169,6 +169,7 @@ divide ::
   Either DivisionFailure Amount
 divide _ 0 = Left DivideByZero
 divide (Amount a) d =
+  -- We always round down here, because it is the least surprising.
   let r = a `div` fromIntegral d
    in Right (Amount r)
 
