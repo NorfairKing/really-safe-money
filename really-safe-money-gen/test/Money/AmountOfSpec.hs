@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -89,17 +88,17 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     it "succeeds on -1" $
       from (-1) `shouldBe` Just (AmountOf (Amount (-(fromIntegral (quantisationFactor p)))))
 
-    xit "fails on NaN" $ do
-      let !nan = 0 :% 0 :: Rational
-      from nan `shouldBe` Nothing
+    it "fails on NaN" $
+      let nan = 0 :% 0 :: Rational
+       in from nan `shouldBe` Nothing
 
-    xit "fails on +Infinity" $ do
-      let !pinf = 1 :% 0 :: Rational
-      from pinf `shouldBe` Nothing
+    it "fails on +Infinity" $
+      let pinf = 1 :% 0 :: Rational
+       in from pinf `shouldBe` Nothing
 
-    xit "fails on -Infinity" $ do
-      let !minf = -1 :% 0 :: Rational
-      from minf `shouldBe` Nothing
+    it "fails on -Infinity" $
+      let minf = -1 :% 0 :: Rational
+       in from minf `shouldBe` Nothing
 
     it "roundtrips with toRational" $
       forAllValid $ \amount ->

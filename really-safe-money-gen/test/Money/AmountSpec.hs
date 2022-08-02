@@ -4,7 +4,6 @@
 module Money.AmountSpec (spec) where
 
 import Control.Arrow (left)
-import Data.Either
 import Data.Ratio
 import GHC.Real (Ratio ((:%)))
 import Money.Amount (Amount (..))
@@ -100,17 +99,17 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
     it "succeeds on 77.02 with quantisation factor 100" $
       Amount.fromRational 100 77.02 `shouldBe` Just (Amount 7702)
 
-    xit "fails on NaN" $ do
+    it "fails on NaN" $ do
       forAllValid $ \quantisationFactor ->
         let nan = 0 :% 0 :: Rational
          in Amount.fromRational quantisationFactor nan `shouldBe` Nothing
 
-    xit "fails on +Infinity" $
+    it "fails on +Infinity" $
       forAllValid $ \quantisationFactor ->
         let pinf = 1 :% 0 :: Rational
          in Amount.fromRational quantisationFactor pinf `shouldBe` Nothing
 
-    xit "fails on -Infinity" $
+    it "fails on -Infinity" $
       forAllValid $ \quantisationFactor ->
         let minf = -1 :% 0 :: Rational
          in Amount.fromRational quantisationFactor minf `shouldBe` Nothing
@@ -138,14 +137,16 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
 
   describe "add" $ do
     it "fails for maxBound + 1" $
-      -- TODO specific failure
       Amount.add (Amount maxBound) (Amount 1)
-        `shouldSatisfy` isLeft
+        `shouldBe` Left (Amount.OverflowMaxbound 9223372036854775808)
 
     it "fails for maxBound + maxBound" $
-      -- TODO specific failure
       Amount.add (Amount maxBound) (Amount maxBound)
-        `shouldSatisfy` isLeft
+        `shouldBe` Left (Amount.OverflowMaxbound 18446744073709551614)
+
+    it "fails for minBound + minBound" $
+      Amount.add (Amount minBound) (Amount minBound)
+        `shouldBe` Left (Amount.OverflowMinbound (-18446744073709551616))
 
     it "produces valid amounts" $
       producesValid2 Amount.add
@@ -187,14 +188,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
 
   describe "subtract" $ do
     it "fails for minBound - 1" $
-      -- TODO specific failure
       Amount.subtract (Amount minBound) (Amount 1)
-        `shouldSatisfy` isLeft
-
-    xit "fails for minBound - minBound" $
-      -- TODO specific failure
-      Amount.subtract (Amount minBound) (Amount minBound)
-        `shouldSatisfy` isLeft
+        `shouldBe` Left (Amount.OverflowMinbound (-9223372036854775809))
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
@@ -256,8 +251,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
 
     it "fails with a zero divisor" $
       forAllValid $ \a ->
-        -- TODO specific failure
-        Amount.divide a 0 `shouldSatisfy` isLeft
+        Amount.divide a 0 `shouldBe` Left Amount.DivideByZero
 
     it "succeeds when dividing by 1" $
       forAllValid $ \a ->
