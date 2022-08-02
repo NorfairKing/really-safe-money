@@ -84,13 +84,25 @@ fromMinimalQuantisations :: Repr -> Amount
 fromMinimalQuantisations = Amount
 
 fromDouble :: Word32 -> Double -> Maybe Amount
-fromDouble quantisationFactor d = Just $ Amount $ round d * fromIntegral quantisationFactor
+fromDouble quantisationFactor d
+  | isNaN d = Nothing
+  | isInfinite d = Nothing
+  | otherwise =
+    let resultDouble :: Double
+        resultDouble = d * fromIntegral quantisationFactor
+        ceiled = ceiling resultDouble
+        floored = floor resultDouble
+     in if ceiled == floored
+          then Just $ Amount ceiled
+          else Nothing
 
+-- Note that the result will be 'NaN' if the quantisation factor is 0
 toDouble :: Word32 -> Amount -> Double
 toDouble quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
 
 fromRational :: Word32 -> Rational -> Maybe Amount
-fromRational quantisationFactor r = Just $ Amount $ round r * fromIntegral quantisationFactor
+fromRational quantisationFactor r =
+  Just $ Amount $ round $ r * fromIntegral quantisationFactor
 
 toRational :: Word32 -> Amount -> Rational
 toRational quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
