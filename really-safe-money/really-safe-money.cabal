@@ -30,3 +30,15 @@ library
     , deepseq
     , validity
   default-language: Haskell2010
+
+test-suite really-safe-money-dummy-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_really_safe_money
+  hs-source-dirs:
+      test
+  build-depends:
+      base >=4.7 && <5
+    , really-safe-money
+  default-language: Haskell2010

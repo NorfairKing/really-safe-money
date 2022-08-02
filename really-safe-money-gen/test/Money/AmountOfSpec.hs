@@ -4,6 +4,7 @@
 
 module Money.AmountOfSpec (spec) where
 
+import Control.Arrow (left)
 import Data.Proxy
 import Data.Typeable
 import GHC.Real
@@ -16,9 +17,14 @@ import qualified Money.Currency as Currency
 import Test.Syd
 import Test.Syd.Validity
 import Test.Syd.Validity.Utils
+import Prelude hiding (subtract)
 
 spec :: Spec
 spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
+  eqSpec @(AmountOf currency)
+  ordSpec @(AmountOf currency)
+  showReadSpec @(AmountOf currency)
+
   describe "fromMinimalQuantisations" $
     it "produces valid amounts" $
       producesValid AmountOf.fromMinimalQuantisations
@@ -58,16 +64,6 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
       let minf = read "-Infinity"
        in from minf `shouldBe` Nothing
 
-    xdescribe "just does not hold because multiplying by the quantisation factor introduces floating point errors" $
-      it "roundtrips with toDouble" $
-        forAllValid $ \amount ->
-          let double = AmountOf.toDouble amount
-              result = from double
-              ctx = show double
-           in context ctx $ case result of
-                Nothing -> pure () -- Fine
-                Just amount' -> amount' `shouldBe` amount
-
   describe "toDouble" $ do
     let to = AmountOf.toDouble :: AmountOf currency -> Double
     it "produces valid Doubles" $
@@ -102,7 +98,8 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
     it "roundtrips with toRational" $
       forAllValid $ \amount ->
-        from (AmountOf.toRational amount) `shouldBe` Just (amount :: AmountOf currency)
+        from (AmountOf.toRational amount)
+          `shouldBe` Just (amount :: AmountOf currency)
 
   describe "toRational" $ do
     let to = AmountOf.toRational :: AmountOf currency -> Rational
@@ -142,6 +139,32 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
         forAllValid $ \a2 ->
           add a1 a2 `shouldBe` add a2 a1
 
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 -> do
+          let errOrAmount = add a1 a2
+          case errOrAmount of
+            Left _ -> pure () -- Fine.
+            Right amountResult -> do
+              let integerResult =
+                    toInteger (AmountOf.toMinimalQuantisations a1)
+                      + toInteger (AmountOf.toMinimalQuantisations a2)
+              toInteger (AmountOf.toMinimalQuantisations amountResult) `shouldBe` integerResult
+
+  describe "subtract" $ do
+    let subtract = AmountOf.subtract @currency
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 -> do
+          let errOrAmount = subtract a1 a2
+          case errOrAmount of
+            Left _ -> pure () -- Fine.
+            Right amountResult -> do
+              let integerResult =
+                    toInteger (AmountOf.toMinimalQuantisations a1)
+                      - toInteger (AmountOf.toMinimalQuantisations a2)
+              toInteger (AmountOf.toMinimalQuantisations amountResult) `shouldBe` integerResult
+
   describe "multiply" $ do
     let multiply = AmountOf.multiply @currency
 
@@ -156,7 +179,74 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
       forAllValid $ \a ->
         multiply 0 a `shouldBe` Right zero
 
-forallCurrencies :: (forall currency. Currency currency => Proxy currency -> Spec) -> Spec
+    -- A x (B + C) == A x B + A x C
+    it "is distributive with add when both succeed" $
+      forAllValid $ \a ->
+        forAllValid $ \b ->
+          forAllValid $ \c -> do
+            let errOrL :: Either (Either AmountOf.AdditionFailure AmountOf.MultiplicationFailure) (AmountOf currency)
+                errOrL = do
+                  d <- left Left (AmountOf.add b c)
+                  left Right $ multiply a d
+            let errOrR :: Either (Either AmountOf.AdditionFailure AmountOf.MultiplicationFailure) (AmountOf currency)
+                errOrR = do
+                  d <- left Right (multiply a b)
+                  e <- left Right (multiply a c)
+                  left Left $ AmountOf.add d e
+            case (,) <$> errOrL <*> errOrR of
+              Left _ -> pure () -- Fine
+              Right (l, r) -> l `shouldBe` r
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \f ->
+        forAllValid $ \a -> do
+          let errOrAmountOf = multiply f a
+          case errOrAmountOf of
+            Left _ -> pure () -- Fine.
+            Right amountResult -> do
+              let integerResult =
+                    toInteger f
+                      * toInteger (AmountOf.toMinimalQuantisations a)
+              toInteger (AmountOf.toMinimalQuantisations amountResult) `shouldBe` integerResult
+
+  describe "divide" $ do
+    let divide = AmountOf.divide @currency
+    it "produces valid amounts" $
+      producesValid2 divide
+
+    it "fails with a zero divisor" $
+      forAllValid $ \a ->
+        divide a 0 `shouldBe` Left AmountOf.DivideByZero
+
+    it "succeeds when dividing by 1" $
+      forAllValid $ \a ->
+        divide a 1 `shouldBe` Right a
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a ->
+        forAllValid $ \d -> do
+          let errOrAmount = divide a d
+          case errOrAmount of
+            Left _ -> pure () -- Fine.
+            Right amountResult -> do
+              let integerResult =
+                    toInteger (AmountOf.toMinimalQuantisations a)
+                      `div` toInteger d
+              toInteger (AmountOf.toMinimalQuantisations amountResult)
+                `shouldBe` integerResult
+
+  describe "fraction" $ do
+    let fraction = AmountOf.fraction @currency
+    it "produces valid amounts" $
+      producesValid2 fraction
+
+forallCurrencies ::
+  ( forall currency.
+    (Typeable currency, Currency currency) =>
+    Proxy currency ->
+    Spec
+  ) ->
+  Spec
 forallCurrencies func = do
   let d :: forall currency. (Typeable currency, Currency currency) => Proxy currency -> Spec
       d p = describe (nameOf @currency) $ func p

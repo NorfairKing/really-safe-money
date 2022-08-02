@@ -35,6 +35,7 @@ where
 import Control.DeepSeq
 import Data.Int
 import Data.Proxy
+import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
@@ -56,7 +57,7 @@ import Prelude hiding (fromRational, subtract, toRational)
 newtype AmountOf currency = AmountOf
   { unAmountOf :: Amount
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Read, Eq, Ord, Typeable, Generic)
 
 instance Validity (AmountOf currency)
 

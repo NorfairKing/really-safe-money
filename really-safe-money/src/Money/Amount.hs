@@ -31,6 +31,7 @@ where
 
 import Control.DeepSeq
 import Data.Int
+import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
@@ -55,7 +56,7 @@ type Repr = Int64
 newtype Amount = Amount
   { unAmount :: Repr
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Read, Eq, Ord, Typeable, Generic)
 
 instance Validity Amount
 

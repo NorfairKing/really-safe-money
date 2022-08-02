@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Money.AmountSpec (spec) where
 
@@ -15,6 +16,10 @@ import Test.Syd.Validity
 
 spec :: Spec
 spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
+  eqSpec @Amount
+  ordSpec @Amount
+  showReadSpec @Amount
+
   describe "fromMinimalQuantisations" $
     it "produces valid amounts" $
       producesValid Amount.fromMinimalQuantisations
@@ -78,6 +83,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
     it "produces valid Doubles" $
       producesValid2 Amount.toDouble
 
+    it "succeeds on 7702 with quantisation factor 100" $
+      Amount.toDouble 100 (Amount 7702) `shouldBe` 77.02
+
   describe "fromRational" $ do
     it "produces valid Amounts" $
       producesValid2 Amount.fromRational
@@ -127,7 +135,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
       forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
         producesValid (Amount.toRational quantisationFactor)
 
-    it "produces 0 with quantisation factor 0" $
+    it "produces an invalid Rational with quantisation factor 0" $
       forAllValid $ \a@(Amount m) ->
         Amount.toRational 0 a `shouldBe` (fromIntegral m :% 0)
 
@@ -180,16 +188,25 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
           let errOrAmount = Amount.add a1 a2
           case errOrAmount of
             Left _ -> pure () -- Fine.
-            Right (Amount amountResult) -> do
+            Right amountResult -> do
               let integerResult =
                     toInteger (Amount.toMinimalQuantisations a1)
                       + toInteger (Amount.toMinimalQuantisations a2)
-              toInteger amountResult `shouldBe` integerResult
+              toInteger (Amount.toMinimalQuantisations amountResult)
+                `shouldBe` integerResult
 
   describe "subtract" $ do
     it "fails for minBound - 1" $
       Amount.subtract (Amount minBound) (Amount 1)
         `shouldBe` Left (Amount.OverflowMinbound (-9223372036854775809))
+
+    it "fails for maxBound - minBound" $
+      Amount.subtract (Amount maxBound) (Amount minBound)
+        `shouldBe` Left (Amount.OverflowMaxbound 18446744073709551615)
+
+    it "fails for minBound - maxBound" $
+      Amount.subtract (Amount minBound) (Amount maxBound)
+        `shouldBe` Left (Amount.OverflowMinbound (-18446744073709551615))
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
@@ -197,11 +214,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
           let errOrAmount = Amount.subtract a1 a2
           case errOrAmount of
             Left _ -> pure () -- Fine.
-            Right (Amount amountResult) -> do
+            Right amountResult -> do
               let integerResult =
                     toInteger (Amount.toMinimalQuantisations a1)
                       - toInteger (Amount.toMinimalQuantisations a2)
-              toInteger amountResult `shouldBe` integerResult
+              toInteger (Amount.toMinimalQuantisations amountResult)
+                `shouldBe` integerResult
 
   describe "multiply" $ do
     it "produces valid amounts" $
@@ -239,11 +257,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
           let errOrAmount = Amount.multiply f a
           case errOrAmount of
             Left _ -> pure () -- Fine.
-            Right (Amount amountResult) -> do
+            Right amountResult -> do
               let integerResult =
                     toInteger f
                       * toInteger (Amount.toMinimalQuantisations a)
-              toInteger amountResult `shouldBe` integerResult
+              toInteger (Amount.toMinimalQuantisations amountResult)
+                `shouldBe` integerResult
 
   describe "divide" $ do
     it "produces valid amounts" $
@@ -266,11 +285,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
           let errOrAmount = Amount.divide a d
           case errOrAmount of
             Left _ -> pure () -- Fine.
-            Right (Amount amountResult) -> do
+            Right amountResult -> do
               let integerResult =
                     toInteger (Amount.toMinimalQuantisations a)
                       `div` toInteger d
-              toInteger amountResult `shouldBe` integerResult
+              toInteger (Amount.toMinimalQuantisations amountResult)
+                `shouldBe` integerResult
 
   describe "fraction" $ do
     it "produces valid amounts" $

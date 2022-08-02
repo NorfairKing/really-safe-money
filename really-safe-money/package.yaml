@@ -13,3 +13,11 @@ library:
   dependencies:
   - deepseq
   - validity
+
+tests:
+  really-safe-money-dummy-test:
+    main: Spec.hs
+    source-dirs: test
+    dependencies:
+    - really-safe-money
+
