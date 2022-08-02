@@ -61,6 +61,7 @@ benchmark smos-data-bench
       QuickCheck
     , base >=4.7 && <5
     , criterion
+    , deepseq
     , genvalidity
     , genvalidity-criterion
     , genvalidity-vector

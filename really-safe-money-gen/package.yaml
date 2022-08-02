@@ -25,6 +25,7 @@ benchmarks:
     dependencies:
     - QuickCheck
     - criterion
+    - deepseq
     - genvalidity
     - genvalidity-criterion
     - genvalidity-vector

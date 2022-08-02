@@ -6,4 +6,6 @@ import Data.GenValidity
 import Money.Amount.Gen ()
 import Money.AmountOf
 
-instance GenValid (AmountOf currency)
+instance GenValid (AmountOf currency) where
+  genValid = genValidStructurallyWithoutExtraChecking
+  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
