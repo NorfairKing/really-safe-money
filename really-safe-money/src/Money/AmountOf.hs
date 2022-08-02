@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-duplicate-exports #-}
+{-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports #-}
 
 module Money.AmountOf
   ( AmountOf (..),
@@ -34,6 +34,7 @@ where
 import Data.Int
 import Data.Proxy
 import Data.Validity
+import Data.Word
 import GHC.Generics (Generic)
 import GHC.TypeLits
 import Money.Amount (Amount)
@@ -114,14 +115,14 @@ multiply f (AmountOf a) = AmountOf <$> Amount.multiply f a
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   AmountOf currency ->
-  Int32 ->
+  Word32 ->
   Either Amount.DivisionFailure (AmountOf currency)
 divide (AmountOf a) i = AmountOf <$> Amount.divide a i
 
 fraction ::
   AmountOf currency ->
   Rational ->
-  Either Amount.FractionFailure (AmountOf currency, Rational)
-fraction (AmountOf a) f = do
-  (a', r) <- Amount.fraction a f
-  pure (AmountOf a', r)
+  (AmountOf currency, Rational)
+fraction (AmountOf a) f =
+  let (a', r) = Amount.fraction a f
+   in (AmountOf a', r)

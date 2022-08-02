@@ -130,17 +130,6 @@ spec = do
       Amount.add (Amount maxBound) (Amount maxBound)
         `shouldSatisfy` isLeft
 
-    it "fails for minBound - 1" $
-      -- TODO specific failure
-      Amount.add (Amount maxBound) (Amount 1)
-        `shouldSatisfy` isLeft
-
-    -- TODO how to write this test? Maybe we need a 'subtract' as well.
-    xit "fails for minBound - minBound" $
-      -- TODO specific failure
-      Amount.add (Amount minBound) (Amount $ -minBound)
-        `shouldSatisfy` isLeft
-
     it "produces valid amounts" $
       producesValid2 Amount.add
 
@@ -167,6 +156,17 @@ spec = do
         forAllValid $ \a2 ->
           Amount.add a1 a2 `shouldBe` Amount.add a2 a1
 
+  describe "subtract" $ do
+    it "fails for minBound - 1" $
+      -- TODO specific failure
+      Amount.subtract (Amount minBound) (Amount 1)
+        `shouldSatisfy` isLeft
+
+    xit "fails for minBound - minBound" $
+      -- TODO specific failure
+      Amount.subtract (Amount minBound) (Amount minBound)
+        `shouldSatisfy` isLeft
+
   describe "multiply" $ do
     it "produces valid amounts" $
       producesValid2 Amount.multiply
@@ -180,20 +180,22 @@ spec = do
         Amount.multiply 0 a `shouldBe` Right Amount.zero
 
     -- A x (B + C) == A x B + A x C
-    it "is distributive with add" $
+    it "is distributive with add when both succeed" $
       forAllValid $ \a ->
         forAllValid $ \b ->
           forAllValid $ \c -> do
-            let l :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
-                l = do
+            let errOrL :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
+                errOrL = do
                   d <- left Left (Amount.add b c)
                   left Right $ Amount.multiply a d
-            let r :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
-                r = do
+            let errOrR :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
+                errOrR = do
                   d <- left Right (Amount.multiply a b)
                   e <- left Right (Amount.multiply a c)
                   left Left $ Amount.add d e
-            l `shouldBe` r
+            case (,) <$> errOrL <*> errOrR of
+              Left _ -> pure () -- Fine
+              Right (l, r) -> l `shouldBe` r
 
   describe "divide" $ do
     it "produces valid amounts" $
@@ -217,8 +219,8 @@ spec = do
 
     it "Correctly fractions 100 with 1 % 100" $
       Amount.fraction (Amount 100) (1 % 100)
-        `shouldBe` Right (Amount 1, 1 % 100)
+        `shouldBe` (Amount 1, 1 % 100)
 
     it "Correctly fractions 101 with 1 % 100" $
       Amount.fraction (Amount 101) (1 % 100)
-        `shouldBe` Right (Amount 1, 1 % 101)
+        `shouldBe` (Amount 1, 1 % 101)

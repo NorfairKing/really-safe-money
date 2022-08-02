@@ -128,7 +128,7 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
           forAllValid $ \a3 -> do
             let errOrL = add <$> add a1 a2 <*> pure a3
             let errOrR = add <$> pure a1 <*> add a2 a3
-            case (,) <$> errOrR <*> errOrR of
+            case (,) <$> errOrL <*> errOrR of
               Left _ -> pure () -- Fine
               Right (l, r) -> l `shouldBe` r
 

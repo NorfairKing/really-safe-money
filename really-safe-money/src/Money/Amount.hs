@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-duplicate-exports #-}
+{-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports #-}
 
 module Money.Amount
   ( Amount (..),
@@ -37,6 +37,9 @@ import Data.Word
 import GHC.Generics (Generic)
 import GHC.TypeLits
 import Prelude hiding (fromRational, subtract, toRational)
+import qualified Prelude
+
+type Repr = Int64
 
 -- | An amount of money of an unspecified currency. May be negative.
 --
@@ -50,7 +53,7 @@ import Prelude hiding (fromRational, subtract, toRational)
 -- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2022)
 -- * 10 billion BTC (more than the 21 million that can exist)
 newtype Amount = Amount
-  { unAmount :: Int64
+  { unAmount :: Repr
   }
   deriving (Show, Eq, Generic)
 
@@ -74,10 +77,10 @@ instance
 zero :: Amount
 zero = Amount 0
 
-toMinimalQuantisations :: Amount -> Int64
+toMinimalQuantisations :: Amount -> Repr
 toMinimalQuantisations = unAmount
 
-fromMinimalQuantisations :: Int64 -> Amount
+fromMinimalQuantisations :: Repr -> Amount
 fromMinimalQuantisations = Amount
 
 fromDouble :: Word32 -> Double -> Maybe Amount
@@ -112,37 +115,49 @@ add :: Amount -> Amount -> Either AdditionFailure Amount
 add (Amount a1) (Amount a2) =
   let i1 = fromIntegral a1 :: Integer
       i2 = fromIntegral a2 :: Integer
-      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
-      minBoundI = fromIntegral (minBound :: Int64) :: Integer
-      i = i1 + i2
+      maxBoundI = fromIntegral (maxBound :: Repr) :: Integer
+      minBoundI = fromIntegral (minBound :: Repr) :: Integer
+      r = i1 + i2
    in if
-          | i > maxBoundI -> Left $ OverflowMaxbound i
-          | i < minBoundI -> Left $ OverflowMinbound i
-          | otherwise -> Right (Amount (fromInteger i))
+          | r > maxBoundI -> Left $ OverflowMaxbound r
+          | r < minBoundI -> Left $ OverflowMinbound r
+          | otherwise -> Right (Amount (fromInteger r))
 
-data SubtractionFailure = SubtractionFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity SubtractionFailure
+type SubtractionFailure = AdditionFailure
 
 --
 -- WARNING: This function can be used to accidentally subtract two amounts of different currencies.
 subtract :: Amount -> Amount -> Either SubtractionFailure Amount
-subtract = undefined
+subtract (Amount a1) (Amount a2) =
+  let i1 = fromIntegral a1 :: Integer
+      i2 = fromIntegral a2 :: Integer
+      maxBoundI = fromIntegral (maxBound :: Repr) :: Integer
+      minBoundI = fromIntegral (minBound :: Repr) :: Integer
+      r = i1 - i2
+   in if
+          | r > maxBoundI -> Left $ OverflowMaxbound r
+          | r < minBoundI -> Left $ OverflowMinbound r
+          | otherwise -> Right (Amount (fromInteger r))
 
-data MultiplicationFailure = MultiplicationFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity MultiplicationFailure
+type MultiplicationFailure = AdditionFailure
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Int32 ->
   Amount ->
   Either MultiplicationFailure Amount
-multiply = undefined
+multiply f (Amount a) =
+  let i = fromIntegral a :: Integer
+      maxBoundI = fromIntegral (maxBound :: Repr) :: Integer
+      minBoundI = fromIntegral (minBound :: Repr) :: Integer
+      r = fromIntegral f * fromInteger i
+   in if
+          | r > maxBoundI -> Left $ OverflowMaxbound r
+          | r < minBoundI -> Left $ OverflowMinbound r
+          | otherwise -> Right (Amount (fromInteger r))
 
-data DivisionFailure = DivisionFailure
+data DivisionFailure
+  = DivideByZero
   deriving (Show, Eq, Generic)
 
 instance Validity DivisionFailure
@@ -150,17 +165,30 @@ instance Validity DivisionFailure
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   Amount ->
-  Int32 ->
+  Word32 ->
   Either DivisionFailure Amount
-divide = undefined
+divide _ 0 = Left DivideByZero
+divide (Amount a) d =
+  let r = a `div` fromIntegral d
+   in Right (Amount r)
 
 data FractionFailure = FractionFailure
   deriving (Show, Eq, Generic)
 
 instance Validity FractionFailure
 
+-- Fractional multiplication
 fraction ::
   Amount ->
   Rational ->
-  Either FractionFailure (Amount, Rational)
-fraction = undefined
+  (Amount, Rational)
+fraction (Amount 0) f = (zero, f)
+fraction _ 0 = (zero, 0)
+fraction (Amount a) f =
+  let theoreticalResult :: Rational
+      theoreticalResult = Prelude.toRational a * f
+      roundedResult :: Repr
+      roundedResult = round theoreticalResult
+      actualRate :: Rational
+      actualRate = Prelude.toRational roundedResult / Prelude.toRational a
+   in (Amount roundedResult, actualRate)
