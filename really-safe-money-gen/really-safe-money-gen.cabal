@@ -42,7 +42,8 @@ test-suite really-safe-money-test
   build-tool-depends:
       sydtest-discover:sydtest-discover
   build-depends:
-      base >=4.7 && <5
+      QuickCheck
+    , base >=4.7 && <5
     , genvalidity-sydtest
     , really-safe-money
     , really-safe-money-gen

@@ -43,6 +43,7 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - QuickCheck
     - genvalidity-sydtest
     - really-safe-money-gen
     - sydtest

@@ -1,20 +1,21 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Money.AmountSpec (spec) where
 
 import Control.Arrow (left)
 import Data.Either
-import GHC.Real
+import Data.Ratio
+import GHC.Real (Ratio ((:%)))
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
+import Test.QuickCheck
 import Test.Syd
 import Test.Syd.Validity
 
 spec :: Spec
-spec = do
+spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
   describe "fromMinimalQuantisations" $
     it "produces valid amounts" $
       producesValid Amount.fromMinimalQuantisations
@@ -117,12 +118,19 @@ spec = do
     it "roundtrips with toRational" $
       forAllValid $ \quantisationFactor ->
         forAllValid $ \amount ->
-          Amount.fromRational quantisationFactor (Amount.toRational quantisationFactor amount)
-            `shouldBe` Just amount
+          let r = Amount.toRational quantisationFactor amount
+           in context (show r) $ case Amount.fromRational quantisationFactor r of
+                Nothing -> pure () -- Fine
+                Just amount' -> amount' `shouldBe` amount
 
   describe "toRational" $ do
-    it "produces valid Rationals" $
-      producesValid2 Amount.toRational
+    it "produces valid Rationals when the quantisation factor is nonzero" $
+      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+        producesValid (Amount.toRational quantisationFactor)
+
+    it "produces 0 with quantisation factor 0" $
+      forAllValid $ \a@(Amount m) ->
+        Amount.toRational 0 a `shouldBe` (fromIntegral m :% 0)
 
   describe "zero" $
     it "is valid" $

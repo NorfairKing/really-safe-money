@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -205,8 +204,7 @@ nameOf =
         else s
 
 withArgs :: (NFData env, GenValid env) => (env -> Benchmark) -> Benchmark
-withArgs func =
-  env (pure (generateDeterministically genValid)) func
+withArgs = env (pure (generateDeterministically genValid))
 
 generateDeterministically :: Gen a -> a
 generateDeterministically (MkGen f) = f seed size

@@ -1,9 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -36,6 +34,7 @@ import Data.Int
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
+import GHC.Real (Ratio ((:%)))
 import GHC.TypeLits
 import Prelude hiding (fromRational, subtract, toRational)
 import qualified Prelude
@@ -91,23 +90,26 @@ fromDouble quantisationFactor d
   | isNaN d = Nothing
   | isInfinite d = Nothing
   | otherwise =
-    let resultDouble :: Double
-        resultDouble = d * fromIntegral quantisationFactor
-        ceiled = ceiling resultDouble
-        floored = floor resultDouble
-     in if ceiled == floored
-          then Just $ Amount ceiled
-          else Nothing
+      let resultDouble :: Double
+          resultDouble = d * fromIntegral quantisationFactor
+          ceiled = ceiling resultDouble
+          floored = floor resultDouble
+       in if ceiled == floored
+            then Just $ Amount ceiled
+            else Nothing
 
 -- Note that the result will be 'NaN' if the quantisation factor is 0
 toDouble :: Word32 -> Amount -> Double
 toDouble quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
 
 fromRational :: Word32 -> Rational -> Maybe Amount
-fromRational quantisationFactor r =
-  Just $ Amount $ round $ r * fromIntegral quantisationFactor
+fromRational quantisationFactor r
+  | isInvalid r = Nothing
+  | otherwise = Just $ Amount $ round $ r * fromIntegral quantisationFactor
 
+-- Note that the result will be 'Amount / 0' if the quantisation factor is 0
 toRational :: Word32 -> Amount -> Rational
+toRational 0 a = fromIntegral (toMinimalQuantisations a) :% 0
 toRational quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
 
 data AdditionFailure

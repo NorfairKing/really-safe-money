@@ -1,0 +1,36 @@
+name: "Nix Build"
+on:
+  pull_request:
+  push:
+    branches: [development, master]
+jobs:
+  build:
+    name: ${{ matrix.attribute }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        attribute:
+          - release
+          - pre-commit-check
+          - hoogle
+          - shell
+          - nixos-21_05
+          - nixos-21_11
+          - nixos-22_05
+    steps:
+    - uses: actions/checkout@v3.0.2
+    - uses: cachix/install-nix-action@v17
+    - name: free disk space
+      run: |
+        if [[ "${{matrix.os}}" == "ubuntu-latest" ]]
+        then
+          sudo rm -rf /opt
+        fi
+    - uses: cachix/cachix-action@v10
+      with:
+        name: really-safe-money
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+    - run: nix-build ci.nix -A ${{ matrix.attribute }}

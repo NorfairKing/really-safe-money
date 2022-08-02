@@ -3,19 +3,26 @@ packages:
 - really-safe-money
 - really-safe-money-gen
 extra-deps:
+- github: NorfairKing/safe-coloured-text
+  commit: 675cb01fce5f46718416d7746de5b856ed90a63f
+  subdirs:
+    - safe-coloured-text
+    - safe-coloured-text-terminfo
+
+
 - github: NorfairKing/sydtest
-  commit: cf1bb414f0c0ce7bbf64659da94b8cd890c9e536
+  commit: 130de92053c1c3d60a8f45d509210415ffbea530
   subdirs:
     - sydtest
     - sydtest-discover
 - github: NorfairKing/autodocodec
-  commit: a60fbd4db121c0529f9ceb68c58c289daa693db2
+  commit: 71c4dcb3c890590cf1a4e42fb9f9f422a7c49ec0
   subdirs:
     - autodocodec
     - autodocodec-yaml
     - autodocodec-schema
 - github: NorfairKing/validity
-  commit: d88be911a7e2a84f6c089e9269aaed8d10a74acd
+  commit: 8373ac5f0f02ad66f1b83c9bf572290430e84062
   subdirs:
     - genvalidity
     - genvalidity-aeson
