@@ -31,6 +31,7 @@ module Money.Amount
   )
 where
 
+import Control.DeepSeq
 import Data.Int
 import Data.Validity
 import Data.Word
@@ -58,6 +59,8 @@ newtype Amount = Amount
   deriving (Show, Eq, Generic)
 
 instance Validity Amount
+
+instance NFData Amount
 
 instance
   TypeError
@@ -115,6 +118,8 @@ data AdditionFailure
   deriving (Show, Eq, Generic)
 
 instance Validity AdditionFailure
+
+instance NFData AdditionFailure
 
 -- | Add two amounts of money.
 --
@@ -174,6 +179,8 @@ data DivisionFailure
 
 instance Validity DivisionFailure
 
+instance NFData DivisionFailure
+
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   Amount ->
@@ -189,6 +196,8 @@ data FractionFailure = FractionFailure
   deriving (Show, Eq, Generic)
 
 instance Validity FractionFailure
+
+instance NFData FractionFailure
 
 -- Fractional multiplication
 fraction ::

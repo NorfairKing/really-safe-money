@@ -12,6 +12,26 @@ library:
   dependencies:
   - genvalidity
 
+
+benchmarks:
+  smos-data-bench:
+    main: Main.hs
+    source-dirs: bench/
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    dependencies:
+    - QuickCheck
+    - criterion
+    - genvalidity
+    - genvalidity-criterion
+    - genvalidity-vector
+    - really-safe-money
+    - really-safe-money-gen
+    - vector
+
 tests:
   really-safe-money-test:
     main: Spec.hs

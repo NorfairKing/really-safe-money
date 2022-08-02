@@ -11,6 +11,8 @@
 module Money.AmountOf
   ( AmountOf (..),
     zero,
+    fromAmount,
+    toAmount,
     toMinimalQuantisations,
     fromMinimalQuantisations,
     fromDouble,
@@ -31,6 +33,7 @@ module Money.AmountOf
   )
 where
 
+import Control.DeepSeq
 import Data.Int
 import Data.Proxy
 import Data.Validity
@@ -58,6 +61,8 @@ newtype AmountOf currency = AmountOf
 
 instance Validity (AmountOf currency)
 
+instance NFData (AmountOf currency)
+
 instance
   TypeError
     ( 'Text "This would require that Amounts of money are an instance of Num"
@@ -76,11 +81,17 @@ instance
 zero :: AmountOf currency
 zero = AmountOf Amount.zero
 
+fromAmount :: Amount -> AmountOf currency
+fromAmount = AmountOf
+
+toAmount :: AmountOf currency -> Amount
+toAmount = unAmountOf
+
 toMinimalQuantisations :: AmountOf currency -> Int64
-toMinimalQuantisations = Amount.toMinimalQuantisations . unAmountOf
+toMinimalQuantisations = Amount.toMinimalQuantisations . toAmount
 
 fromMinimalQuantisations :: Int64 -> AmountOf currency
-fromMinimalQuantisations = AmountOf . Amount.fromMinimalQuantisations
+fromMinimalQuantisations = fromAmount . Amount.fromMinimalQuantisations
 
 fromDouble :: forall currency. Currency currency => Double -> Maybe (AmountOf currency)
 fromDouble = fmap AmountOf . Amount.fromDouble (quantisationFactor (Proxy @currency))
