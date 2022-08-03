@@ -45,15 +45,12 @@ import qualified Money.Amount as Amount
 import Money.Currency as Currency
 import Prelude hiding (fromRational, subtract, toRational)
 
--- | An amount of money. May be negative.
+-- | An amount of money of a specific currency. May be negative.
 --
--- The underlying representation is 'Int64'.
--- This supports 1E18 minimal quantisations.
--- For example:
+-- === Representation
 --
--- * 10 quadrillion USD ((much) more than the M1 money supply as of 2022)
--- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2022)
--- * 10 billion BTC (more than the 21 million that can exist)
+-- The underlying representation is 'Amount'.
+-- See its documentation for more details.
 newtype AmountOf currency = AmountOf
   { unAmountOf :: Amount
   }
@@ -65,18 +62,49 @@ instance NFData (AmountOf currency)
 
 instance
   TypeError
+    ( 'Text "This would require that Amounts of money are an instance of Enum"
+        ':$$: 'Text "Amounts of money must not be an instance of Enum. Don't do this."
+        ':$$: 'Text "In particular:"
+        ':$$: 'Text "* succ and pred would be partial."
+        ':$$: 'Text "* the fromEnum :: Amount -> Int function would be partial on 32-bit systems."
+    ) =>
+  Enum (AmountOf currency)
+  where
+  toEnum = undefined
+  fromEnum = undefined
+
+instance
+  TypeError
+    ( 'Text "This would require that Amounts of money are an instance of Bounded"
+        ':$$: 'Text "Amounts of money must not be an instance of Bounded. Don't do this."
+        ':$$: 'Text "The reasoning is more philosophical than practical:"
+        ':$$: 'Text "It is not clear which bound to choose."
+        ':$$: 'Text "Setting the bounds equal to the bounds of the representation is surprising if there is a clear bound on the amount of a currency, like in the case of BTC."
+        ':$$: 'Text "Setting the bounds equal to the bounds of currency is only possible if there is a clear bound, like in the case of BTC, and that the instance exists at all would be surprising in the case of USD."
+    ) =>
+  Bounded (AmountOf currency)
+  where
+  minBound = undefined
+  maxBound = undefined
+
+instance
+  TypeError
     ( 'Text "This would require that Amounts of money are an instance of Num"
         ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
+        ':$$: 'Text "In particular:"
+        ':$$: 'Text "* (*) cannot be implemented because the units don't match."
+        ':$$: 'Text "* abs would be wrong for minBound."
+        ':$$: 'Text "* negate would be wrong for minBound."
     ) =>
   Num (AmountOf currency)
   where
-  (+) = error "unreachable"
-  (*) = error "unreachable"
-  abs = error "unreachable"
-  signum = error "unreachable"
-  fromInteger = error "unreachable"
-  negate = error "unreachable"
-  (-) = error "unreachable"
+  (+) = undefined
+  (*) = undefined
+  abs = undefined
+  signum = undefined
+  fromInteger = undefined
+  negate = undefined
+  (-) = undefined
 
 zero :: AmountOf currency
 zero = AmountOf Amount.zero

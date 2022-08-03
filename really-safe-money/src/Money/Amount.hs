@@ -48,6 +48,8 @@ type Repr = Int64
 --
 -- If the currency is statically known, you are better off using 'Money.AmountOf.AmountOf'.
 --
+-- === Representation
+--
 -- The underlying representation is 'Int64'.
 -- This supports 2^64 (about 1E18) minimal quantisations.
 -- For example:
@@ -145,9 +147,19 @@ instance
   toEnum = undefined
   fromEnum = undefined
 
-instance Bounded Amount where
-  minBound = Amount minBound
-  maxBound = Amount maxBound
+instance
+  TypeError
+    ( 'Text "This would require that Amounts of money are an instance of Bounded"
+        ':$$: 'Text "Amounts of money must not be an instance of Bounded. Don't do this."
+        ':$$: 'Text "The reasoning is more philosophical than practical:"
+        ':$$: 'Text "It is not clear which bound to choose."
+        ':$$: 'Text "Setting the bounds equal to the bounds of the representation is surprising if there is a clear bound on the amount of a currency, like in the case of BTC."
+        ':$$: 'Text "Setting the bounds equal to the bounds of currency is only possible if there is a clear bound, like in the case of BTC, and that the instance exists at all would be surprising in the case of USD."
+    ) =>
+  Bounded Amount
+  where
+  minBound = undefined
+  maxBound = undefined
 
 instance
   TypeError
