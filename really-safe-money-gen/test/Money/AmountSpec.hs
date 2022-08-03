@@ -10,6 +10,7 @@ import GHC.Real (Ratio ((:%)))
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
+import Numeric.Natural
 import Test.QuickCheck
 import Test.Syd
 import Test.Syd.Validity
@@ -31,6 +32,52 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
     it "roundtrips with fromMinimalQuantisations" $
       forAllValid $ \amount ->
         Amount.fromMinimalQuantisations (Amount.toMinimalQuantisations amount) `shouldBe` amount
+
+  describe "fromRatio" $ do
+    it "fails on NaN" $ do
+      forAllValid $ \quantisationFactor ->
+        let nan = 0 :% 0 :: Ratio Natural
+         in Amount.fromRatio quantisationFactor nan `shouldBe` Nothing
+
+    it "fails on +Infinity" $
+      forAllValid $ \quantisationFactor ->
+        let pinf = 1 :% 0 :: Ratio Natural
+         in Amount.fromRatio quantisationFactor pinf `shouldBe` Nothing
+
+    it "fails on 7.123 with quantisation factor 10" $
+      Amount.fromRatio 10 7.123 `shouldBe` Nothing
+
+    it "succeeds on 77.02 with quantisation factor 100" $
+      Amount.fromRatio 100 77.02 `shouldBe` Just (Amount 7702)
+
+    it "succeeds on 0" $
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRatio quantisationFactor 0.0 `shouldBe` Just (Amount 0)
+
+    it "succeeds on 1" $
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRatio quantisationFactor 1
+          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
+
+    it "produces valid Amounts" $
+      producesValid2 Amount.fromRatio
+
+    it "roundtrips with toRatio" $
+      forAllValid $ \quantisationFactor ->
+        forAllValid $ \amount ->
+          let r = Amount.toRatio quantisationFactor amount
+           in context (show r) $ case Amount.fromRatio quantisationFactor r of
+                Nothing -> pure () -- Fine
+                Just amount' -> amount' `shouldBe` amount
+
+  describe "toRatio" $ do
+    it "produces valid Rationals when the quantisation factor is nonzero" $
+      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+        producesValid (Amount.toRatio quantisationFactor)
+
+    it "produces an invalid Rational with quantisation factor 0" $
+      forAllValid $ \a@(Amount m) ->
+        Amount.toRatio 0 a `shouldBe` (fromIntegral m :% 0)
 
   describe "fromDouble" $ do
     it "succeeds on 77.02 with quantisation factor 100" $

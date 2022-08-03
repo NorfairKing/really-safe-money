@@ -216,9 +216,7 @@ fromMinimalQuantisations = Amount
 -- * Is non-normalised (5 :% 5)
 -- * Does represent an integer number of minimal quantisations.
 fromRatio :: Word32 -> Ratio Natural -> Maybe Amount
-fromRatio quantisationFactor r
-  | isInvalid r = Nothing
-  | otherwise = Just $ Amount $ round $ r * fromIntegral quantisationFactor
+fromRatio quantisationFactor r = fromRational quantisationFactor (Prelude.toRational r)
 
 -- | Turn an amount of money into a 'Ratio'.
 --
@@ -243,6 +241,7 @@ fromDouble ::
 fromDouble quantisationFactor d
   | isNaN d = Nothing
   | isInfinite d = Nothing
+  | d < 0 = Nothing
   | otherwise =
       let resultDouble :: Double
           resultDouble = d * fromIntegral quantisationFactor
@@ -274,7 +273,15 @@ toDouble quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIn
 fromRational :: Word32 -> Rational -> Maybe Amount
 fromRational quantisationFactor r
   | isInvalid r = Nothing
-  | otherwise = Just $ Amount $ round $ r * fromIntegral quantisationFactor
+  | r < 0 = Nothing
+  | otherwise =
+      let resultRational :: Rational
+          resultRational = r * fromIntegral quantisationFactor
+          ceiled = ceiling resultRational
+          floored = floor resultRational
+       in if ceiled == floored
+            then Just $ Amount ceiled
+            else Nothing
 
 -- | Turn an amount of money into a 'Rational'.
 --

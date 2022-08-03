@@ -49,8 +49,8 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     it "succeeds on 1" $
       from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor p))))
 
-    it "succeeds on -1" $
-      from (-1) `shouldBe` Just (AmountOf (Amount (-(fromIntegral (quantisationFactor p)))))
+    it "fails on -1" $
+      from (-1) `shouldBe` Nothing
 
     it "fails on NaN" $
       let nan = read "NaN" :: Double
@@ -81,8 +81,8 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     it "succeeds on 1" $
       from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor p))))
 
-    it "succeeds on -1" $
-      from (-1) `shouldBe` Just (AmountOf (Amount (-(fromIntegral (quantisationFactor p)))))
+    it "fails on -1" $
+      from (-1) `shouldBe` Nothing
 
     it "fails on NaN" $
       let nan = 0 :% 0 :: Rational
