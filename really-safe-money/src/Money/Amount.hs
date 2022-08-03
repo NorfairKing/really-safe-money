@@ -65,6 +65,7 @@ type Repr = Int64
 --
 -- Many instances have been poisoned for good reason.
 --
+--     * 'Bounded' because the implementation would be surprising either way.
 --     * 'Semigroup'
 --         * '(<>)' cannot be implemented because 'add' must be able to fail.
 --
