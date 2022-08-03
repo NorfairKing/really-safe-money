@@ -8,8 +8,7 @@
 {-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports #-}
 
 module Money.Amount
-  ( Repr,
-    Amount (..),
+  ( Amount (..),
     zero,
     toMinimalQuantisations,
     fromMinimalQuantisations,
@@ -25,6 +24,8 @@ module Money.Amount
     MultiplicationFailure (..),
     divide,
     DivisionFailure (..),
+    allocate,
+    AllocationResult (..),
     fraction,
     FractionFailure (..),
   )
@@ -32,6 +33,8 @@ where
 
 import Control.DeepSeq
 import Data.Int
+import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty as NE
 import Data.Typeable
 import Data.Validity
 import Data.Word
@@ -40,9 +43,6 @@ import GHC.Real (Ratio ((:%)))
 import GHC.TypeLits
 import Prelude hiding (fromRational, subtract, toRational)
 import qualified Prelude
-
--- | A type-synonym so we only have to change this in one place.
-type Repr = Int64
 
 -- | An amount of money of an unspecified currency. May be negative.
 --
@@ -127,7 +127,7 @@ type Repr = Int64
 --     * 'RealFloat', because an amount of money is not represented using a floating-point number.
 --     * 'Monoid' could work if there was a 'Semigroup Amount', but there isn't and there shouldn't be.
 newtype Amount = Amount
-  { unAmount :: Repr
+  { unAmount :: Int64
   }
   deriving (Show, Read, Eq, Ord, Typeable, Generic)
 
@@ -192,16 +192,30 @@ instance
   where
   (<>) = undefined
 
+-- | No money
 zero :: Amount
 zero = Amount 0
 
-toMinimalQuantisations :: Amount -> Repr
+-- | Turn an amount into a number of minimal quantisations.
+toMinimalQuantisations :: Amount -> Int64
 toMinimalQuantisations = unAmount
 
-fromMinimalQuantisations :: Repr -> Amount
+-- | Turn a number of minimal quantisations into an amount.
+fromMinimalQuantisations :: Int64 -> Amount
 fromMinimalQuantisations = Amount
 
-fromDouble :: Word32 -> Double -> Maybe Amount
+-- | Turn a 'Double' into an amount of money.
+--
+-- This function will fail if the 'Double':
+--
+-- * is @NaN@
+-- * is infinite
+-- * does not represent an integral amount of minimal quantisations
+fromDouble ::
+  -- | The quantisation factor: How many minimal quantisations per unit?
+  Word32 ->
+  Double ->
+  Maybe Amount
 fromDouble quantisationFactor d
   | isNaN d = Nothing
   | isInfinite d = Nothing
@@ -214,16 +228,31 @@ fromDouble quantisationFactor d
             then Just $ Amount ceiled
             else Nothing
 
--- Note that the result will be 'NaN' if the quantisation factor is 0
-toDouble :: Word32 -> Amount -> Double
+-- | Turn an amount of money into a 'Double'.
+--
+-- WARNING: the result will be 'NaN' if the quantisation factor is @0@
+toDouble ::
+  -- | The quantisation factor: How many minimal quantisations per unit?
+  Word32 ->
+  Amount ->
+  Double
 toDouble quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
 
+-- | Turn a 'Rational' into an amount of money.
+--
+-- This function will fail if the 'Rational':
+--
+-- * Is NaN (0 :% 0)
+-- * Is infinite (1 :% 0) or (-1 :% 0)
+-- * Is non-normalised (5 :% 5)
 fromRational :: Word32 -> Rational -> Maybe Amount
 fromRational quantisationFactor r
   | isInvalid r = Nothing
   | otherwise = Just $ Amount $ round $ r * fromIntegral quantisationFactor
 
--- Note that the result will be 'Amount / 0' if the quantisation factor is 0
+-- | Turn an amount of money into a 'Rational'.
+--
+-- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
 toRational :: Word32 -> Amount -> Rational
 toRational 0 a = fromIntegral (toMinimalQuantisations a) :% 0
 toRational quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
@@ -241,17 +270,15 @@ instance NFData AdditionFailure
 
 -- | Add two amounts of money.
 --
--- This operation may fail with an 'AdditionFailure' for the following reasons:
---
--- TODO
+-- This operation may fail with an 'AdditionFailure'.
 --
 -- WARNING: This function can be used to accidentally add up two amounts of different currencies.
 add :: Amount -> Amount -> Either AdditionFailure Amount
 add (Amount a1) (Amount a2) =
   let i1 = fromIntegral a1 :: Integer
       i2 = fromIntegral a2 :: Integer
-      maxBoundI = fromIntegral (maxBound :: Repr) :: Integer
-      minBoundI = fromIntegral (minBound :: Repr) :: Integer
+      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
+      minBoundI = fromIntegral (minBound :: Int64) :: Integer
       r = i1 + i2
    in if
           | r > maxBoundI -> Left $ OverflowMaxbound r
@@ -260,14 +287,17 @@ add (Amount a1) (Amount a2) =
 
 type SubtractionFailure = AdditionFailure
 
+-- | Add two amounts of money.
+--
+-- This operation may fail with a 'SubtractionFailure'.
 --
 -- WARNING: This function can be used to accidentally subtract two amounts of different currencies.
 subtract :: Amount -> Amount -> Either SubtractionFailure Amount
 subtract (Amount a1) (Amount a2) =
   let i1 = fromIntegral a1 :: Integer
       i2 = fromIntegral a2 :: Integer
-      maxBoundI = fromIntegral (maxBound :: Repr) :: Integer
-      minBoundI = fromIntegral (minBound :: Repr) :: Integer
+      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
+      minBoundI = fromIntegral (minBound :: Int64) :: Integer
       r = i1 - i2
    in if
           | r > maxBoundI -> Left $ OverflowMaxbound r
@@ -276,16 +306,20 @@ subtract (Amount a1) (Amount a2) =
 
 type MultiplicationFailure = AdditionFailure
 
+-- | Multiply an amount of money by an integer scalar
+--
+-- This operation may fail with a 'MultiplicationFailure'.
+--
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Int32 ->
   Amount ->
   Either MultiplicationFailure Amount
-multiply f (Amount a) =
+multiply s (Amount a) =
   let i = fromIntegral a :: Integer
-      maxBoundI = fromIntegral (maxBound :: Repr) :: Integer
-      minBoundI = fromIntegral (minBound :: Repr) :: Integer
-      r = fromIntegral f * fromInteger i
+      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
+      minBoundI = fromIntegral (minBound :: Int64) :: Integer
+      r = fromIntegral s * fromInteger i
    in if
           | r > maxBoundI -> Left $ OverflowMaxbound r
           | r < minBoundI -> Left $ OverflowMinbound r
@@ -299,6 +333,13 @@ instance Validity DivisionFailure
 
 instance NFData DivisionFailure
 
+-- | Divide an amount of money by an integer denominator
+--
+-- WARNING: This function uses integer division, which means that money can
+-- "dissappear" if the function is used incorrectly.
+-- For example, when dividing 10 by 4, which results in 2, we cannot then multiply 4 by 2 again to get 10.
+-- See also 'allocate'.
+--
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   Amount ->
@@ -309,6 +350,39 @@ divide (Amount a) d =
   -- We always round down here, because it is the least surprising.
   let r = a `div` fromIntegral d
    in Right (Amount r)
+
+-- | Allocate an amount of money into chunks that are as evenly distributed as possible.
+-- Leftovers will be added to earlier elements evenly.
+--
+-- WARNING: The resulting list should be consumed in its entirity, otherwise
+-- you may assume that remaining chunks are bigger or smaller than they are.
+allocate :: Amount -> Word32 -> AllocationResult
+allocate _ 0 = AllocatedIntoZeroChunks
+allocate (Amount 0) _ = AllocatedZeroAmount
+allocate _ _ = undefined
+
+data AllocationResult
+  = -- | The second argument was zero.
+    AllocatedIntoZeroChunks
+  | -- | The first argument was a zero amount.
+    AllocatedZeroAmount
+  | -- | The amount has been allocated into this nonempty list of amounts.
+    -- Note that these amounts will not necessarily all be equal.
+    -- TODO: consider representing this without a list: ((1, 2), (1, 1)) instead of [2, 1].
+    AllocatedInto (NonEmpty Amount)
+  deriving (Show, Eq, Generic)
+
+instance Validity AllocationResult where
+  validate ar =
+    mconcat
+      [ genericValidate ar,
+        case ar of
+          AllocatedInto ne -> decorateList (NE.toList ne) $ \a ->
+            declare "The amount is strictly positive" $ a > zero
+          _ -> valid
+      ]
+
+instance NFData AllocationResult
 
 data FractionFailure = FractionFailure
   deriving (Show, Eq, Generic)
@@ -327,7 +401,7 @@ fraction _ 0 = (zero, 0)
 fraction (Amount a) f =
   let theoreticalResult :: Rational
       theoreticalResult = Prelude.toRational a * f
-      roundedResult :: Repr
+      roundedResult :: Int64
       roundedResult = round theoreticalResult
       actualRate :: Rational
       actualRate = Prelude.toRational roundedResult / Prelude.toRational a
