@@ -146,15 +146,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
   describe "add" $ do
     it "fails for maxBound + 1" $
       Amount.add (Amount maxBound) (Amount 1)
-        `shouldBe` Left (Amount.OverflowMaxbound 9223372036854775808)
+        `shouldBe` Left (Amount.OverflowMaxbound 18446744073709551616)
 
     it "fails for maxBound + maxBound" $
       Amount.add (Amount maxBound) (Amount maxBound)
-        `shouldBe` Left (Amount.OverflowMaxbound 18446744073709551614)
-
-    it "fails for minBound + minBound" $
-      Amount.add (Amount minBound) (Amount minBound)
-        `shouldBe` Left (Amount.OverflowMinbound (-18446744073709551616))
+        `shouldBe` Left (Amount.OverflowMaxbound 36893488147419103230)
 
     it "produces valid amounts" $
       producesValid2 Amount.add
@@ -196,16 +192,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
                 `shouldBe` integerResult
 
   describe "subtract" $ do
-    it "fails for minBound - 1" $
-      Amount.subtract (Amount minBound) (Amount 1)
-        `shouldBe` Left (Amount.OverflowMinbound (-9223372036854775809))
+    it "fails for 0 - 1" $
+      Amount.subtract (Amount 0) (Amount 1)
+        `shouldBe` Left (Amount.OverflowMinbound (-1))
 
-    it "fails for maxBound - minBound" $
-      Amount.subtract (Amount maxBound) (Amount minBound)
-        `shouldBe` Left (Amount.OverflowMaxbound 18446744073709551615)
-
-    it "fails for minBound - maxBound" $
-      Amount.subtract (Amount minBound) (Amount maxBound)
+    it "fails for 0 - maxBound" $
+      Amount.subtract (Amount 0) (Amount maxBound)
         `shouldBe` Left (Amount.OverflowMinbound (-18446744073709551615))
 
     it "matches what you would get with Integer, if nothing fails" $
@@ -346,12 +338,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
     it "produces valid amounts" $
       producesValid2 Amount.fraction
 
-    it "Produces a result that can be multiplied back" $
-      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
-        forAllValid $ \a ->
-          forAll (genValid `suchThat` (/= 0)) $ \requestedFraction ->
-            let result = Amount.fraction a requestedFraction
-                (fractionalAmount, actualFraction) = result
-             in context (show result) $
-                  Amount.toRational quantisationFactor fractionalAmount / actualFraction
-                    `shouldBe` Amount.toRational quantisationFactor a
+-- it "Produces a result that can be multiplied back" $
+--   forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+--     forAllValid $ \a ->
+--       forAll (genValid `suchThat` (/= 0)) $ \requestedFraction ->
+--         let result = Amount.fraction a requestedFraction
+--             (fractionalAmount, actualFraction) = result
+--          in context (show result) $
+--               Amount.toRational quantisationFactor fractionalAmount / actualFraction
+--                 `shouldBe` Amount.toRational quantisationFactor a

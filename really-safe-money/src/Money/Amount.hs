@@ -32,22 +32,24 @@ module Money.Amount
 where
 
 import Control.DeepSeq
-import Data.Int
 import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import GHC.Real (Ratio ((:%)))
+import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
+import Numeric.Natural
 import Prelude hiding (fromRational, subtract, toRational)
-import qualified Prelude
 
--- | An amount of money of an unspecified currency. May be negative.
+-- | An amount of money of an unspecified currency. May not be negative.
 --
 -- If the currency is statically known, you are better off using 'Money.AmountOf.AmountOf'.
 --
 -- === Representation
 --
+-- Negative amounts of money are considered amounts of a different unit, so only positive amounts are allowed.
+--
+-- TODO
 -- The underlying representation is 'Int64'.
 -- This supports 2^64 (about 1E18) minimal quantisations.
 -- For example:
@@ -125,7 +127,7 @@ import qualified Prelude
 --     * 'RealFloat', because an amount of money is not represented using a floating-point number.
 --     * 'Monoid' could work if there was a 'Semigroup Amount', but there isn't and there shouldn't be.
 newtype Amount = Amount
-  { unAmount :: Int64
+  { unAmount :: Word64
   }
   deriving (Show, Read, Eq, Ord, Typeable, Generic)
 
@@ -195,11 +197,11 @@ zero :: Amount
 zero = Amount 0
 
 -- | Turn an amount into a number of minimal quantisations.
-toMinimalQuantisations :: Amount -> Int64
+toMinimalQuantisations :: Amount -> Word64
 toMinimalQuantisations = unAmount
 
 -- | Turn a number of minimal quantisations into an amount.
-fromMinimalQuantisations :: Int64 -> Amount
+fromMinimalQuantisations :: Word64 -> Amount
 fromMinimalQuantisations = Amount
 
 -- | Turn a 'Double' into an amount of money.
@@ -275,8 +277,8 @@ add :: Amount -> Amount -> Either AdditionFailure Amount
 add (Amount a1) (Amount a2) =
   let i1 = fromIntegral a1 :: Integer
       i2 = fromIntegral a2 :: Integer
-      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
-      minBoundI = fromIntegral (minBound :: Int64) :: Integer
+      maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
+      minBoundI = fromIntegral (minBound :: Word64) :: Integer
       r = i1 + i2
    in if
           | r > maxBoundI -> Left $ OverflowMaxbound r
@@ -294,8 +296,8 @@ subtract :: Amount -> Amount -> Either SubtractionFailure Amount
 subtract (Amount a1) (Amount a2) =
   let i1 = fromIntegral a1 :: Integer
       i2 = fromIntegral a2 :: Integer
-      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
-      minBoundI = fromIntegral (minBound :: Int64) :: Integer
+      maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
+      minBoundI = fromIntegral (minBound :: Word64) :: Integer
       r = i1 - i2
    in if
           | r > maxBoundI -> Left $ OverflowMaxbound r
@@ -315,8 +317,8 @@ multiply ::
   Either MultiplicationFailure Amount
 multiply s (Amount a) =
   let i = fromIntegral a :: Integer
-      maxBoundI = fromIntegral (maxBound :: Int64) :: Integer
-      minBoundI = fromIntegral (minBound :: Int64) :: Integer
+      maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
+      minBoundI = fromIntegral (minBound :: Word64) :: Integer
       r = fromIntegral s * fromInteger i
    in if
           | r > maxBoundI -> Left $ OverflowMaxbound r
@@ -354,7 +356,7 @@ distribute :: Amount -> Word32 -> DistributionResult
 distribute (Amount 0) _ = DistributedZeroAmount
 distribute _ 0 = DistributedIntoZeroChunks
 distribute (Amount a) f =
-  let (smallerChunkSize, rest) = divMod a ((fromIntegral :: Word32 -> Int64) f)
+  let (smallerChunkSize, rest) = divMod a ((fromIntegral :: Word32 -> Word64) f)
       smallerChunk = Amount smallerChunkSize
    in if rest == 0
         then DistributedIntoEqualChunks f smallerChunk
@@ -397,15 +399,15 @@ instance NFData FractionFailure
 -- | Fractional multiplication
 fraction ::
   Amount ->
-  Rational ->
-  (Amount, Rational)
+  Ratio Natural ->
+  (Amount, Ratio Natural)
 fraction (Amount 0) f = (zero, f)
 fraction _ 0 = (zero, 0)
 fraction (Amount a) f =
-  let theoreticalResult :: Rational
-      theoreticalResult = Prelude.toRational a * f
-      roundedResult :: Int64
+  let theoreticalResult :: Ratio Natural
+      theoreticalResult = (fromIntegral a % 1) * f
+      roundedResult :: Word64
       roundedResult = round theoreticalResult
-      actualRate :: Rational
-      actualRate = Prelude.toRational roundedResult / Prelude.toRational a
+      actualRate :: Ratio Natural
+      actualRate = fromIntegral roundedResult / fromIntegral a
    in (Amount roundedResult, actualRate)

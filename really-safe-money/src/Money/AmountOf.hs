@@ -33,8 +33,8 @@ module Money.AmountOf
 where
 
 import Control.DeepSeq
-import Data.Int
 import Data.Proxy
+import Data.Ratio
 import Data.Typeable
 import Data.Validity
 import Data.Word
@@ -43,9 +43,10 @@ import GHC.TypeLits
 import Money.Amount (Amount)
 import qualified Money.Amount as Amount
 import Money.Currency as Currency
+import Numeric.Natural
 import Prelude hiding (fromRational, subtract, toRational)
 
--- | An amount of money of a specific currency. May be negative.
+-- | An amount of money of a specific currency. May not be negative.
 --
 -- === Representation
 --
@@ -115,10 +116,10 @@ fromAmount = AmountOf
 toAmount :: AmountOf currency -> Amount
 toAmount = unAmountOf
 
-toMinimalQuantisations :: AmountOf currency -> Int64
+toMinimalQuantisations :: AmountOf currency -> Word64
 toMinimalQuantisations = Amount.toMinimalQuantisations . toAmount
 
-fromMinimalQuantisations :: Int64 -> AmountOf currency
+fromMinimalQuantisations :: Word64 -> AmountOf currency
 fromMinimalQuantisations = fromAmount . Amount.fromMinimalQuantisations
 
 fromDouble :: forall currency. Currency currency => Double -> Maybe (AmountOf currency)
@@ -160,8 +161,8 @@ divide (AmountOf a) i = AmountOf <$> Amount.divide a i
 
 fraction ::
   AmountOf currency ->
-  Rational ->
-  (AmountOf currency, Rational)
+  Ratio Natural ->
+  (AmountOf currency, Ratio Natural)
 fraction (AmountOf a) f =
   let (a', r) = Amount.fraction a f
    in (AmountOf a', r)
