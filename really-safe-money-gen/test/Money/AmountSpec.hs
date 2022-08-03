@@ -304,7 +304,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
            in context (show distribution) $ case distribution of
                 Amount.DistributedIntoZeroChunks -> f `shouldBe` 0
                 Amount.DistributedZeroAmount -> a `shouldBe` Amount.zero
-                Amount.DistributedIntoEqualChunks chunks chunkSize -> Amount.multiply (fromIntegral chunks) chunkSize `shouldBe` Right a
+                Amount.DistributedIntoEqualChunks chunks chunkSize -> Amount.multiply chunks chunkSize `shouldBe` Right a
                 Amount.DistributedIntoUnequalChunks
                   numberOfLargerChunks
                   largerChunk
@@ -312,8 +312,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
                   smallerChunk -> do
                     context "chunksize" $
                       Amount.add smallerChunk (Amount 1) `shouldBe` Right largerChunk
-                    let errOrLargerChunksAmount = Amount.multiply (fromIntegral numberOfLargerChunks) largerChunk
-                    let errOrSmallerChunksAmount = Amount.multiply (fromIntegral numberOfSmallerChunks) smallerChunk
+                    let errOrLargerChunksAmount = Amount.multiply numberOfLargerChunks largerChunk
+                    let errOrSmallerChunksAmount = Amount.multiply numberOfSmallerChunks smallerChunk
                     let errOrTotal = do
                           largerChunksAmount <- errOrLargerChunksAmount
                           smallerChunksAmount <- errOrSmallerChunksAmount
@@ -338,12 +338,14 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
     it "produces valid amounts" $
       producesValid2 Amount.fraction
 
--- it "Produces a result that can be multiplied back" $
---   forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
---     forAllValid $ \a ->
---       forAll (genValid `suchThat` (/= 0)) $ \requestedFraction ->
---         let result = Amount.fraction a requestedFraction
---             (fractionalAmount, actualFraction) = result
---          in context (show result) $
---               Amount.toRational quantisationFactor fractionalAmount / actualFraction
---                 `shouldBe` Amount.toRational quantisationFactor a
+    it "Produces a result that can be multiplied back" $
+      forAllValid $ \a@(Amount amount) ->
+        forAllValid $ \requestedFraction ->
+          let result = Amount.fraction a requestedFraction
+              (Amount fractionalAmount, actualFraction) = result
+           in if actualFraction == 0
+                then pure () -- Fine.
+                else
+                  context (show result) $
+                    fromIntegral fractionalAmount / actualFraction
+                      `shouldBe` fromIntegral amount

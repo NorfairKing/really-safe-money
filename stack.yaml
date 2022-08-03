@@ -2,6 +2,11 @@ resolver: lts-19.6
 packages:
 - really-safe-money
 - really-safe-money-gen
+
+# These are duplicated in nix/overlay.nix
+ghc-options:
+  "$locals": -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Widentities -Wredundant-constraints -Wcpp-undef
+
 extra-deps:
 - github: NorfairKing/safe-coloured-text
   commit: 675cb01fce5f46718416d7746de5b856ed90a63f
