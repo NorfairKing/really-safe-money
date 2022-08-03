@@ -8,7 +8,8 @@
 {-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports #-}
 
 module Money.Amount
-  ( Amount (..),
+  ( Repr,
+    Amount (..),
     zero,
     toMinimalQuantisations,
     fromMinimalQuantisations,
@@ -40,11 +41,12 @@ import GHC.TypeLits
 import Prelude hiding (fromRational, subtract, toRational)
 import qualified Prelude
 
+-- | A type-synonym so we only have to change this in one place.
 type Repr = Int64
 
 -- | An amount of money of an unspecified currency. May be negative.
 --
--- If the currency is statically known, you are better off using 'AmountOf' in 'Money.AmountOf'.
+-- If the currency is statically known, you are better off using 'Money.AmountOf.AmountOf'.
 --
 -- The underlying representation is 'Int64'.
 -- This supports 2^64 (about 1E18) minimal quantisations.
@@ -53,6 +55,74 @@ type Repr = Int64
 -- * 10 quadrillion USD ((much) more than the M1 money supply as of 2022)
 -- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2022)
 -- * 10 billion BTC (more than the 21 million that can exist)
+--
+-- === Instances
+--
+-- The instances that exist are unsurprising, lawful, tested, and implemented
+-- using total functions.
+--
+-- Many instances have been poisoned for good reason.
+--
+--     * 'Semigroup'
+--         * '(<>)' cannot be implemented because 'add' must be able to fail.
+--
+--     * 'Enum'
+--
+--         * 'succ' and 'pred' would be partial.
+--         * 'fromEnum' would be partial on 32-bit systems.
+--
+--     * 'Num'
+--
+--         * '(*)' cannot be implemented because the units don't match.
+--         * 'fromInteger' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--         * 'abs' would be wrong for 'minBound'.
+--         * 'negate' would be wrong for 'minBound'.
+--
+--
+-- The following instances have not been poisoned because their superclasses
+-- instances have already been poisoned.
+-- In the very rare case that the type class hierarchy is changed and such an
+-- instance could be implemented, we should still not do it because:
+--
+--
+--     * 'Real'
+--
+--         * 'toRational' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--
+--     * 'Integral'
+--
+--         * 'quot' would be partial (0 divisor)
+--         * 'rem' would be partial (0 divisor)
+--         * 'div' would be partial (0 divisor)
+--         * 'mod' would be partial (0 divisor)
+--         * 'quotRem' would be partial (0 divisor)
+--         * 'divMod' would be partial (0 divisor)
+--         * 'toInteger' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--
+--     * 'Fractional'
+--
+--         * '(/)' cannot be implemented because the units don't match
+--         * 'fromRational' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--
+--     * 'Floating'
+--
+--         * 'pi' cannot be represented accurately (and also doesn't mean anything as an amount of money)
+--         * 'exp' cannot be implemented because the units don't match
+--         * 'log' cannot be implemented because the units don't match
+--         * 'sqrt' cannot be implemented because the units don't match
+--         * '(**)' cannot be implemented because the units don't match
+--         * 'logBase' cannot be implemented because the units don't match
+--
+--     * 'RealFrac'
+--
+--         * 'properFraction' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--         * 'truncate' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--         * 'round' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--         * 'ceiling' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--         * 'floor' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--
+--     * 'RealFloat', because an amount of money is not represented using a floating-point number.
+--     * 'Monoid' could work if there was a 'Semigroup Amount', but there isn't and there shouldn't be.
 newtype Amount = Amount
   { unAmount :: Repr
   }
@@ -64,18 +134,50 @@ instance NFData Amount
 
 instance
   TypeError
+    ( 'Text "This would require that Amounts of money are an instance of Enum"
+        ':$$: 'Text "Amounts of money must not be an instance of Enum. Don't do this."
+        ':$$: 'Text "In particular:"
+        ':$$: 'Text "* succ and pred would be partial."
+        ':$$: 'Text "* the fromEnum :: Amount -> Int function would be partial on 32-bit systems."
+    ) =>
+  Enum Amount
+  where
+  toEnum = undefined
+  fromEnum = undefined
+
+instance Bounded Amount where
+  minBound = Amount minBound
+  maxBound = Amount maxBound
+
+instance
+  TypeError
     ( 'Text "This would require that Amounts of money are an instance of Num"
         ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
+        ':$$: 'Text "In particular:"
+        ':$$: 'Text "* (*) cannot be implemented because the units don't match."
+        ':$$: 'Text "* fromInteger cannot be implemented because we don't know the minimal quantisation of an arbitrary amount."
+        ':$$: 'Text "* abs would be wrong for minBound."
+        ':$$: 'Text "* negate would be wrong for minBound."
     ) =>
   Num Amount
   where
-  (+) = error "unreachable"
-  (*) = error "unreachable"
-  abs = error "unreachable"
-  signum = error "unreachable"
-  fromInteger = error "unreachable"
-  negate = error "unreachable"
-  (-) = error "unreachable"
+  (+) = undefined
+  (*) = undefined
+  abs = undefined
+  signum = undefined
+  fromInteger = undefined
+  negate = undefined
+  (-) = undefined
+
+instance
+  TypeError
+    ( 'Text "This would require that Amounts of money are an instance of Semigroup"
+        ':$$: 'Text "Amounts of money must not be an instance of Semigroup. Don't do this."
+        ':$$: 'Text "In particular, (<>) cannot be implemented because add must be able to fail."
+    ) =>
+  Semigroup Amount
+  where
+  (<>) = undefined
 
 zero :: Amount
 zero = Amount 0
