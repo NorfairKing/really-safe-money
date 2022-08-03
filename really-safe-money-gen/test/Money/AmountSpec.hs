@@ -292,10 +292,49 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
               toInteger (Amount.toMinimalQuantisations amountResult)
                 `shouldBe` integerResult
 
-  describe "fraction" $ do
-    it "produces valid amounts" $
-      producesValid2 Amount.fraction
+  describe "distribute" $ do
+    it "correctly distributes 3 into 3" $
+      Amount.distribute (Amount 3) 3 `shouldBe` Amount.DistributedIntoEqualChunks 3 (Amount 1)
 
+    it "correctly distributes 5 into 3" $
+      Amount.distribute (Amount 5) 3 `shouldBe` Amount.DistributedIntoUnequalChunks 2 (Amount 2) 1 (Amount 1)
+
+    it "correctly distributes 10 into 4" $
+      Amount.distribute (Amount 10) 4 `shouldBe` Amount.DistributedIntoUnequalChunks 2 (Amount 3) 2 (Amount 2)
+
+    it "produces valid amounts" $
+      producesValid2 Amount.distribute
+
+    it "produces results that sum up to the greater whole" $
+      forAllValid $ \f ->
+        forAllValid $ \a ->
+          let distribution = Amount.distribute a f
+           in context (show distribution) $ case distribution of
+                Amount.DistributedIntoZeroChunks -> f `shouldBe` 0
+                Amount.DistributedZeroAmount -> a `shouldBe` Amount.zero
+                Amount.DistributedIntoEqualChunks chunks chunkSize -> Amount.multiply (fromIntegral chunks) chunkSize `shouldBe` Right a
+                Amount.DistributedIntoUnequalChunks
+                  numberOfLargerChunks
+                  largerChunk
+                  numberOfSmallerChunks
+                  smallerChunk -> do
+                    context "chunksize" $
+                      Amount.add smallerChunk (Amount 1) `shouldBe` Right largerChunk
+                    let errOrLargerChunksAmount = Amount.multiply (fromIntegral numberOfLargerChunks) largerChunk
+                    let errOrSmallerChunksAmount = Amount.multiply (fromIntegral numberOfSmallerChunks) smallerChunk
+                    let errOrTotal = do
+                          largerChunksAmount <- errOrLargerChunksAmount
+                          smallerChunksAmount <- errOrSmallerChunksAmount
+                          Amount.add largerChunksAmount smallerChunksAmount
+                    let ctx =
+                          unlines
+                            [ unwords ["errOrLargerChunksAmount  ", show errOrLargerChunksAmount],
+                              unwords ["errOrSmallerChunksAmount ", show errOrSmallerChunksAmount],
+                              unwords ["errOrTotal               ", show errOrTotal]
+                            ]
+                    context ctx $ errOrTotal `shouldBe` Right a
+
+  describe "fraction" $ do
     it "Correctly fractions 100 with 1 % 100" $
       Amount.fraction (Amount 100) (1 % 100)
         `shouldBe` (Amount 1, 1 % 100)
@@ -303,3 +342,16 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
     it "Correctly fractions 101 with 1 % 100" $
       Amount.fraction (Amount 101) (1 % 100)
         `shouldBe` (Amount 1, 1 % 101)
+
+    it "produces valid amounts" $
+      producesValid2 Amount.fraction
+
+    it "Produces a result that can be multiplied back" $
+      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+        forAllValid $ \a ->
+          forAll (genValid `suchThat` (/= 0)) $ \requestedFraction ->
+            let result = Amount.fraction a requestedFraction
+                (fractionalAmount, actualFraction) = result
+             in context (show result) $
+                  Amount.toRational quantisationFactor fractionalAmount / actualFraction
+                    `shouldBe` Amount.toRational quantisationFactor a

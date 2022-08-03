@@ -24,8 +24,8 @@ module Money.Amount
     MultiplicationFailure (..),
     divide,
     DivisionFailure (..),
-    allocate,
-    AllocationResult (..),
+    distribute,
+    DistributionResult (..),
     fraction,
     FractionFailure (..),
   )
@@ -33,8 +33,6 @@ where
 
 import Control.DeepSeq
 import Data.Int
-import Data.List.NonEmpty (NonEmpty)
-import Data.List.NonEmpty as NE
 import Data.Typeable
 import Data.Validity
 import Data.Word
@@ -312,7 +310,7 @@ type MultiplicationFailure = AdditionFailure
 --
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
-  Int32 ->
+  Word32 ->
   Amount ->
   Either MultiplicationFailure Amount
 multiply s (Amount a) =
@@ -338,7 +336,7 @@ instance NFData DivisionFailure
 -- WARNING: This function uses integer division, which means that money can
 -- "dissappear" if the function is used incorrectly.
 -- For example, when dividing 10 by 4, which results in 2, we cannot then multiply 4 by 2 again to get 10.
--- See also 'allocate'.
+-- See also 'distribute'.
 --
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
@@ -351,38 +349,43 @@ divide (Amount a) d =
   let r = a `div` fromIntegral d
    in Right (Amount r)
 
--- | Allocate an amount of money into chunks that are as evenly distributed as possible.
--- Leftovers will be added to earlier elements evenly.
---
--- WARNING: The resulting list should be consumed in its entirity, otherwise
--- you may assume that remaining chunks are bigger or smaller than they are.
-allocate :: Amount -> Word32 -> AllocationResult
-allocate _ 0 = AllocatedIntoZeroChunks
-allocate (Amount 0) _ = AllocatedZeroAmount
-allocate _ _ = undefined
+-- | Distribute an amount of money into chunks that are as evenly distributed as possible.
+distribute :: Amount -> Word32 -> DistributionResult
+distribute (Amount 0) _ = DistributedZeroAmount
+distribute _ 0 = DistributedIntoZeroChunks
+distribute (Amount a) f =
+  let (smallerChunkSize, rest) = divMod a ((fromIntegral :: Word32 -> Int64) f)
+      smallerChunk = Amount smallerChunkSize
+   in if rest == 0
+        then DistributedIntoEqualChunks f smallerChunk
+        else
+          let numberOfLargerChunks :: Word32
+              numberOfLargerChunks = fromIntegral rest
+              numberOfSmallerChunks :: Word32
+              numberOfSmallerChunks = f - numberOfLargerChunks
+              largerChunk :: Amount
+              largerChunk = Amount $ succ smallerChunkSize
+           in DistributedIntoUnequalChunks
+                numberOfLargerChunks
+                largerChunk
+                numberOfSmallerChunks
+                smallerChunk
 
-data AllocationResult
+-- | The result of 'distribute'
+data DistributionResult
   = -- | The second argument was zero.
-    AllocatedIntoZeroChunks
+    DistributedIntoZeroChunks
   | -- | The first argument was a zero amount.
-    AllocatedZeroAmount
-  | -- | The amount has been allocated into this nonempty list of amounts.
-    -- Note that these amounts will not necessarily all be equal.
-    -- TODO: consider representing this without a list: ((1, 2), (1, 1)) instead of [2, 1].
-    AllocatedInto (NonEmpty Amount)
+    DistributedZeroAmount
+  | -- | Distributed into this many equal chunks of this amount
+    DistributedIntoEqualChunks !Word32 !Amount
+  | -- | Distributed into unequal chunks, this many of the first (larger) amount, and this many of the second (slightly smaller) amount.
+    DistributedIntoUnequalChunks !Word32 !Amount !Word32 !Amount
   deriving (Show, Eq, Generic)
 
-instance Validity AllocationResult where
-  validate ar =
-    mconcat
-      [ genericValidate ar,
-        case ar of
-          AllocatedInto ne -> decorateList (NE.toList ne) $ \a ->
-            declare "The amount is strictly positive" $ a > zero
-          _ -> valid
-      ]
+instance Validity DistributionResult
 
-instance NFData AllocationResult
+instance NFData DistributionResult
 
 data FractionFailure = FractionFailure
   deriving (Show, Eq, Generic)
@@ -391,7 +394,7 @@ instance Validity FractionFailure
 
 instance NFData FractionFailure
 
--- Fractional multiplication
+-- | Fractional multiplication
 fraction ::
   Amount ->
   Rational ->

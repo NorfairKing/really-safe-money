@@ -146,7 +146,7 @@ subtract (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.subtract a1 a2
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
-  Int32 ->
+  Word32 ->
   AmountOf currency ->
   Either Amount.MultiplicationFailure (AmountOf currency)
 multiply f (AmountOf a) = AmountOf <$> Amount.multiply f a
