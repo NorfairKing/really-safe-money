@@ -33,8 +33,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
         Amount.fromMinimalQuantisations (Amount.toMinimalQuantisations amount) `shouldBe` amount
 
   describe "fromDouble" $ do
-    it "produces valid amounts" $
-      producesValid2 Amount.fromDouble
+    it "succeeds on 77.02 with quantisation factor 100" $
+      Amount.fromDouble 100 77.02 `shouldBe` Just (Amount 7702)
+
+    it "fails on 7.123 with quantisation factor 10" $
+      Amount.fromDouble 10 7.123 `shouldBe` Nothing
 
     it "succeeds on 0" $
       forAllValid $ \quantisationFactor ->
@@ -45,13 +48,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
         Amount.fromDouble quantisationFactor 1
           `shouldBe` Just (Amount (fromIntegral quantisationFactor))
 
-    it "succeeds on -1" $
+    it "fails on -1" $
       forAllValid $ \quantisationFactor ->
         Amount.fromDouble quantisationFactor (-1)
-          `shouldBe` Just (Amount (-(fromIntegral quantisationFactor)))
-
-    it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromDouble 100 77.02 `shouldBe` Just (Amount 7702)
+          `shouldBe` Nothing
 
     it "fails on NaN" $
       forAllValid $ \quantisationFactor ->
@@ -67,6 +67,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
       forAllValid $ \quantisationFactor ->
         let minf = read "-Infinity"
          in Amount.fromDouble quantisationFactor minf `shouldBe` Nothing
+
+    it "produces valid amounts" $
+      producesValid2 Amount.fromDouble
 
     xdescribe "just does not hold because multiplying by the quantisation factor introduces floating point errors" $
       it "roundtrips with toDouble" $
@@ -87,26 +90,6 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
       Amount.toDouble 100 (Amount 7702) `shouldBe` 77.02
 
   describe "fromRational" $ do
-    it "produces valid Amounts" $
-      producesValid2 Amount.fromRational
-
-    it "succeeds on 0" $
-      forAllValid $ \quantisationFactor ->
-        Amount.fromRational quantisationFactor 0.0 `shouldBe` Just (Amount 0)
-
-    it "succeeds on 1" $
-      forAllValid $ \quantisationFactor ->
-        Amount.fromRational quantisationFactor 1
-          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
-
-    it "succeeds on -1" $
-      forAllValid $ \quantisationFactor ->
-        Amount.fromRational quantisationFactor (-1)
-          `shouldBe` Just (Amount (-(fromIntegral quantisationFactor)))
-
-    it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromRational 100 77.02 `shouldBe` Just (Amount 7702)
-
     it "fails on NaN" $ do
       forAllValid $ \quantisationFactor ->
         let nan = 0 :% 0 :: Rational
@@ -121,6 +104,29 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
       forAllValid $ \quantisationFactor ->
         let minf = -1 :% 0 :: Rational
          in Amount.fromRational quantisationFactor minf `shouldBe` Nothing
+
+    it "fails on 7.123 with quantisation factor 10" $
+      Amount.fromRational 10 7.123 `shouldBe` Nothing
+
+    it "succeeds on 77.02 with quantisation factor 100" $
+      Amount.fromRational 100 77.02 `shouldBe` Just (Amount 7702)
+
+    it "succeeds on 0" $
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRational quantisationFactor 0.0 `shouldBe` Just (Amount 0)
+
+    it "succeeds on 1" $
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRational quantisationFactor 1
+          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
+
+    it "fails on -1" $
+      forAllValid $ \quantisationFactor ->
+        Amount.fromRational quantisationFactor (-1)
+          `shouldBe` Nothing
+
+    it "produces valid Amounts" $
+      producesValid2 Amount.fromRational
 
     it "roundtrips with toRational" $
       forAllValid $ \quantisationFactor ->

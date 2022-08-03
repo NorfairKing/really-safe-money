@@ -12,6 +12,8 @@ module Money.Amount
     zero,
     toMinimalQuantisations,
     fromMinimalQuantisations,
+    fromRatio,
+    toRatio,
     fromDouble,
     toDouble,
     fromRational,
@@ -40,6 +42,7 @@ import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
 import Numeric.Natural
 import Prelude hiding (fromRational, subtract, toRational)
+import qualified Prelude
 
 -- | An amount of money of an unspecified currency. May not be negative.
 --
@@ -204,12 +207,33 @@ toMinimalQuantisations = unAmount
 fromMinimalQuantisations :: Word64 -> Amount
 fromMinimalQuantisations = Amount
 
+-- | Turn a 'Ratio' into an amount of money.
+--
+-- This function will fail if the 'Ratio':
+--
+-- * Is NaN (0 :% 0)
+-- * Is infinite (1 :% 0) or (-1 :% 0)
+-- * Is non-normalised (5 :% 5)
+-- * Does represent an integer number of minimal quantisations.
+fromRatio :: Word32 -> Ratio Natural -> Maybe Amount
+fromRatio quantisationFactor r
+  | isInvalid r = Nothing
+  | otherwise = Just $ Amount $ round $ r * fromIntegral quantisationFactor
+
+-- | Turn an amount of money into a 'Ratio'.
+--
+-- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
+toRatio :: Word32 -> Amount -> Ratio Natural
+toRatio 0 a = fromIntegral (toMinimalQuantisations a) :% 0
+toRatio quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
+
 -- | Turn a 'Double' into an amount of money.
 --
 -- This function will fail if the 'Double':
 --
 -- * is @NaN@
 -- * is infinite
+-- * Is negative
 -- * does not represent an integral amount of minimal quantisations
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
@@ -245,6 +269,8 @@ toDouble quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIn
 -- * Is NaN (0 :% 0)
 -- * Is infinite (1 :% 0) or (-1 :% 0)
 -- * Is non-normalised (5 :% 5)
+-- * Is negative
+-- * Does represent an integer number of minimal quantisations.
 fromRational :: Word32 -> Rational -> Maybe Amount
 fromRational quantisationFactor r
   | isInvalid r = Nothing
@@ -254,8 +280,7 @@ fromRational quantisationFactor r
 --
 -- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
 toRational :: Word32 -> Amount -> Rational
-toRational 0 a = fromIntegral (toMinimalQuantisations a) :% 0
-toRational quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
+toRational quantisationFactor amount = Prelude.toRational $ toRatio quantisationFactor amount
 
 data AdditionFailure
   = -- | Overflow over the maxBound, with the real result
