@@ -9,6 +9,7 @@
 
 module Money.AmountOf
   ( AmountOf (..),
+    Currency (..),
     zero,
     fromAmount,
     toAmount,
@@ -18,7 +19,6 @@ module Money.AmountOf
     toDouble,
     fromRational,
     toRational,
-    Currency (..),
     add,
     sum,
     subtract,
@@ -85,44 +85,50 @@ instance
   negate = undefined
   (-) = undefined
 
+-- | See 'Amount.zero'
 zero :: AmountOf currency
 zero = fromAmount Amount.zero
 
+-- | Annotate an amount with a currency
 fromAmount :: Amount -> AmountOf currency
 fromAmount = AmountOf
 
+-- | Remove an amount's currency annotation
 toAmount :: AmountOf currency -> Amount
 toAmount = unAmountOf
 
+-- | See 'Amount.toMinimalQuantisations'
 toMinimalQuantisations :: AmountOf currency -> Word64
 toMinimalQuantisations = Amount.toMinimalQuantisations . toAmount
 
+-- | See 'Amount.fromMinimalQuantisations'
 fromMinimalQuantisations :: Word64 -> AmountOf currency
 fromMinimalQuantisations = fromAmount . Amount.fromMinimalQuantisations
 
+-- | See 'Amount.fromDouble'
 fromDouble :: forall currency. Currency currency => Double -> Maybe (AmountOf currency)
 fromDouble = fmap fromAmount . Amount.fromDouble (quantisationFactor (Proxy @currency))
 
+-- | See 'Amount.toDouble'
 toDouble :: forall currency. Currency currency => AmountOf currency -> Double
 toDouble = Amount.toDouble (quantisationFactor (Proxy @currency)) . toAmount
 
+-- | See 'Amount.fromRational'
 fromRational :: forall currency. Currency currency => Rational -> Maybe (AmountOf currency)
 fromRational = fmap fromAmount . Amount.fromRational (quantisationFactor (Proxy @currency))
 
+-- | See 'Amount.toRational'
 toRational :: forall currency. Currency currency => AmountOf currency -> Rational
 toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . toAmount
 
--- | Add two amounts of money.
---
--- This operation may fail with an 'AdditionFailure' for the following reasons:
---
--- TODO
+-- | See 'Amount.add'
 add ::
   AmountOf currency ->
   AmountOf currency ->
   Maybe (AmountOf currency)
 add (AmountOf a1) (AmountOf a2) = fromAmount <$> Amount.add a1 a2
 
+-- | See 'Amount.sum'
 sum ::
   forall f currency.
   Foldable f =>
@@ -130,27 +136,28 @@ sum ::
   Maybe (AmountOf currency)
 sum as = fromAmount <$> Amount.sum (map unAmountOf (Foldable.toList as))
 
+-- | See 'Amount.subtract'
 subtract ::
   AmountOf currency ->
   AmountOf currency ->
   Maybe (AmountOf currency)
 subtract (AmountOf a1) (AmountOf a2) = fromAmount <$> Amount.subtract a1 a2
 
--- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
+-- | See 'Amount.multiply'
 multiply ::
   Word32 ->
   AmountOf currency ->
   Maybe (AmountOf currency)
 multiply f (AmountOf a) = fromAmount <$> Amount.multiply f a
 
--- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
+-- | See 'Amount.divide'
 divide ::
   AmountOf currency ->
   Word32 ->
   Maybe (AmountOf currency)
 divide (AmountOf a) i = fromAmount <$> Amount.divide a i
 
--- | Distribute an amount of money into chunks that are as evenly distributed as possible.
+-- | See 'Amount.distribute'
 distribute :: AmountOf currency -> Word32 -> AmountDistributionOf currency
 distribute (AmountOf a) w = case Amount.distribute a w of
   Amount.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
@@ -183,6 +190,7 @@ instance Validity (AmountDistributionOf currency) where
 
 instance NFData (AmountDistributionOf currency)
 
+-- | See 'Amount.fraction'
 fraction ::
   AmountOf currency ->
   Ratio Natural ->

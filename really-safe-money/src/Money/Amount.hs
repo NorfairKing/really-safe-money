@@ -56,8 +56,7 @@ import qualified Prelude
 --
 -- Negative amounts of money are considered amounts of a different unit, so only positive amounts are allowed.
 --
--- TODO
--- The underlying representation is 'Int64'.
+-- The underlying representation is 'Word64'.
 -- This supports 2^64 (about 1E18) minimal quantisations.
 -- For example:
 --
@@ -79,14 +78,14 @@ import qualified Prelude
 --     * 'Enum'
 --
 --         * 'succ' and 'pred' would be partial.
+--         * 'toEnum' would be partial or wrong for negative numbers.
 --         * 'fromEnum' would be partial on 32-bit systems.
 --
 --     * 'Num'
 --
 --         * '(*)' cannot be implemented because the units don't match.
---         * 'fromInteger' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
---         * 'abs' would be wrong for 'minBound'.
---         * 'negate' would be wrong for 'minBound'.
+--         * 'fromInteger' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount and integers can be negative.
+--         * 'negate' would be partial or wrong, and makes no sense semantically
 --
 --
 -- The following instances have not been poisoned because their superclasses
@@ -112,7 +111,7 @@ import qualified Prelude
 --     * 'Fractional'
 --
 --         * '(/)' cannot be implemented because the units don't match
---         * 'fromRational' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount.
+--         * 'fromRational' cannot be implemented because we don't know the minimal quantisation of an arbitrary amount and Rationals can be negative.
 --
 --     * 'Floating'
 --
@@ -149,6 +148,7 @@ instance
         ':$$: 'Text "In particular:"
         ':$$: 'Text "* succ and pred would be partial."
         ':$$: 'Text "* the fromEnum :: Amount -> Int function would be partial on 32-bit systems."
+        ':$$: 'Text "* the toEnum :: Int -> Amount function would fail for negative Ints."
     ) =>
   Enum Amount
   where
@@ -175,7 +175,7 @@ instance
         ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
         ':$$: 'Text "In particular:"
         ':$$: 'Text "* (*) cannot be implemented because the units don't match."
-        ':$$: 'Text "* fromInteger cannot be implemented because we don't know the minimal quantisation of an arbitrary amount."
+        ':$$: 'Text "* fromInteger cannot be implemented because we don't know the minimal quantisation of an arbitrary amount and integers can be negative."
         ':$$: 'Text "* abs would be wrong for minBound."
         ':$$: 'Text "* negate would be wrong for minBound."
     ) =>
