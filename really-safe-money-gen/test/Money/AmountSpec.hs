@@ -4,7 +4,6 @@
 
 module Money.AmountSpec (spec) where
 
-import Control.Arrow (left)
 import Data.Ratio
 import GHC.Real (Ratio ((:%)))
 import Money.Amount (Amount (..))
@@ -199,22 +198,22 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
   describe "add" $ do
     it "fails for maxBound + 1" $
       Amount.add (Amount maxBound) (Amount 1)
-        `shouldBe` Left (Amount.OverflowMaxbound 18446744073709551616)
+        `shouldBe` Nothing
 
     it "fails for maxBound + maxBound" $
       Amount.add (Amount maxBound) (Amount maxBound)
-        `shouldBe` Left (Amount.OverflowMaxbound 36893488147419103230)
+        `shouldBe` Nothing
 
     it "produces valid amounts" $
       producesValid2 Amount.add
 
     it "has a left-identity: zero" $
       forAllValid $ \a ->
-        Amount.add Amount.zero a `shouldBe` Right a
+        Amount.add Amount.zero a `shouldBe` Just a
 
     it "has a right-identity: zero" $
       forAllValid $ \a ->
-        Amount.add a Amount.zero `shouldBe` Right a
+        Amount.add a Amount.zero `shouldBe` Just a
 
     it "is associative when both succeed" $
       forAllValid $ \a1 ->
@@ -223,8 +222,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
             let errOrL = Amount.add <$> Amount.add a1 a2 <*> pure a3
             let errOrR = Amount.add <$> pure a1 <*> Amount.add a2 a3
             case (,) <$> errOrL <*> errOrR of
-              Left _ -> pure () -- Fine.
-              Right (l, r) -> l `shouldBe` r
+              Nothing -> pure () -- Fine.
+              Just (l, r) -> l `shouldBe` r
 
     it "is commutative" $
       forAllValid $ \a1 ->
@@ -236,8 +235,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
         forAllValid $ \a2 -> do
           let errOrAmount = Amount.add a1 a2
           case errOrAmount of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger (Amount.toMinimalQuantisations a1)
                       + toInteger (Amount.toMinimalQuantisations a2)
@@ -247,19 +246,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
   describe "subtract" $ do
     it "fails for 0 - 1" $
       Amount.subtract (Amount 0) (Amount 1)
-        `shouldBe` Left (Amount.OverflowMinbound (-1))
+        `shouldBe` Nothing
 
     it "fails for 0 - maxBound" $
       Amount.subtract (Amount 0) (Amount maxBound)
-        `shouldBe` Left (Amount.OverflowMinbound (-18446744073709551615))
+        `shouldBe` Nothing
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 -> do
           let errOrAmount = Amount.subtract a1 a2
           case errOrAmount of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger (Amount.toMinimalQuantisations a1)
                       - toInteger (Amount.toMinimalQuantisations a2)
@@ -272,37 +271,37 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
 
     it "has an identity: 1" $
       forAllValid $ \a ->
-        Amount.multiply 1 a `shouldBe` Right a
+        Amount.multiply 1 a `shouldBe` Just a
 
     it "is absorbed by 0" $
       forAllValid $ \a ->
-        Amount.multiply 0 a `shouldBe` Right Amount.zero
+        Amount.multiply 0 a `shouldBe` Just Amount.zero
 
     -- A x (B + C) == A x B + A x C
     it "is distributive with add when both succeed" $
       forAllValid $ \a ->
         forAllValid $ \b ->
           forAllValid $ \c -> do
-            let errOrL :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
+            let errOrL :: Maybe Amount
                 errOrL = do
-                  d <- left Left (Amount.add b c)
-                  left Right $ Amount.multiply a d
-            let errOrR :: Either (Either Amount.AdditionFailure Amount.MultiplicationFailure) Amount
+                  d <- Amount.add b c
+                  Amount.multiply a d
+            let errOrR :: Maybe Amount
                 errOrR = do
-                  d <- left Right (Amount.multiply a b)
-                  e <- left Right (Amount.multiply a c)
-                  left Left $ Amount.add d e
+                  d <- Amount.multiply a b
+                  e <- Amount.multiply a c
+                  Amount.add d e
             case (,) <$> errOrL <*> errOrR of
-              Left _ -> pure () -- Fine
-              Right (l, r) -> l `shouldBe` r
+              Nothing -> pure () -- Fine
+              Just (l, r) -> l `shouldBe` r
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \f ->
         forAllValid $ \a -> do
           let errOrAmount = Amount.multiply f a
           case errOrAmount of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger f
                       * toInteger (Amount.toMinimalQuantisations a)
@@ -315,22 +314,22 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
 
     it "fails with a zero divisor" $
       forAllValid $ \a ->
-        Amount.divide a 0 `shouldBe` Left Amount.DivideByZero
+        Amount.divide a 0 `shouldBe` Nothing
 
     it "succeeds when dividing by 1" $
       forAllValid $ \a ->
-        Amount.divide a 1 `shouldBe` Right a
+        Amount.divide a 1 `shouldBe` Just a
 
     it "Correctly divides 10 by 3" $
-      Amount.divide (Amount 10) 3 `shouldBe` Right (Amount 3)
+      Amount.divide (Amount 10) 3 `shouldBe` Just (Amount 3)
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a ->
         forAllValid $ \d -> do
           let errOrAmount = Amount.divide a d
           case errOrAmount of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger (Amount.toMinimalQuantisations a)
                       `div` toInteger d
@@ -357,14 +356,14 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
            in context (show distribution) $ case distribution of
                 Amount.DistributedIntoZeroChunks -> f `shouldBe` 0
                 Amount.DistributedZeroAmount -> a `shouldBe` Amount.zero
-                Amount.DistributedIntoEqualChunks chunks chunkSize -> Amount.multiply chunks chunkSize `shouldBe` Right a
+                Amount.DistributedIntoEqualChunks chunks chunkSize -> Amount.multiply chunks chunkSize `shouldBe` Just a
                 Amount.DistributedIntoUnequalChunks
                   numberOfLargerChunks
                   largerChunk
                   numberOfSmallerChunks
                   smallerChunk -> do
                     context "chunksize" $
-                      Amount.add smallerChunk (Amount 1) `shouldBe` Right largerChunk
+                      Amount.add smallerChunk (Amount 1) `shouldBe` Just largerChunk
                     let errOrLargerChunksAmount = Amount.multiply numberOfLargerChunks largerChunk
                     let errOrSmallerChunksAmount = Amount.multiply numberOfSmallerChunks smallerChunk
                     let errOrTotal = do
@@ -377,7 +376,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
                               unwords ["errOrSmallerChunksAmount ", show errOrSmallerChunksAmount],
                               unwords ["errOrTotal               ", show errOrTotal]
                             ]
-                    context ctx $ errOrTotal `shouldBe` Right a
+                    context ctx $ errOrTotal `shouldBe` Just a
 
   describe "fraction" $ do
     it "Correctly fractions 100 with 1 % 100" $

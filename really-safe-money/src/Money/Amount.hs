@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -19,17 +18,12 @@ module Money.Amount
     fromRational,
     toRational,
     add,
-    AdditionFailure (..),
     subtract,
-    SubtractionFailure (..),
     multiply,
-    MultiplicationFailure (..),
     divide,
-    DivisionFailure (..),
     distribute,
     DistributionResult (..),
     fraction,
-    FractionFailure (..),
   )
 where
 
@@ -289,83 +283,55 @@ fromRational quantisationFactor r
 toRational :: Word32 -> Amount -> Rational
 toRational quantisationFactor amount = Prelude.toRational $ toRatio quantisationFactor amount
 
-data AdditionFailure
-  = -- | Overflow over the maxBound, with the real result
-    OverflowMaxbound !Integer
-  | -- | Overflow under the minBound, with the real result
-    OverflowMinbound !Integer
-  deriving (Show, Eq, Generic)
-
-instance Validity AdditionFailure
-
-instance NFData AdditionFailure
-
 -- | Add two amounts of money.
 --
--- This operation may fail with an 'AdditionFailure'.
+-- This operation may fail when overflow over the maxBound occurs.
 --
 -- WARNING: This function can be used to accidentally add up two amounts of different currencies.
-add :: Amount -> Amount -> Either AdditionFailure Amount
+add :: Amount -> Amount -> Maybe Amount
 add (Amount a1) (Amount a2) =
   let i1 = fromIntegral a1 :: Integer
       i2 = fromIntegral a2 :: Integer
       maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
-      minBoundI = fromIntegral (minBound :: Word64) :: Integer
       r = i1 + i2
-   in if
-          | r > maxBoundI -> Left $ OverflowMaxbound r
-          | r < minBoundI -> Left $ OverflowMinbound r
-          | otherwise -> Right (Amount (fromInteger r))
-
-type SubtractionFailure = AdditionFailure
+   in if r > maxBoundI
+        then Nothing
+        else Just (Amount (fromInteger r))
 
 -- | Add two amounts of money.
 --
--- This operation may fail with a 'SubtractionFailure'.
+-- This operation may fail when the amount becomes negative.
 --
 -- WARNING: This function can be used to accidentally subtract two amounts of different currencies.
-subtract :: Amount -> Amount -> Either SubtractionFailure Amount
+subtract :: Amount -> Amount -> Maybe Amount
 subtract (Amount a1) (Amount a2) =
   let i1 = fromIntegral a1 :: Integer
       i2 = fromIntegral a2 :: Integer
-      maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
-      minBoundI = fromIntegral (minBound :: Word64) :: Integer
       r = i1 - i2
-   in if
-          | r > maxBoundI -> Left $ OverflowMaxbound r
-          | r < minBoundI -> Left $ OverflowMinbound r
-          | otherwise -> Right (Amount (fromInteger r))
-
-type MultiplicationFailure = AdditionFailure
+   in if r < 0
+        then Nothing
+        else Just (Amount (fromInteger r))
 
 -- | Multiply an amount of money by an integer scalar
 --
--- This operation may fail with a 'MultiplicationFailure'.
+-- This operation may fail when overflow over the maxBound occurs.
 --
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Word32 ->
   Amount ->
-  Either MultiplicationFailure Amount
+  Maybe Amount
 multiply s (Amount a) =
   let i = fromIntegral a :: Integer
       maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
-      minBoundI = fromIntegral (minBound :: Word64) :: Integer
       r = fromIntegral s * fromInteger i
-   in if
-          | r > maxBoundI -> Left $ OverflowMaxbound r
-          | r < minBoundI -> Left $ OverflowMinbound r
-          | otherwise -> Right (Amount (fromInteger r))
-
-data DivisionFailure
-  = DivideByZero
-  deriving (Show, Eq, Generic)
-
-instance Validity DivisionFailure
-
-instance NFData DivisionFailure
+   in if r > maxBoundI
+        then Nothing
+        else Just (Amount (fromInteger r))
 
 -- | Divide an amount of money by an integer denominator
+--
+-- This operation may fail, when dividing by zero.
 --
 -- WARNING: This function uses integer division, which means that money can
 -- "dissappear" if the function is used incorrectly.
@@ -376,12 +342,12 @@ instance NFData DivisionFailure
 divide ::
   Amount ->
   Word32 ->
-  Either DivisionFailure Amount
-divide _ 0 = Left DivideByZero
+  Maybe Amount
+divide _ 0 = Nothing
 divide (Amount a) d =
   -- We always round down here, because it is the least surprising.
   let r = a `div` fromIntegral d
-   in Right (Amount r)
+   in Just (Amount r)
 
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
 distribute :: Amount -> Word32 -> DistributionResult
@@ -420,13 +386,6 @@ data DistributionResult
 instance Validity DistributionResult
 
 instance NFData DistributionResult
-
-data FractionFailure = FractionFailure
-  deriving (Show, Eq, Generic)
-
-instance Validity FractionFailure
-
-instance NFData FractionFailure
 
 -- | Fractional multiplication
 fraction ::

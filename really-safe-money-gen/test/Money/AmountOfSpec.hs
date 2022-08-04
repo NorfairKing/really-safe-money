@@ -4,7 +4,6 @@
 
 module Money.AmountOfSpec (spec) where
 
-import Control.Arrow (left)
 import Data.Proxy
 import Data.Typeable
 import GHC.Real
@@ -118,11 +117,11 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
     it "has a left-identity: zero" $
       forAllValid $ \a ->
-        add AmountOf.zero a `shouldBe` Right a
+        add AmountOf.zero a `shouldBe` Just a
 
     it "has a right-identity: zero" $
       forAllValid $ \a ->
-        add a AmountOf.zero `shouldBe` Right a
+        add a AmountOf.zero `shouldBe` Just a
 
     it "is associative when both succeed" $
       forAllValid $ \a1 ->
@@ -131,8 +130,8 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
             let errOrL = add <$> add a1 a2 <*> pure a3
             let errOrR = add <$> pure a1 <*> add a2 a3
             case (,) <$> errOrL <*> errOrR of
-              Left _ -> pure () -- Fine
-              Right (l, r) -> l `shouldBe` r
+              Nothing -> pure () -- Fine
+              Just (l, r) -> l `shouldBe` r
 
     it "is commutative" $
       forAllValid $ \a1 ->
@@ -144,8 +143,8 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
         forAllValid $ \a2 -> do
           let errOrAmount = add a1 a2
           case errOrAmount of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger (AmountOf.toMinimalQuantisations a1)
                       + toInteger (AmountOf.toMinimalQuantisations a2)
@@ -158,8 +157,8 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
         forAllValid $ \a2 -> do
           let errOrAmount = subtract a1 a2
           case errOrAmount of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger (AmountOf.toMinimalQuantisations a1)
                       - toInteger (AmountOf.toMinimalQuantisations a2)
@@ -173,37 +172,37 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
     it "has an identity: 1" $
       forAllValid $ \a ->
-        multiply 1 a `shouldBe` Right a
+        multiply 1 a `shouldBe` Just a
 
     it "is absorbed by 0" $
       forAllValid $ \a ->
-        multiply 0 a `shouldBe` Right zero
+        multiply 0 a `shouldBe` Just zero
 
     -- A x (B + C) == A x B + A x C
     it "is distributive with add when both succeed" $
       forAllValid $ \a ->
         forAllValid $ \b ->
           forAllValid $ \c -> do
-            let errOrL :: Either (Either AmountOf.AdditionFailure AmountOf.MultiplicationFailure) (AmountOf currency)
+            let errOrL :: Maybe (AmountOf currency)
                 errOrL = do
-                  d <- left Left (AmountOf.add b c)
-                  left Right $ multiply a d
-            let errOrR :: Either (Either AmountOf.AdditionFailure AmountOf.MultiplicationFailure) (AmountOf currency)
+                  d <- AmountOf.add b c
+                  multiply a d
+            let errOrR :: Maybe (AmountOf currency)
                 errOrR = do
-                  d <- left Right (multiply a b)
-                  e <- left Right (multiply a c)
-                  left Left $ AmountOf.add d e
+                  d <- multiply a b
+                  e <- multiply a c
+                  AmountOf.add d e
             case (,) <$> errOrL <*> errOrR of
-              Left _ -> pure () -- Fine
-              Right (l, r) -> l `shouldBe` r
+              Nothing -> pure () -- Fine
+              Just (l, r) -> l `shouldBe` r
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \f ->
         forAllValid $ \a -> do
           let errOrAmountOf = multiply f a
           case errOrAmountOf of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger f
                       * toInteger (AmountOf.toMinimalQuantisations a)
@@ -216,19 +215,19 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
     it "fails with a zero divisor" $
       forAllValid $ \a ->
-        divide a 0 `shouldBe` Left AmountOf.DivideByZero
+        divide a 0 `shouldBe` Nothing
 
     it "succeeds when dividing by 1" $
       forAllValid $ \a ->
-        divide a 1 `shouldBe` Right a
+        divide a 1 `shouldBe` Just a
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a ->
         forAllValid $ \d -> do
           let errOrAmount = divide a d
           case errOrAmount of
-            Left _ -> pure () -- Fine.
-            Right amountResult -> do
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
               let integerResult =
                     toInteger (AmountOf.toMinimalQuantisations a)
                       `div` toInteger d

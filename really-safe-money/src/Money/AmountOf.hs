@@ -20,15 +20,10 @@ module Money.AmountOf
     toRational,
     Currency (..),
     add,
-    Amount.AdditionFailure (..),
     subtract,
-    Amount.SubtractionFailure (..),
     multiply,
-    Amount.MultiplicationFailure (..),
     divide,
-    Amount.DivisionFailure (..),
     fraction,
-    Amount.FractionFailure (..),
   )
 where
 
@@ -139,24 +134,30 @@ toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . unAmount
 -- This operation may fail with an 'AdditionFailure' for the following reasons:
 --
 -- TODO
-add :: AmountOf currency -> AmountOf currency -> Either Amount.AdditionFailure (AmountOf currency)
+add ::
+  AmountOf currency ->
+  AmountOf currency ->
+  Maybe (AmountOf currency)
 add (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.add a1 a2
 
-subtract :: AmountOf currency -> AmountOf currency -> Either Amount.SubtractionFailure (AmountOf currency)
+subtract ::
+  AmountOf currency ->
+  AmountOf currency ->
+  Maybe (AmountOf currency)
 subtract (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.subtract a1 a2
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Word32 ->
   AmountOf currency ->
-  Either Amount.MultiplicationFailure (AmountOf currency)
+  Maybe (AmountOf currency)
 multiply f (AmountOf a) = AmountOf <$> Amount.multiply f a
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   AmountOf currency ->
   Word32 ->
-  Either Amount.DivisionFailure (AmountOf currency)
+  Maybe (AmountOf currency)
 divide (AmountOf a) i = AmountOf <$> Amount.divide a i
 
 fraction ::
