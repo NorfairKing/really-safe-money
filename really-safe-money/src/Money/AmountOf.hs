@@ -4,9 +4,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports #-}
+{-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports -Wno-redundant-constraints #-}
 
 module Money.AmountOf
   ( AmountOf (..),
@@ -39,7 +38,6 @@ import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import GHC.TypeLits
 import Money.Amount (Amount)
 import qualified Money.Amount as Amount
 import Money.Currency as Currency
@@ -62,41 +60,21 @@ instance Validity (AmountOf currency)
 instance NFData (AmountOf currency)
 
 instance
-  TypeError
-    ( 'Text "This would require that Amounts of money are an instance of Enum"
-        ':$$: 'Text "Amounts of money must not be an instance of Enum. Don't do this."
-        ':$$: 'Text "In particular:"
-        ':$$: 'Text "* succ and pred would be partial."
-        ':$$: 'Text "* the fromEnum :: Amount -> Int function would be partial on 32-bit systems."
-    ) =>
+  Enum Amount =>
   Enum (AmountOf currency)
   where
   toEnum = undefined
   fromEnum = undefined
 
 instance
-  TypeError
-    ( 'Text "This would require that Amounts of money are an instance of Bounded"
-        ':$$: 'Text "Amounts of money must not be an instance of Bounded. Don't do this."
-        ':$$: 'Text "The reasoning is more philosophical than practical:"
-        ':$$: 'Text "It is not clear which bound to choose."
-        ':$$: 'Text "Setting the bounds equal to the bounds of the representation is surprising if there is a clear bound on the amount of a currency, like in the case of BTC."
-        ':$$: 'Text "Setting the bounds equal to the bounds of currency is only possible if there is a clear bound, like in the case of BTC, and that the instance exists at all would be surprising in the case of USD."
-    ) =>
+  Bounded Amount =>
   Bounded (AmountOf currency)
   where
   minBound = undefined
   maxBound = undefined
 
 instance
-  TypeError
-    ( 'Text "This would require that Amounts of money are an instance of Num"
-        ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
-        ':$$: 'Text "In particular:"
-        ':$$: 'Text "* (*) cannot be implemented because the units don't match."
-        ':$$: 'Text "* abs would be wrong for minBound."
-        ':$$: 'Text "* negate would be wrong for minBound."
-    ) =>
+  Num Amount =>
   Num (AmountOf currency)
   where
   (+) = undefined
