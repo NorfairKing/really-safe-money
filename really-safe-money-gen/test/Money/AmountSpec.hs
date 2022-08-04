@@ -337,6 +337,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
                 `shouldBe` integerResult
 
   describe "distribute" $ do
+    eqSpec @Amount.AmountDistribution
+    showReadSpec @Amount.AmountDistribution
+
     it "correctly distributes 3 into 3" $
       Amount.distribute (Amount 3) 3 `shouldBe` Amount.DistributedIntoEqualChunks 3 (Amount 1)
 

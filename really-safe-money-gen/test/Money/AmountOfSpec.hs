@@ -234,6 +234,42 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
               toInteger (AmountOf.toMinimalQuantisations amountResult)
                 `shouldBe` integerResult
 
+  describe "distribute" $ do
+    eqSpec @(AmountOf.AmountDistributionOf currency)
+    showReadSpec @(AmountOf.AmountDistributionOf currency)
+
+    let distribute = AmountOf.distribute @currency
+
+    it "produces valid amounts" $
+      producesValid2 distribute
+
+    it "produces results that sum up to the greater whole" $
+      forAllValid $ \f ->
+        forAllValid $ \a ->
+          let distribution = distribute a f
+           in context (show distribution) $ case distribution of
+                AmountOf.DistributedIntoZeroChunks -> f `shouldBe` 0
+                AmountOf.DistributedZeroAmount -> a `shouldBe` zero
+                AmountOf.DistributedIntoEqualChunks chunks chunkSize -> AmountOf.multiply chunks chunkSize `shouldBe` Just a
+                AmountOf.DistributedIntoUnequalChunks
+                  numberOfLargerChunks
+                  largerChunk
+                  numberOfSmallerChunks
+                  smallerChunk -> do
+                    let errOrLargerChunksAmount = AmountOf.multiply numberOfLargerChunks largerChunk
+                    let errOrSmallerChunksAmount = AmountOf.multiply numberOfSmallerChunks smallerChunk
+                    let errOrTotal = do
+                          largerChunksAmount <- errOrLargerChunksAmount
+                          smallerChunksAmount <- errOrSmallerChunksAmount
+                          AmountOf.add largerChunksAmount smallerChunksAmount
+                    let ctx =
+                          unlines
+                            [ unwords ["errOrLargerChunksAmount  ", show errOrLargerChunksAmount],
+                              unwords ["errOrSmallerChunksAmount ", show errOrSmallerChunksAmount],
+                              unwords ["errOrTotal               ", show errOrTotal]
+                            ]
+                    context ctx $ errOrTotal `shouldBe` Just a
+
   describe "fraction" $ do
     let fraction = AmountOf.fraction @currency
     it "produces valid amounts" $

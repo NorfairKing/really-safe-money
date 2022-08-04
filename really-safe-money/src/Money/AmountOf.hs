@@ -23,6 +23,8 @@ module Money.AmountOf
     subtract,
     multiply,
     divide,
+    AmountDistributionOf (..),
+    distribute,
     fraction,
   )
 where
@@ -159,6 +161,39 @@ divide ::
   Word32 ->
   Maybe (AmountOf currency)
 divide (AmountOf a) i = AmountOf <$> Amount.divide a i
+
+-- | Distribute an amount of money into chunks that are as evenly distributed as possible.
+distribute :: AmountOf currency -> Word32 -> AmountDistributionOf currency
+distribute (AmountOf a) w = case Amount.distribute a w of
+  Amount.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
+  Amount.DistributedZeroAmount -> DistributedZeroAmount
+  Amount.DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (AmountOf a')
+  Amount.DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (AmountOf a1) w2 (AmountOf a2)
+
+-- | The result of 'distribute'
+data AmountDistributionOf currency
+  = -- | The second argument was zero.
+    DistributedIntoZeroChunks
+  | -- | The first argument was a zero amount.
+    DistributedZeroAmount
+  | -- | Distributed into this many equal chunks of this amount
+    DistributedIntoEqualChunks !Word32 !(AmountOf currency)
+  | -- | Distributed into unequal chunks, this many of the first (larger) amount, and this many of the second (slightly smaller) amount.
+    DistributedIntoUnequalChunks !Word32 !(AmountOf currency) !Word32 !(AmountOf currency)
+  deriving (Show, Read, Eq, Generic)
+
+instance Validity (AmountDistributionOf currency) where
+  validate ad =
+    mconcat
+      [ genericValidate ad,
+        case ad of
+          DistributedIntoUnequalChunks _ a1 _ a2 ->
+            declare "The larger chunks are larger" $
+              a1 > a2
+          _ -> valid
+      ]
+
+instance NFData (AmountDistributionOf currency)
 
 fraction ::
   AmountOf currency ->

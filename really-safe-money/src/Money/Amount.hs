@@ -22,7 +22,7 @@ module Money.Amount
     multiply,
     divide,
     distribute,
-    DistributionResult (..),
+    AmountDistribution (..),
     fraction,
   )
 where
@@ -350,7 +350,7 @@ divide (Amount a) d =
    in Just (Amount r)
 
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
-distribute :: Amount -> Word32 -> DistributionResult
+distribute :: Amount -> Word32 -> AmountDistribution
 distribute (Amount 0) _ = DistributedZeroAmount
 distribute _ 0 = DistributedIntoZeroChunks
 distribute (Amount a) f =
@@ -372,7 +372,7 @@ distribute (Amount a) f =
                 smallerChunk
 
 -- | The result of 'distribute'
-data DistributionResult
+data AmountDistribution
   = -- | The second argument was zero.
     DistributedIntoZeroChunks
   | -- | The first argument was a zero amount.
@@ -381,11 +381,20 @@ data DistributionResult
     DistributedIntoEqualChunks !Word32 !Amount
   | -- | Distributed into unequal chunks, this many of the first (larger) amount, and this many of the second (slightly smaller) amount.
     DistributedIntoUnequalChunks !Word32 !Amount !Word32 !Amount
-  deriving (Show, Eq, Generic)
+  deriving (Show, Read, Eq, Generic)
 
-instance Validity DistributionResult
+instance Validity AmountDistribution where
+  validate ad =
+    mconcat
+      [ genericValidate ad,
+        case ad of
+          DistributedIntoUnequalChunks _ a1 _ a2 ->
+            declare "The larger chunks are larger" $
+              a1 > a2
+          _ -> valid
+      ]
 
-instance NFData DistributionResult
+instance NFData AmountDistribution
 
 -- | Fractional multiplication
 fraction ::
