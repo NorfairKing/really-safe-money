@@ -45,5 +45,7 @@ tests:
     dependencies:
     - QuickCheck
     - genvalidity-sydtest
+    - genvalidity-vector
     - really-safe-money-gen
     - sydtest
+    - vector

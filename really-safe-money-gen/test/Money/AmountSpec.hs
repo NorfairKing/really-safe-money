@@ -4,7 +4,10 @@
 
 module Money.AmountSpec (spec) where
 
+import Data.GenValidity.Vector ()
 import Data.Ratio
+import Data.Vector (Vector)
+import qualified Data.Vector as V
 import GHC.Real (Ratio ((:%)))
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
@@ -15,7 +18,7 @@ import Test.Syd
 import Test.Syd.Validity
 
 spec :: Spec
-spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
+spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   eqSpec @Amount
   ordSpec @Amount
   showReadSpec @Amount
@@ -242,6 +245,26 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 10) $ do
                       + toInteger (Amount.toMinimalQuantisations a2)
               toInteger (Amount.toMinimalQuantisations amountResult)
                 `shouldBe` integerResult
+
+  describe "sum" $ do
+    it "correctly sums [1,2,3] to 6" $
+      Amount.sum [Amount 1, Amount 2, Amount 3] `shouldBe` Just (Amount 6)
+
+    it "fails to sum above maxBound" $
+      Amount.sum [Amount maxBound, Amount 1, Amount 2] `shouldBe` Nothing
+
+    it "produces valid amounts" $
+      producesValid (Amount.sum @Vector)
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \as -> do
+        let errOrAmount = Amount.sum as
+        case errOrAmount of
+          Nothing -> pure () -- Fine.
+          Just amountResult -> do
+            let integerResult = sum $ V.map (toInteger . Amount.toMinimalQuantisations) as
+            toInteger (Amount.toMinimalQuantisations amountResult)
+              `shouldBe` integerResult
 
   describe "subtract" $ do
     it "fails for 0 - 1" $

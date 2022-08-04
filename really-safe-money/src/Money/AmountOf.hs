@@ -20,6 +20,7 @@ module Money.AmountOf
     toRational,
     Currency (..),
     add,
+    sum,
     subtract,
     multiply,
     divide,
@@ -30,6 +31,7 @@ module Money.AmountOf
 where
 
 import Control.DeepSeq
+import Data.Foldable as Foldable hiding (sum)
 import Data.Proxy
 import Data.Ratio
 import Data.Typeable
@@ -41,7 +43,7 @@ import Money.Amount (Amount)
 import qualified Money.Amount as Amount
 import Money.Currency as Currency
 import Numeric.Natural
-import Prelude hiding (fromRational, subtract, toRational)
+import Prelude hiding (fromRational, subtract, sum, toRational)
 
 -- | An amount of money of a specific currency. May not be negative.
 --
@@ -141,6 +143,13 @@ add ::
   AmountOf currency ->
   Maybe (AmountOf currency)
 add (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.add a1 a2
+
+sum ::
+  forall f currency.
+  Foldable f =>
+  f (AmountOf currency) ->
+  Maybe (AmountOf currency)
+sum as = AmountOf <$> Amount.sum (map unAmountOf (Foldable.toList as))
 
 subtract ::
   AmountOf currency ->

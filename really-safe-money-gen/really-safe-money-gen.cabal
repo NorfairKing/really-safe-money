@@ -45,9 +45,11 @@ test-suite really-safe-money-test
       QuickCheck
     , base >=4.7 && <5
     , genvalidity-sydtest
+    , genvalidity-vector
     , really-safe-money
     , really-safe-money-gen
     , sydtest
+    , vector
   default-language: Haskell2010
 
 benchmark smos-data-bench

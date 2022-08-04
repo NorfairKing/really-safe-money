@@ -6,6 +6,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports #-}
 
+-- === Importing this module
+--
+-- This module is designed to be imported as follows:
+--
+-- @
+-- import Money.Amount (Amount)
+-- import qualified Money.Amount as Amount
+-- @
 module Money.Amount
   ( Amount (..),
     zero,
@@ -18,6 +26,7 @@ module Money.Amount
     fromRational,
     toRational,
     add,
+    sum,
     subtract,
     multiply,
     divide,
@@ -28,6 +37,7 @@ module Money.Amount
 where
 
 import Control.DeepSeq
+import Data.Foldable hiding (sum)
 import Data.Typeable
 import Data.Validity
 import Data.Word
@@ -35,7 +45,7 @@ import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
 import Numeric.Natural
-import Prelude hiding (fromRational, subtract, toRational)
+import Prelude hiding (fromRational, subtract, sum, toRational)
 import qualified Prelude
 
 -- | An amount of money of an unspecified currency. May not be negative.
@@ -294,6 +304,17 @@ add (Amount a1) (Amount a2) =
       i2 = fromIntegral a2 :: Integer
       maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
       r = i1 + i2
+   in if r > maxBoundI
+        then Nothing
+        else Just (Amount (fromInteger r))
+
+-- | Add a number of amounts of money together.
+--
+-- See 'add'
+sum :: forall f. Foldable f => f Amount -> Maybe Amount
+sum l =
+  let maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
+      r = foldl' (\acc a -> (toInteger :: Word64 -> Integer) (unAmount a) + acc) 0 l
    in if r > maxBoundI
         then Nothing
         else Just (Amount (fromInteger r))

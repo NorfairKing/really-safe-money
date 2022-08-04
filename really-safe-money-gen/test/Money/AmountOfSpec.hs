@@ -4,8 +4,11 @@
 
 module Money.AmountOfSpec (spec) where
 
+import Data.GenValidity.Vector ()
 import Data.Proxy
 import Data.Typeable
+import Data.Vector (Vector)
+import qualified Data.Vector as V
 import GHC.Real
 import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..))
@@ -16,7 +19,8 @@ import qualified Money.Currency as Currency
 import Test.Syd
 import Test.Syd.Validity
 import Test.Syd.Validity.Utils
-import Prelude hiding (subtract)
+import Prelude hiding (subtract, sum)
+import qualified Prelude
 
 spec :: Spec
 spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
@@ -149,6 +153,22 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
                     toInteger (AmountOf.toMinimalQuantisations a1)
                       + toInteger (AmountOf.toMinimalQuantisations a2)
               toInteger (AmountOf.toMinimalQuantisations amountResult) `shouldBe` integerResult
+
+  describe "sum" $ do
+    let sum = AmountOf.sum :: Vector (AmountOf currency) -> Maybe (AmountOf currency)
+    it "produces valid amounts" $
+      producesValid sum
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \as -> do
+        let errOrAmount = sum (as :: Vector (AmountOf currency))
+        case errOrAmount of
+          Nothing -> pure () -- Fine.
+          Just amountResult -> do
+            let integerResult :: Integer
+                integerResult = Prelude.sum $ V.map (toInteger . AmountOf.toMinimalQuantisations) as
+            toInteger (AmountOf.toMinimalQuantisations amountResult)
+              `shouldBe` integerResult
 
   describe "subtract" $ do
     let subtract = AmountOf.subtract @currency
