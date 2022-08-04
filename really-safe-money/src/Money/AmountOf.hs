@@ -108,7 +108,7 @@ instance
   (-) = undefined
 
 zero :: AmountOf currency
-zero = AmountOf Amount.zero
+zero = fromAmount Amount.zero
 
 fromAmount :: Amount -> AmountOf currency
 fromAmount = AmountOf
@@ -123,16 +123,16 @@ fromMinimalQuantisations :: Word64 -> AmountOf currency
 fromMinimalQuantisations = fromAmount . Amount.fromMinimalQuantisations
 
 fromDouble :: forall currency. Currency currency => Double -> Maybe (AmountOf currency)
-fromDouble = fmap AmountOf . Amount.fromDouble (quantisationFactor (Proxy @currency))
+fromDouble = fmap fromAmount . Amount.fromDouble (quantisationFactor (Proxy @currency))
 
 toDouble :: forall currency. Currency currency => AmountOf currency -> Double
-toDouble = Amount.toDouble (quantisationFactor (Proxy @currency)) . unAmountOf
+toDouble = Amount.toDouble (quantisationFactor (Proxy @currency)) . toAmount
 
 fromRational :: forall currency. Currency currency => Rational -> Maybe (AmountOf currency)
-fromRational = fmap AmountOf . Amount.fromRational (quantisationFactor (Proxy @currency))
+fromRational = fmap fromAmount . Amount.fromRational (quantisationFactor (Proxy @currency))
 
 toRational :: forall currency. Currency currency => AmountOf currency -> Rational
-toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . unAmountOf
+toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . toAmount
 
 -- | Add two amounts of money.
 --
@@ -143,42 +143,42 @@ add ::
   AmountOf currency ->
   AmountOf currency ->
   Maybe (AmountOf currency)
-add (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.add a1 a2
+add (AmountOf a1) (AmountOf a2) = fromAmount <$> Amount.add a1 a2
 
 sum ::
   forall f currency.
   Foldable f =>
   f (AmountOf currency) ->
   Maybe (AmountOf currency)
-sum as = AmountOf <$> Amount.sum (map unAmountOf (Foldable.toList as))
+sum as = fromAmount <$> Amount.sum (map unAmountOf (Foldable.toList as))
 
 subtract ::
   AmountOf currency ->
   AmountOf currency ->
   Maybe (AmountOf currency)
-subtract (AmountOf a1) (AmountOf a2) = AmountOf <$> Amount.subtract a1 a2
+subtract (AmountOf a1) (AmountOf a2) = fromAmount <$> Amount.subtract a1 a2
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Word32 ->
   AmountOf currency ->
   Maybe (AmountOf currency)
-multiply f (AmountOf a) = AmountOf <$> Amount.multiply f a
+multiply f (AmountOf a) = fromAmount <$> Amount.multiply f a
 
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 divide ::
   AmountOf currency ->
   Word32 ->
   Maybe (AmountOf currency)
-divide (AmountOf a) i = AmountOf <$> Amount.divide a i
+divide (AmountOf a) i = fromAmount <$> Amount.divide a i
 
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
 distribute :: AmountOf currency -> Word32 -> AmountDistributionOf currency
 distribute (AmountOf a) w = case Amount.distribute a w of
   Amount.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
   Amount.DistributedZeroAmount -> DistributedZeroAmount
-  Amount.DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (AmountOf a')
-  Amount.DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (AmountOf a1) w2 (AmountOf a2)
+  Amount.DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (fromAmount a')
+  Amount.DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (fromAmount a1) w2 (fromAmount a2)
 
 -- | The result of 'distribute'
 data AmountDistributionOf currency
@@ -211,4 +211,4 @@ fraction ::
   (AmountOf currency, Ratio Natural)
 fraction (AmountOf a) f =
   let (a', r) = Amount.fraction a f
-   in (AmountOf a', r)
+   in (fromAmount a', r)

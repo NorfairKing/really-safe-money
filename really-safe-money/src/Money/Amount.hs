@@ -227,7 +227,9 @@ fromRatio quantisationFactor r = fromRational quantisationFactor (Prelude.toRati
 -- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
 toRatio :: Word32 -> Amount -> Ratio Natural
 toRatio 0 a = fromIntegral (toMinimalQuantisations a) :% 0
-toRatio quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
+toRatio quantisationFactor a =
+  (fromIntegral :: Word64 -> Natural) (toMinimalQuantisations a)
+    % (fromIntegral :: Word32 -> Natural) quantisationFactor
 
 -- | Turn a 'Double' into an amount of money.
 --
@@ -248,9 +250,11 @@ fromDouble quantisationFactor d
   | d < 0 = Nothing
   | otherwise =
       let resultDouble :: Double
-          resultDouble = d * fromIntegral quantisationFactor
-          ceiled = ceiling resultDouble
-          floored = floor resultDouble
+          resultDouble = d * (fromIntegral :: Word32 -> Double) quantisationFactor
+          ceiled :: Word64
+          ceiled = (ceiling :: Double -> Word64) resultDouble
+          floored :: Word64
+          floored = (floor :: Double -> Word64) resultDouble
        in if ceiled == floored
             then Just $ Amount ceiled
             else Nothing
@@ -263,7 +267,9 @@ toDouble ::
   Word32 ->
   Amount ->
   Double
-toDouble quantisationFactor a = fromIntegral (toMinimalQuantisations a) / fromIntegral quantisationFactor
+toDouble quantisationFactor a =
+  (fromIntegral :: Word64 -> Double) (toMinimalQuantisations a)
+    / (fromIntegral :: Word32 -> Double) quantisationFactor
 
 -- | Turn a 'Rational' into an amount of money.
 --
@@ -280,9 +286,11 @@ fromRational quantisationFactor r
   | r < 0 = Nothing
   | otherwise =
       let resultRational :: Rational
-          resultRational = r * fromIntegral quantisationFactor
-          ceiled = ceiling resultRational
-          floored = floor resultRational
+          resultRational = r * (fromIntegral :: Word32 -> Rational) quantisationFactor
+          ceiled :: Word64
+          ceiled = (ceiling :: Rational -> Word64) resultRational
+          floored :: Word64
+          floored = (floor :: Rational -> Word64) resultRational
        in if ceiled == floored
             then Just $ Amount ceiled
             else Nothing
@@ -291,7 +299,7 @@ fromRational quantisationFactor r
 --
 -- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
 toRational :: Word32 -> Amount -> Rational
-toRational quantisationFactor amount = Prelude.toRational $ toRatio quantisationFactor amount
+toRational quantisationFactor amount = (Prelude.toRational :: Ratio Natural -> Rational) $ toRatio quantisationFactor amount
 
 -- | Add two amounts of money.
 --
@@ -300,24 +308,30 @@ toRational quantisationFactor amount = Prelude.toRational $ toRatio quantisation
 -- WARNING: This function can be used to accidentally add up two amounts of different currencies.
 add :: Amount -> Amount -> Maybe Amount
 add (Amount a1) (Amount a2) =
-  let i1 = fromIntegral a1 :: Integer
-      i2 = fromIntegral a2 :: Integer
-      maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
+  let i1 :: Integer
+      i1 = (fromIntegral :: Word64 -> Integer) a1
+      i2 :: Integer
+      i2 = (fromIntegral :: Word64 -> Integer) a2
+      maxBoundI :: Integer
+      maxBoundI = fromIntegral (maxBound :: Word64)
+      r :: Integer
       r = i1 + i2
    in if r > maxBoundI
         then Nothing
-        else Just (Amount (fromInteger r))
+        else Just (Amount ((fromInteger :: Integer -> Word64) r))
 
 -- | Add a number of amounts of money together.
 --
 -- See 'add'
 sum :: forall f. Foldable f => f Amount -> Maybe Amount
 sum l =
-  let maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
+  let maxBoundI :: Integer
+      maxBoundI = fromIntegral (maxBound :: Word64)
+      r :: Integer
       r = foldl' (\acc a -> (toInteger :: Word64 -> Integer) (unAmount a) + acc) 0 l
    in if r > maxBoundI
         then Nothing
-        else Just (Amount (fromInteger r))
+        else Just (Amount ((fromInteger :: Integer -> Word64) r))
 
 -- | Add two amounts of money.
 --
@@ -326,12 +340,15 @@ sum l =
 -- WARNING: This function can be used to accidentally subtract two amounts of different currencies.
 subtract :: Amount -> Amount -> Maybe Amount
 subtract (Amount a1) (Amount a2) =
-  let i1 = fromIntegral a1 :: Integer
-      i2 = fromIntegral a2 :: Integer
+  let i1 :: Integer
+      i1 = (fromIntegral :: Word64 -> Integer) a1
+      i2 :: Integer
+      i2 = (fromIntegral :: Word64 -> Integer) a2
+      r :: Integer
       r = i1 - i2
    in if r < 0
         then Nothing
-        else Just (Amount (fromInteger r))
+        else Just (Amount ((fromInteger :: Integer -> Word64) r))
 
 -- | Multiply an amount of money by an integer scalar
 --
@@ -343,12 +360,13 @@ multiply ::
   Amount ->
   Maybe Amount
 multiply s (Amount a) =
-  let i = fromIntegral a :: Integer
-      maxBoundI = fromIntegral (maxBound :: Word64) :: Integer
-      r = fromIntegral s * fromInteger i
+  let maxBoundI :: Integer
+      maxBoundI = (fromIntegral :: Word64 -> Integer) (maxBound :: Word64)
+      r :: Integer
+      r = (fromIntegral :: Word32 -> Integer) s * (fromIntegral :: Word64 -> Integer) a
    in if r > maxBoundI
         then Nothing
-        else Just (Amount (fromInteger r))
+        else Just (Amount ((fromInteger :: Integer -> Word64) r))
 
 -- | Divide an amount of money by an integer denominator
 --
@@ -367,7 +385,8 @@ divide ::
 divide _ 0 = Nothing
 divide (Amount a) d =
   -- We always round down here, because it is the least surprising.
-  let r = a `div` fromIntegral d
+  let r :: Word64
+      r = a `div` (fromIntegral :: Word32 -> Word64) d
    in Just (Amount r)
 
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
@@ -375,13 +394,17 @@ distribute :: Amount -> Word32 -> AmountDistribution
 distribute (Amount 0) _ = DistributedZeroAmount
 distribute _ 0 = DistributedIntoZeroChunks
 distribute (Amount a) f =
-  let (smallerChunkSize, rest) = divMod a ((fromIntegral :: Word32 -> Word64) f)
+  let smallerChunkSize, rest :: Word64
+      (smallerChunkSize, rest) = divMod a ((fromIntegral :: Word32 -> Word64) f)
+      smallerChunk :: Amount
       smallerChunk = Amount smallerChunkSize
    in if rest == 0
         then DistributedIntoEqualChunks f smallerChunk
         else
-          let numberOfLargerChunks :: Word32
-              numberOfLargerChunks = fromIntegral rest
+          let -- This 'fromIntegral' is theoretically not safe, but it's
+              -- necessarily smaller than f so it will fit.
+              numberOfLargerChunks :: Word32
+              numberOfLargerChunks = (fromIntegral :: Word64 -> Word32) rest
               numberOfSmallerChunks :: Word32
               numberOfSmallerChunks = f - numberOfLargerChunks
               largerChunk :: Amount
@@ -426,9 +449,11 @@ fraction (Amount 0) f = (zero, f)
 fraction _ 0 = (zero, 0)
 fraction (Amount a) f =
   let theoreticalResult :: Ratio Natural
-      theoreticalResult = (fromIntegral a % 1) * f
+      theoreticalResult = (fromIntegral :: Word64 -> Ratio Natural) a * f
       roundedResult :: Word64
-      roundedResult = round theoreticalResult
+      roundedResult = (round :: Ratio Natural -> Word64) theoreticalResult
       actualRate :: Ratio Natural
-      actualRate = fromIntegral roundedResult / fromIntegral a
+      actualRate =
+        (fromIntegral :: Word64 -> Natural) roundedResult
+          % (fromIntegral :: Word64 -> Natural) a
    in (Amount roundedResult, actualRate)
