@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -51,7 +52,7 @@ import Prelude hiding (fromRational, subtract, sum, toRational)
 --
 -- The underlying representation is 'Amount'.
 -- See its documentation for more details.
-newtype AmountOf currency = AmountOf
+newtype AmountOf (currency :: k) = AmountOf
   { unAmountOf :: Amount
   }
   deriving (Show, Read, Eq, Ord, Typeable, Generic)

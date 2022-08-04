@@ -28,17 +28,21 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
   ordSpec @(AmountOf currency)
   showReadSpec @(AmountOf currency)
 
-  describe "fromMinimalQuantisations" $
+  describe "fromMinimalQuantisations" $ do
+    let fromMinimalQuantisations = AmountOf.fromMinimalQuantisations @currency
+
     it "produces valid amounts" $
-      producesValid AmountOf.fromMinimalQuantisations
+      producesValid fromMinimalQuantisations
 
   describe "toMinimalQuantisations" $ do
+    let toMinimalQuantisations = AmountOf.toMinimalQuantisations @currency
+
     it "produces valid Int64s" $
-      producesValid AmountOf.toMinimalQuantisations
+      producesValid toMinimalQuantisations
 
     it "roundtrips with fromMinimalQuantisations" $
       forAllValid $ \amount ->
-        AmountOf.fromMinimalQuantisations (AmountOf.toMinimalQuantisations amount) `shouldBe` amount
+        AmountOf.fromMinimalQuantisations (toMinimalQuantisations amount) `shouldBe` amount
 
   describe "fromDouble" $ do
     let from = AmountOf.fromDouble :: Double -> Maybe (AmountOf currency)
