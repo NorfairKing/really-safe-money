@@ -27,9 +27,8 @@ import Test.QuickCheck.Random (mkQCGen)
 main :: IO ()
 main = do
   Criterion.defaultMain
-    [ bgroup
-        "generators"
-        $ concat
+    [ bgroup "generators" $
+        concat
           [ [genValidBench @Amount],
             forAllCurrencies $ \(Proxy :: Proxy currency) ->
               genValidBench @(AmountOf currency)
@@ -111,9 +110,8 @@ main = do
       bgroup
         "operations"
         [ withArgs $ \args ->
-            bgroup
-              "add"
-              $ concat
+            bgroup "add" $
+              concat
                 [ [ bench "add" $ nf (V.map (uncurry Amount.add)) args
                   ],
                   forAllCurrencies
@@ -125,9 +123,21 @@ main = do
                     )
                 ],
           withArgs $ \args ->
-            bgroup
-              "subtract"
-              $ concat
+            bgroup "sum" $
+              concat
+                [ [ bench "sum" $ nf (V.map Amount.sum) args
+                  ],
+                  forAllCurrencies
+                    ( \(Proxy :: Proxy currency) ->
+                        let makeTyped = V.map (V.map AmountOf.fromAmount)
+                         in env (pure $ makeTyped args) $ \args' ->
+                              bench (nameOf @currency) $
+                                nf (V.map AmountOf.sum) args'
+                    )
+                ],
+          withArgs $ \args ->
+            bgroup "subtract" $
+              concat
                 [ [ bench "subtract" $ nf (V.map (uncurry Amount.subtract)) args
                   ],
                   forAllCurrencies
@@ -139,9 +149,8 @@ main = do
                     )
                 ],
           withArgs $ \args ->
-            bgroup
-              "multiply"
-              $ concat
+            bgroup "multiply" $
+              concat
                 [ [ bench "multiply" $ nf (V.map (uncurry Amount.multiply)) args
                   ],
                   forAllCurrencies
@@ -153,9 +162,8 @@ main = do
                     )
                 ],
           withArgs $ \args ->
-            bgroup
-              "divide"
-              $ concat
+            bgroup "divide" $
+              concat
                 [ [ bench "divide" $ nf (V.map (uncurry Amount.divide)) args
                   ],
                   forAllCurrencies
@@ -167,9 +175,21 @@ main = do
                     )
                 ],
           withArgs $ \args ->
-            bgroup
-              "fraction"
-              $ concat
+            bgroup "distribute" $
+              concat
+                [ [ bench "distribute" $ nf (V.map (uncurry Amount.distribute)) args
+                  ],
+                  forAllCurrencies
+                    ( \(Proxy :: Proxy currency) ->
+                        let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
+                         in env (pure $ makeTyped args) $ \args' ->
+                              bench (nameOf @currency) $
+                                nf (V.map (uncurry AmountOf.distribute)) args'
+                    )
+                ],
+          withArgs $ \args ->
+            bgroup "fraction" $
+              concat
                 [ [ bench "fraction" $ nf (V.map (uncurry Amount.fraction)) args
                   ],
                   forAllCurrencies
