@@ -18,6 +18,7 @@ source-repository head
 
 library
   exposed-modules:
+      Money.Account
       Money.Amount
       Money.AmountOf
       Money.Currency
