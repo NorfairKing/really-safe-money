@@ -51,6 +51,11 @@ main = do
                 bgroup
                   "subtract"
                   [ bench "subtract" $ nf (V.map (uncurry Account.subtract)) args
+                  ],
+              withArgs $ \args ->
+                bgroup
+                  "multiply"
+                  [ bench "multiply" $ nf (V.map (uncurry Amount.multiply)) args
                   ]
             ]
         ],

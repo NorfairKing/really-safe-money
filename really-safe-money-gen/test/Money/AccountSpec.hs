@@ -170,3 +170,46 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "abs" $ do
     it "produces valid amounts" $
       producesValid Account.abs
+
+  describe "multiply" $ do
+    it "produces valid amounts" $
+      producesValid2 Account.multiply
+
+    it "has an identity: 1" $
+      forAllValid $ \a ->
+        Account.multiply 1 a `shouldBe` Just a
+
+    it "is absorbed by 0" $
+      forAllValid $ \a ->
+        Account.multiply 0 a `shouldBe` Just Account.zero
+
+    -- A x (B + C) == A x B + A x C
+    it "is distributive with add when both succeed" $
+      forAllValid $ \a ->
+        forAllValid $ \b ->
+          forAllValid $ \c -> do
+            let errOrL :: Maybe Account
+                errOrL = do
+                  d <- Account.add b c
+                  Account.multiply a d
+            let errOrR :: Maybe Account
+                errOrR = do
+                  d <- Account.multiply a b
+                  e <- Account.multiply a c
+                  Account.add d e
+            case (,) <$> errOrL <*> errOrR of
+              Nothing -> pure () -- Fine
+              Just (l, r) -> l `shouldBe` r
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \f ->
+        forAllValid $ \a -> do
+          let errOrAccount = Account.multiply f a
+          case errOrAccount of
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
+              let integerResult =
+                    toInteger f
+                      * Account.toMinimalQuantisations a
+              Account.toMinimalQuantisations amountResult
+                `shouldBe` integerResult

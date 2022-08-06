@@ -13,11 +13,13 @@ module Money.Account
     add,
     subtract,
     abs,
+    multiply,
   )
 where
 
 import Control.DeepSeq
 import Data.Function
+import Data.Int
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
@@ -164,8 +166,25 @@ subtract a1 a2 =
 
 -- | The absolute value of the account
 --
+-- The 'Account' type has a symmetrical range so this function will always return a correct result.
+--
 -- Note that this returns an 'Amount' and not an 'Account' because the result is always positive.
 abs :: Account -> Amount
 abs = \case
   Negative a -> a
   Positive a -> a
+
+-- | Multiply an account by an integer scalar
+--
+-- This operation may fail when overflow over either bound occurs.
+multiply :: Int32 -> Account -> Maybe Account
+multiply factor account =
+  let af = (fromIntegral :: Int32 -> Word32) ((Prelude.abs :: Int32 -> Int32) factor)
+      f = case (compare factor 0, compare account zero) of
+        (EQ, _) -> const zero
+        (_, EQ) -> const zero
+        (GT, GT) -> Positive
+        (GT, LT) -> Negative
+        (LT, GT) -> Negative
+        (LT, LT) -> Positive
+   in f <$> Amount.multiply af (abs account)
