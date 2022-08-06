@@ -15,6 +15,7 @@ module Money.Account
   )
 where
 
+import Control.DeepSeq
 import Data.Function
 import Data.Validity
 import Data.Word
@@ -31,6 +32,8 @@ data Account
   deriving (Show, Read, Generic)
 
 instance Validity Account
+
+instance NFData Account
 
 instance Eq Account where
   (==) = (==) `on` toMinimalQuantisations
@@ -130,6 +133,8 @@ zero = Positive Amount.zero
 --
 -- WARNING: This function can be used to accidentally add up two accounts of different currencies.
 add :: Account -> Account -> Maybe Account
+add (Positive a1) (Positive a2) = Positive <$> Amount.add a1 a2
+add (Negative a1) (Negative a2) = Negative <$> Amount.add a1 a2
 add a1 a2 =
   let i1 :: Integer
       i1 = toMinimalQuantisations a1

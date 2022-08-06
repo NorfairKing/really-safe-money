@@ -12,7 +12,11 @@ import Data.GenValidity.Criterion
 import Data.GenValidity.Vector ()
 import Data.Proxy
 import Data.Typeable
+import Data.Vector (Vector)
 import qualified Data.Vector as V
+import Money.Account (Account)
+import qualified Money.Account as Account
+import Money.Account.Gen ()
 import Money.Amount (Amount)
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
@@ -31,175 +35,190 @@ main = do
         concat
           [ [genValidBench @Amount],
             forAllCurrencies $ \(Proxy :: Proxy currency) ->
-              genValidBench @(AmountOf currency)
+              genValidBench @(AmountOf currency),
+            [genValidBench @Account]
           ],
       bgroup
-        "conversions"
-        [ withArgs $ \args ->
-            bgroup "fromMinimalQuantisations" $
-              concat
-                [ [ bench "fromMinimalQuantisations" $ nf (V.map Amount.fromMinimalQuantisations) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        bench (nameOf @currency) $
-                          nf (V.map (AmountOf.fromMinimalQuantisations @currency)) args
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "toMinimalQuantisations" $
-              concat
-                [ [ bench "toMinimalQuantisations" $ nf (V.map Amount.toMinimalQuantisations) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        env (pure $ V.map AmountOf.fromAmount args) $ \args' ->
-                          bench (nameOf @currency) $
-                            nf (V.map (AmountOf.toMinimalQuantisations @currency)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "fromDouble" $
-              concat
-                [ [ bench "fromDouble" $ nf (V.map (uncurry Amount.fromDouble)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        env (pure $ V.map snd args) $ \args' ->
-                          bench (nameOf @currency) $
-                            nf (V.map (AmountOf.fromDouble @currency)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "toDouble" $
-              concat
-                [ [ bench "toDouble" $ nf (V.map (uncurry Amount.toDouble)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        env (pure $ V.map (AmountOf.fromAmount . snd) args) $ \args' ->
-                          bench (nameOf @currency) $
-                            nf (V.map (AmountOf.toDouble @currency)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "fromRational" $
-              concat
-                [ [ bench "fromRational" $ nf (V.map (uncurry Amount.fromRational)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        env (pure $ V.map snd args) $ \args' ->
-                          bench (nameOf @currency) $
-                            nf (V.map (AmountOf.fromRational @currency)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "toRational" $
-              concat
-                [ [ bench "toRational" $ nf (V.map (uncurry Amount.toRational)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        env (pure $ V.map (AmountOf.fromAmount . snd) args) $ \args' ->
-                          bench (nameOf @currency) $
-                            nf (V.map (AmountOf.toRational @currency)) args'
-                    )
-                ]
+        "Account"
+        [ bgroup
+            "operations"
+            [ withArgs $ \args ->
+                bgroup
+                  "add"
+                  [ bench "add" $ nf (V.map (uncurry Account.add)) args
+                  ]
+            ]
         ],
       bgroup
-        "operations"
-        [ withArgs $ \args ->
-            bgroup "add" $
-              concat
-                [ [ bench "add" $ nf (V.map (uncurry Amount.add)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, AmountOf.fromAmount r))
-                         in env (pure $ makeTyped args) $ \args' ->
+        "Amount"
+        [ bgroup
+            "conversions"
+            [ withArgs $ \args ->
+                bgroup "fromMinimalQuantisations" $
+                  concat
+                    [ [ bench "fromMinimalQuantisations" $ nf (V.map Amount.fromMinimalQuantisations) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            bench (nameOf @currency) $
+                              nf (V.map (AmountOf.fromMinimalQuantisations @currency)) args
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "toMinimalQuantisations" $
+                  concat
+                    [ [ bench "toMinimalQuantisations" $ nf (V.map Amount.toMinimalQuantisations) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            env (pure $ V.map AmountOf.fromAmount args) $ \args' ->
                               bench (nameOf @currency) $
-                                nf (V.map (uncurry AmountOf.add)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "sum" $
-              concat
-                [ [ bench "sum" $ nf (V.map Amount.sum) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        let makeTyped = V.map (V.map AmountOf.fromAmount)
-                         in env (pure $ makeTyped args) $ \args' ->
+                                nf (V.map (AmountOf.toMinimalQuantisations @currency)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "fromDouble" $
+                  concat
+                    [ [ bench "fromDouble" $ nf (V.map (uncurry Amount.fromDouble)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            env (pure $ V.map snd args) $ \args' ->
                               bench (nameOf @currency) $
-                                nf (V.map AmountOf.sum) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "subtract" $
-              concat
-                [ [ bench "subtract" $ nf (V.map (uncurry Amount.subtract)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, AmountOf.fromAmount r))
-                         in env (pure $ makeTyped args) $ \args' ->
+                                nf (V.map (AmountOf.fromDouble @currency)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "toDouble" $
+                  concat
+                    [ [ bench "toDouble" $ nf (V.map (uncurry Amount.toDouble)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            env (pure $ V.map (AmountOf.fromAmount . snd) args) $ \args' ->
                               bench (nameOf @currency) $
-                                nf (V.map (uncurry AmountOf.subtract)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "multiply" $
-              concat
-                [ [ bench "multiply" $ nf (V.map (uncurry Amount.multiply)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        let makeTyped = V.map (\(l, r) -> (l, AmountOf.fromAmount r))
-                         in env (pure $ makeTyped args) $ \args' ->
+                                nf (V.map (AmountOf.toDouble @currency)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "fromRational" $
+                  concat
+                    [ [ bench "fromRational" $ nf (V.map (uncurry Amount.fromRational)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            env (pure $ V.map snd args) $ \args' ->
                               bench (nameOf @currency) $
-                                nf (V.map (uncurry AmountOf.multiply)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "divide" $
-              concat
-                [ [ bench "divide" $ nf (V.map (uncurry Amount.divide)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
-                         in env (pure $ makeTyped args) $ \args' ->
+                                nf (V.map (AmountOf.fromRational @currency)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "toRational" $
+                  concat
+                    [ [ bench "toRational" $ nf (V.map (uncurry Amount.toRational)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            env (pure $ V.map (AmountOf.fromAmount . snd) args) $ \args' ->
                               bench (nameOf @currency) $
-                                nf (V.map (uncurry AmountOf.divide)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "distribute" $
-              concat
-                [ [ bench "distribute" $ nf (V.map (uncurry Amount.distribute)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
-                         in env (pure $ makeTyped args) $ \args' ->
-                              bench (nameOf @currency) $
-                                nf (V.map (uncurry AmountOf.distribute)) args'
-                    )
-                ],
-          withArgs $ \args ->
-            bgroup "fraction" $
-              concat
-                [ [ bench "fraction" $ nf (V.map (uncurry Amount.fraction)) args
-                  ],
-                  forAllCurrencies
-                    ( \(Proxy :: Proxy currency) ->
-                        let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
-                         in env (pure $ makeTyped args) $ \args' ->
-                              bench (nameOf @currency) $
-                                nf (V.map (uncurry AmountOf.fraction)) args'
-                    )
-                ]
+                                nf (V.map (AmountOf.toRational @currency)) args'
+                        )
+                    ]
+            ],
+          bgroup
+            "operations"
+            [ withArgs $ \args ->
+                bgroup "add" $
+                  concat
+                    [ [ bench "add" $ nf (V.map (uncurry Amount.add)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, AmountOf.fromAmount r))
+                             in env (pure $ makeTyped args) $ \args' ->
+                                  bench (nameOf @currency) $
+                                    nf (V.map (uncurry AmountOf.add)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "sum" $
+                  concat
+                    [ [ bench "sum" $ nf (V.map Amount.sum) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            let makeTyped = V.map (V.map AmountOf.fromAmount)
+                             in env (pure $ makeTyped args) $ \args' ->
+                                  bench (nameOf @currency) $
+                                    nf (V.map AmountOf.sum) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "subtract" $
+                  concat
+                    [ [ bench "subtract" $ nf (V.map (uncurry Amount.subtract)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, AmountOf.fromAmount r))
+                             in env (pure $ makeTyped args) $ \args' ->
+                                  bench (nameOf @currency) $
+                                    nf (V.map (uncurry AmountOf.subtract)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "multiply" $
+                  concat
+                    [ [ bench "multiply" $ nf (V.map (uncurry Amount.multiply)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            let makeTyped = V.map (\(l, r) -> (l, AmountOf.fromAmount r))
+                             in env (pure $ makeTyped args) $ \args' ->
+                                  bench (nameOf @currency) $
+                                    nf (V.map (uncurry AmountOf.multiply)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "divide" $
+                  concat
+                    [ [ bench "divide" $ nf (V.map (uncurry Amount.divide)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
+                             in env (pure $ makeTyped args) $ \args' ->
+                                  bench (nameOf @currency) $
+                                    nf (V.map (uncurry AmountOf.divide)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "distribute" $
+                  concat
+                    [ [ bench "distribute" $ nf (V.map (uncurry Amount.distribute)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
+                             in env (pure $ makeTyped args) $ \args' ->
+                                  bench (nameOf @currency) $
+                                    nf (V.map (uncurry AmountOf.distribute)) args'
+                        )
+                    ],
+              withArgs $ \args ->
+                bgroup "fraction" $
+                  concat
+                    [ [ bench "fraction" $ nf (V.map (uncurry Amount.fraction)) args
+                      ],
+                      forAllCurrencies
+                        ( \(Proxy :: Proxy currency) ->
+                            let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
+                             in env (pure $ makeTyped args) $ \args' ->
+                                  bench (nameOf @currency) $
+                                    nf (V.map (uncurry AmountOf.fraction)) args'
+                        )
+                    ]
+            ]
         ]
     ]
 
@@ -223,8 +242,8 @@ nameOf =
         then "(" ++ s ++ ")"
         else s
 
-withArgs :: (NFData env, GenValid env) => (env -> Benchmark) -> Benchmark
-withArgs = env (pure (generateDeterministically genValid))
+withArgs :: (NFData arg, GenValid arg) => (Vector arg -> Benchmark) -> Benchmark
+withArgs = env (pure (generateDeterministically $ V.replicateM 100 genValid))
 
 generateDeterministically :: Gen a -> a
 generateDeterministically (MkGen f) = f seed size
