@@ -261,7 +261,7 @@ fromDouble quantisationFactor d
 
 -- | Turn an amount of money into a 'Double'.
 --
--- WARNING: the result will be 'NaN' if the quantisation factor is @0@
+-- WARNING: the result will be infinite or NaN if the quantisation factor is @0@
 toDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   Word32 ->

@@ -5,16 +5,11 @@
 module Money.AccountSpec (spec) where
 
 import Data.GenValidity.Vector ()
-import Data.Ratio
-import Data.Vector (Vector)
-import qualified Data.Vector as V
-import GHC.Real (Ratio ((:%)))
 import Money.Account (Account (..))
 import qualified Money.Account as Account
 import Money.Account.Gen ()
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
-import Numeric.Natural
 import Test.QuickCheck hiding (Negative (..), Positive (..))
 import Test.Syd
 import Test.Syd.Validity
@@ -68,6 +63,27 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
           case Account.fromRational quantisationFactor (Account.toRational quantisationFactor account) of
             Nothing -> pure () -- Fine
             Just account' -> account' `shouldBe` account
+
+  describe "toDouble" $ do
+    it "produces valid Doubles when the quantisation factor is nonzero" $
+      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+        producesValid (Account.toDouble quantisationFactor)
+
+    it "produces an infinite or NaN Double with quantisation factor 0" $
+      forAllValid $ \a ->
+        Account.toDouble 0 a `shouldSatisfy` (\d -> isInfinite d || isNaN d)
+
+  describe "fromDouble" $ do
+    it "produces valid rational" $
+      producesValid2 Account.fromDouble
+
+    xdescribe "does not hold" $
+      it "roundtrips with toDouble" $
+        forAllValid $ \quantisationFactor ->
+          forAllValid $ \account ->
+            case Account.fromDouble quantisationFactor (Account.toDouble quantisationFactor account) of
+              Nothing -> pure () -- Fine
+              Just account' -> account' `shouldBe` account
 
   describe "abs" $ do
     it "produces valid amounts" $

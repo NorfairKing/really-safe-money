@@ -5,6 +5,8 @@ module Money.Account
   ( Account (..),
     fromMinimalQuantisations,
     toMinimalQuantisations,
+    fromDouble,
+    toDouble,
     fromRational,
     toRational,
     abs,
@@ -61,9 +63,36 @@ fromMinimalQuantisations i =
 --
 -- We return 'Integer' because the result does not fit into a 'Word64'
 toMinimalQuantisations :: Account -> Integer
-toMinimalQuantisations = \case
-  Positive a -> (fromIntegral :: Word64 -> Integer) $ Amount.toMinimalQuantisations a
-  Negative a -> negate $ (fromIntegral :: Word64 -> Integer) $ Amount.toMinimalQuantisations a
+toMinimalQuantisations account =
+  let f = case account of
+        Positive _ -> id
+        Negative _ -> negate
+   in f $ (fromIntegral :: Word64 -> Integer) $ Amount.toMinimalQuantisations (abs account)
+
+-- | Turn an amount of money into a 'Double'.
+--
+-- WARNING: the result will be infinite or NaN if the quantisation factor is @0@
+toDouble :: Word32 -> Account -> Double
+toDouble quantisationFactor account =
+  let f = case account of
+        Positive _ -> id
+        Negative _ -> negate
+   in f $ Amount.toDouble quantisationFactor (abs account)
+
+-- | Turn a 'Double' into an amount of money.
+--
+-- This function will fail if the 'Double':
+--
+-- * is @NaN@
+-- * is infinite
+-- * does not represent an integral amount of minimal quantisations
+--
+-- WARNING: This function _does not_ roundtrip with toDouble because 'Account' contains more precision than 'Double' does.
+fromDouble :: Word32 -> Double -> Maybe Account
+fromDouble quantisationFactor d =
+  let d' = Prelude.abs d
+      f = if d >= 0 then Positive else Negative
+   in f <$> Amount.fromDouble quantisationFactor d'
 
 -- | Turn an amount of money into a 'Rational'.
 --

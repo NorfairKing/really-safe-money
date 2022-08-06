@@ -138,6 +138,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "succeeds on 7702 with quantisation factor 100" $
       Amount.toDouble 100 (Amount 7702) `shouldBe` 77.02
 
+    it "produces an infinite Double with quantisation factor 0" $
+      forAllValid $ \a ->
+        Amount.toDouble 0 a `shouldSatisfy` (\d -> isInfinite d || isNaN d)
+
   describe "fromRational" $ do
     it "fails on NaN" $ do
       forAllValid $ \quantisationFactor ->
