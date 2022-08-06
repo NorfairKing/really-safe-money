@@ -9,6 +9,8 @@ module Money.Account
     toDouble,
     fromRational,
     toRational,
+    zero,
+    add,
     abs,
   )
 where
@@ -117,6 +119,31 @@ fromRational quantisationFactor r =
   let r' = Prelude.abs r
       f = if r >= 0 then Positive else Negative
    in f <$> Amount.fromRational quantisationFactor r'
+
+-- | No money in the account
+zero :: Account
+zero = Positive Amount.zero
+
+-- | Add two amounts of money.
+--
+-- This operation may fail when overflow over either bound occurs.
+--
+-- WARNING: This function can be used to accidentally add up two accounts of different currencies.
+add :: Account -> Account -> Maybe Account
+add a1 a2 =
+  let i1 :: Integer
+      i1 = toMinimalQuantisations a1
+      i2 :: Integer
+      i2 = toMinimalQuantisations a2
+      minBoundI :: Integer
+      minBoundI = -fromIntegral (maxBound :: Word64)
+      maxBoundI :: Integer
+      maxBoundI = fromIntegral (maxBound :: Word64)
+      r :: Integer
+      r = i1 + i2
+   in if r > maxBoundI || r < minBoundI
+        then Nothing
+        else fromMinimalQuantisations r
 
 -- | The absolute value of the account
 --

@@ -85,6 +85,62 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
               Nothing -> pure () -- Fine
               Just account' -> account' `shouldBe` account
 
+  describe "add" $ do
+    it "fails for maxBound + 1" $
+      Account.add (Positive (Amount maxBound)) (Positive (Amount 1))
+        `shouldBe` Nothing
+
+    it "fails for maxBound + maxBound" $
+      Account.add (Positive (Amount maxBound)) (Positive (Amount maxBound))
+        `shouldBe` Nothing
+
+    it "fails for minBound + (-1)" $
+      Account.add (Negative (Amount maxBound)) (Negative (Amount 1))
+        `shouldBe` Nothing
+
+    it "fails for minBound + minBound" $
+      Account.add (Negative (Amount maxBound)) (Negative (Amount maxBound))
+        `shouldBe` Nothing
+
+    it "produces valid amounts" $
+      producesValid2 Account.add
+
+    it "has a left-identity: zero" $
+      forAllValid $ \a ->
+        Account.add Account.zero a `shouldBe` Just a
+
+    it "has a right-identity: zero" $
+      forAllValid $ \a ->
+        Account.add a Account.zero `shouldBe` Just a
+
+    it "is associative when both succeed" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 ->
+          forAllValid $ \a3 -> do
+            let errOrL = Account.add <$> Account.add a1 a2 <*> pure a3
+            let errOrR = Account.add <$> pure a1 <*> Account.add a2 a3
+            case (,) <$> errOrL <*> errOrR of
+              Nothing -> pure () -- Fine.
+              Just (l, r) -> l `shouldBe` r
+
+    it "is commutative" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 ->
+          Account.add a1 a2 `shouldBe` Account.add a2 a1
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 -> do
+          let errOrAccount = Account.add a1 a2
+          case errOrAccount of
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
+              let integerResult =
+                    Account.toMinimalQuantisations a1
+                      + Account.toMinimalQuantisations a2
+              Account.toMinimalQuantisations amountResult
+                `shouldBe` integerResult
+
   describe "abs" $ do
     it "produces valid amounts" $
       producesValid Account.abs

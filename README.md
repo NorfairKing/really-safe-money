@@ -27,7 +27,7 @@ Come back no sooner than when this has a passing CI.
 | Type-errors for instances that must not exist    | ✔️  | ✔  | ✖     | ✖ | ✖    | ✖ |
 | Multi-amounts                                    | 🚧 | ✖️  | ✖️     | ✔️ | ✖    | ✖ |
 
-[1]: Dollaridoos technically supports multiple currencies, but [its 'Show' instance](https://github.com/qfpl/dollaridoos/blob/fd0686edad9fee855f4651cb9494a9214f570e6a/src/Data/Money.hs) always uses `$`.
+[1]: Dollaridoos technically supports multiple currencies, but [its `Show` instance](https://github.com/qfpl/dollaridoos/blob/fd0686edad9fee855f4651cb9494a9214f570e6a/src/Data/Money.hs) always uses `$`.
 
 [2]: [Money technically supports multiple currencies, but only the three that it defines](https://github.com/jpvillaisaza/money/blob/fbfac3dbc585749035d46e31ca6c9b4b53c978ef/src/Data/Money.hs#L48-L51).
 
