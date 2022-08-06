@@ -46,6 +46,11 @@ main = do
                 bgroup
                   "add"
                   [ bench "add" $ nf (V.map (uncurry Account.add)) args
+                  ],
+              withArgs $ \args ->
+                bgroup
+                  "subtract"
+                  [ bench "subtract" $ nf (V.map (uncurry Account.subtract)) args
                   ]
             ]
         ],

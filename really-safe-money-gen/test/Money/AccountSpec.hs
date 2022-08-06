@@ -141,6 +141,32 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
               Account.toMinimalQuantisations amountResult
                 `shouldBe` integerResult
 
+  describe "subtract" $ do
+    it "fails for minBound - 1" $
+      Account.subtract (Negative (Amount maxBound)) (Positive (Amount 1))
+        `shouldBe` Nothing
+
+    it "fails for maxBound - minBound" $
+      Account.subtract (Positive (Amount maxBound)) (Negative (Amount maxBound))
+        `shouldBe` Nothing
+
+    it "fails for minBound - maxBound" $
+      Account.subtract (Negative (Amount maxBound)) (Positive (Amount maxBound))
+        `shouldBe` Nothing
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 -> do
+          let errOrAccount = Account.subtract a1 a2
+          case errOrAccount of
+            Nothing -> pure () -- Fine.
+            Just amountResult -> do
+              let integerResult =
+                    Account.toMinimalQuantisations a1
+                      - Account.toMinimalQuantisations a2
+              Account.toMinimalQuantisations amountResult
+                `shouldBe` integerResult
+
   describe "abs" $ do
     it "produces valid amounts" $
       producesValid Account.abs

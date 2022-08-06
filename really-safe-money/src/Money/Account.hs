@@ -11,6 +11,7 @@ module Money.Account
     toRational,
     zero,
     add,
+    subtract,
     abs,
   )
 where
@@ -22,7 +23,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
-import Prelude hiding (abs, fromRational, toRational)
+import Prelude hiding (abs, fromRational, subtract, toRational)
 import qualified Prelude
 
 -- | An account of money. Like 'Amount' but can also be negative.
@@ -127,7 +128,7 @@ fromRational quantisationFactor r =
 zero :: Account
 zero = Positive Amount.zero
 
--- | Add two amounts of money.
+-- | Add two accounts of money.
 --
 -- This operation may fail when overflow over either bound occurs.
 --
@@ -140,15 +141,26 @@ add a1 a2 =
       i1 = toMinimalQuantisations a1
       i2 :: Integer
       i2 = toMinimalQuantisations a2
-      minBoundI :: Integer
-      minBoundI = -fromIntegral (maxBound :: Word64)
-      maxBoundI :: Integer
-      maxBoundI = fromIntegral (maxBound :: Word64)
       r :: Integer
       r = i1 + i2
-   in if r > maxBoundI || r < minBoundI
-        then Nothing
-        else fromMinimalQuantisations r
+   in fromMinimalQuantisations r
+
+-- | Add two accounts of money.
+--
+-- This operation may fail when overflow over either bound occurs.
+--
+-- WARNING: This function can be used to accidentally subtract two accounts of different currencies.
+subtract :: Account -> Account -> Maybe Account
+subtract (Positive a1) (Negative a2) = Positive <$> Amount.add a1 a2
+subtract (Negative a1) (Positive a2) = Negative <$> Amount.add a1 a2
+subtract a1 a2 =
+  let i1 :: Integer
+      i1 = toMinimalQuantisations a1
+      i2 :: Integer
+      i2 = toMinimalQuantisations a2
+      r :: Integer
+      r = i1 - i2
+   in fromMinimalQuantisations r
 
 -- | The absolute value of the account
 --
