@@ -421,7 +421,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       producesValid2 Amount.fraction
 
     it "Produces a result that can be multiplied back" $
-      forAllValid $ \a@(Amount amount) ->
+      forAllValid $ \a ->
         forAllValid $ \requestedFraction ->
           let result = Amount.fraction a requestedFraction
               (Amount fractionalAmount, actualFraction) = result
@@ -430,4 +430,4 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                 else
                   context (show result) $
                     fromIntegral fractionalAmount / actualFraction
-                      `shouldBe` fromIntegral amount
+                      `shouldBe` fromIntegral (Amount.toMinimalQuantisations a)

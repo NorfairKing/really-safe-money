@@ -49,18 +49,33 @@ main = do
                   ],
               withArgs $ \args ->
                 bgroup
+                  "sum"
+                  [ bench "sum" $ nf (V.map (Account.sum @Vector)) args
+                  ],
+              withArgs $ \args ->
+                bgroup
                   "subtract"
                   [ bench "subtract" $ nf (V.map (uncurry Account.subtract)) args
                   ],
               withArgs $ \args ->
                 bgroup
                   "multiply"
-                  [ bench "multiply" $ nf (V.map (uncurry Amount.multiply)) args
+                  [ bench "multiply" $ nf (V.map (uncurry Account.multiply)) args
                   ],
               withArgs $ \args ->
                 bgroup
                   "divide"
-                  [ bench "divide" $ nf (V.map (uncurry Amount.divide)) args
+                  [ bench "divide" $ nf (V.map (uncurry Account.divide)) args
+                  ],
+              withArgs $ \args ->
+                bgroup
+                  "distribute"
+                  [ bench "distribute" $ nf (V.map (uncurry Account.distribute)) args
+                  ],
+              withArgs $ \args ->
+                bgroup
+                  "fraction"
+                  [ bench "fraction" $ nf (V.map (uncurry Account.fraction)) args
                   ]
             ]
         ],

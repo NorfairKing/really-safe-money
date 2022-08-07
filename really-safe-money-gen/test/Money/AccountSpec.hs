@@ -5,6 +5,9 @@
 module Money.AccountSpec (spec) where
 
 import Data.GenValidity.Vector ()
+import Data.Ratio
+import Data.Vector (Vector)
+import qualified Data.Vector as V
 import Money.Account (Account (..))
 import qualified Money.Account as Account
 import Money.Account.Gen ()
@@ -141,6 +144,29 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
               Account.toMinimalQuantisations amountResult
                 `shouldBe` integerResult
 
+  describe "sum" $ do
+    it "correctly sums [1,2,3] to 6" $
+      Account.sum [Positive (Amount 1), Positive (Amount 2), Positive (Amount 3)] `shouldBe` Just (Positive (Amount 6))
+
+    it "fails to sum above maxBound" $
+      Account.sum [Positive (Amount maxBound), Positive (Amount 1), Positive (Amount 2)] `shouldBe` Nothing
+
+    it "succeeds to sum above maxBound if the result is back below maxBound" $
+      Account.sum [Positive (Amount maxBound), Positive (Amount 1), Positive (Amount 2), Negative (Amount 3)] `shouldBe` Just (Positive (Amount maxBound))
+
+    it "produces valid amounts" $
+      producesValid (Amount.sum @Vector)
+
+    it "matches what you would get with Integer, if nothing fails" $
+      forAllValid $ \as -> do
+        let errOrAmount = Amount.sum as
+        case errOrAmount of
+          Nothing -> pure () -- Fine.
+          Just amountResult -> do
+            let integerResult = sum $ V.map (toInteger . Amount.toMinimalQuantisations) as
+            toInteger (Amount.toMinimalQuantisations amountResult)
+              `shouldBe` integerResult
+
   describe "subtract" $ do
     it "fails for minBound - 1" $
       Account.subtract (Negative (Amount maxBound)) (Positive (Amount 1))
@@ -242,6 +268,74 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
               let integerResult =
                     Account.toMinimalQuantisations a
                       `quot` toInteger d
-              print (Account.toMinimalQuantisations a, d, integerResult)
               Account.toMinimalQuantisations amountResult
                 `shouldBe` integerResult
+
+  describe "distribute" $ do
+    eqSpec @Account.AccountDistribution
+    showReadSpec @Account.AccountDistribution
+
+    it "correctly distributes 3 into 3" $
+      Account.distribute (Positive (Amount 3)) 3 `shouldBe` Account.DistributedIntoEqualChunks 3 (Positive (Amount 1))
+
+    it "correctly distributes 5 into 3" $
+      Account.distribute (Positive (Amount 5)) 3 `shouldBe` Account.DistributedIntoUnequalChunks 2 (Positive (Amount 2)) 1 (Positive (Amount 1))
+
+    it "correctly distributes 10 into 4" $
+      Account.distribute (Positive (Amount 10)) 4 `shouldBe` Account.DistributedIntoUnequalChunks 2 (Positive (Amount 3)) 2 (Positive (Amount 2))
+
+    it "produces valid amounts" $
+      producesValid2 Account.distribute
+
+    it "produces results that sum up to the greater whole" $
+      forAllValid $ \a ->
+        forAllValid $ \f ->
+          let distribution = Account.distribute a f
+           in case distribution of
+                Account.DistributedIntoZeroChunks -> f `shouldBe` 0
+                Account.DistributedZeroAccount -> a `shouldBe` Account.zero
+                Account.DistributedIntoEqualChunks chunks chunkSize -> Account.multiply (fromIntegral chunks) chunkSize `shouldBe` Just a
+                Account.DistributedIntoUnequalChunks
+                  numberOfLargerChunks
+                  largerChunk
+                  numberOfSmallerChunks
+                  smallerChunk -> do
+                    let errOrLargerChunksAccount = Account.multiply (fromIntegral numberOfLargerChunks) largerChunk
+                    let errOrSmallerChunksAccount = Account.multiply (fromIntegral numberOfSmallerChunks) smallerChunk
+                    let errOrTotal = do
+                          largerChunksAccount <- errOrLargerChunksAccount
+                          smallerChunksAccount <- errOrSmallerChunksAccount
+                          Account.add largerChunksAccount smallerChunksAccount
+                    let ctx =
+                          unlines
+                            [ "distribution:",
+                              ppShow distribution,
+                              unwords ["errOrLargerChunksAccount  ", show errOrLargerChunksAccount],
+                              unwords ["errOrSmallerChunksAccount ", show errOrSmallerChunksAccount],
+                              unwords ["errOrTotal               ", show errOrTotal]
+                            ]
+                    context ctx $ errOrTotal `shouldBe` Just a
+
+  describe "fraction" $ do
+    it "Correctly fractions 100 with 1 % 100" $
+      Account.fraction (Positive (Amount 100)) (1 % 100)
+        `shouldBe` (Positive (Amount 1), 1 % 100)
+
+    it "Correctly fractions 101 with 1 % 100" $
+      Account.fraction (Positive (Amount 101)) (1 % 100)
+        `shouldBe` (Positive (Amount 1), 1 % 101)
+
+    it "produces valid amounts" $
+      producesValid2 Account.fraction
+
+    it "Produces a result that can be multiplied back" $
+      forAllValid $ \account ->
+        forAllValid $ \requestedFraction ->
+          let result = Account.fraction account requestedFraction
+              (fractionalAccount, actualFraction) = result
+           in if actualFraction == 0
+                then pure () -- Fine.
+                else
+                  context (show result) $
+                    fromIntegral (Account.toMinimalQuantisations fractionalAccount) / actualFraction
+                      `shouldBe` fromIntegral (Account.toMinimalQuantisations account)

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Money.Account
   ( Account (..),
@@ -11,22 +12,30 @@ module Money.Account
     toRational,
     zero,
     add,
+    sum,
     subtract,
     abs,
     multiply,
     divide,
+    distribute,
+    AccountDistribution (..),
+    fraction,
   )
 where
 
 import Control.DeepSeq
+import Data.Foldable hiding (sum)
 import Data.Function
 import Data.Int
+import Data.Monoid
+import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
-import Prelude hiding (abs, fromRational, subtract, toRational)
+import Numeric.Natural
+import Prelude hiding (abs, fromRational, subtract, sum, toRational)
 import qualified Prelude
 
 -- | An account of money. Like 'Amount' but can also be negative.
@@ -148,6 +157,17 @@ add a1 a2 =
       r = i1 + i2
    in fromMinimalQuantisations r
 
+-- | Add a number of accounts of money together.
+--
+-- See 'add'
+--
+-- Note that this function may not fail in certain cases where 'add' would fail.
+sum :: forall f. Foldable f => f Account -> Maybe Account
+sum accounts =
+  let r :: Integer
+      r = foldl' (\acc a -> toMinimalQuantisations a + acc) 0 accounts
+   in fromMinimalQuantisations r
+
 -- | Add two accounts of money.
 --
 -- This operation may fail when overflow over either bound occurs.
@@ -200,9 +220,9 @@ multiply factor account =
 --
 -- See also 'distribute'.
 divide :: Account -> Int32 -> Maybe Account
-divide account denominator =
-  let ad = (fromIntegral :: Int32 -> Word32) ((Prelude.abs :: Int32 -> Int32) denominator)
-      f = case (compare account zero, compare denominator 0) of
+divide account d =
+  let ad = (fromIntegral :: Int32 -> Word32) ((Prelude.abs :: Int32 -> Int32) d)
+      f = case (compare account zero, compare d 0) of
         (EQ, _) -> const (Just zero)
         (_, EQ) -> const Nothing
         (GT, GT) -> Just . Positive
@@ -210,3 +230,66 @@ divide account denominator =
         (LT, GT) -> Just . Negative
         (LT, LT) -> Just . Positive
    in Amount.divide (abs account) ad >>= f
+
+-- | Distribute an amount of money into chunks that are as evenly distributed as possible.
+distribute :: Account -> Word16 -> AccountDistribution
+distribute a f =
+  let aa = abs a
+      af = (fromIntegral :: Word16 -> Word32) (Prelude.abs f)
+      func =
+        if a >= zero
+          then Positive
+          else Negative
+   in case Amount.distribute aa af of
+        Amount.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
+        Amount.DistributedZeroAmount -> DistributedZeroAccount
+        Amount.DistributedIntoEqualChunks numberOfChunks chunk ->
+          DistributedIntoEqualChunks
+            numberOfChunks
+            (func chunk)
+        Amount.DistributedIntoUnequalChunks numberOfLargerChunks largerChunk numberOfSmallerChunks smallerChunk ->
+          DistributedIntoUnequalChunks numberOfLargerChunks (func largerChunk) numberOfSmallerChunks (func smallerChunk)
+
+-- | The result of 'distribute'
+data AccountDistribution
+  = -- | The second argument was zero.
+    DistributedIntoZeroChunks
+  | -- | The first argument was a zero amount.
+    DistributedZeroAccount
+  | -- | Distributed into this many equal chunks of this amount
+    DistributedIntoEqualChunks !Word32 !Account
+  | -- | Distributed into unequal chunks, this many of the first (larger, in absolute value) amount, and this many of the second (slightly smaller) amount.
+    DistributedIntoUnequalChunks !Word32 !Account !Word32 !Account
+  deriving (Show, Read, Eq, Generic)
+
+instance Validity AccountDistribution where
+  validate ad =
+    mconcat
+      [ genericValidate ad,
+        case ad of
+          DistributedIntoUnequalChunks _ a1 _ a2 ->
+            declare "The larger chunks are larger in absolute value" $
+              abs a1 > abs a2
+          _ -> valid
+      ]
+
+instance NFData AccountDistribution
+
+-- | Fractional multiplication
+fraction ::
+  Account ->
+  Rational ->
+  (Account, Rational)
+fraction account f =
+  let af = (realToFrac :: Rational -> Ratio Natural) ((Prelude.abs :: Rational -> Rational) f)
+      aa = abs account
+      (amount, actualFraction) = Amount.fraction aa af
+      func :: Amount -> Rational -> (Account, Rational)
+      func a r = case (compare account zero, compare f 0) of
+        (EQ, _) -> (zero, r)
+        (_, EQ) -> (zero, 0)
+        (GT, GT) -> (Positive a, r)
+        (GT, LT) -> (Negative a, -r)
+        (LT, GT) -> (Negative a, r)
+        (LT, LT) -> (Positive a, -r)
+   in func amount ((realToFrac :: Ratio Natural -> Rational) actualFraction)
