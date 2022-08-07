@@ -16,16 +16,23 @@ Come back no sooner than when this has a passing CI.
 
 |  | Really Safe Money | [Safe Money](https://github.com/k0001/safe-money) | [Dollaridoos](https://github.com/qfpl/dollaridoos) | [Plutus values](https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/Plutus-V1-Ledger-Value.html#t:Value) | [Money](https://github.com/jpvillaisaza/money) | [Simple Money](https://hackage.haskell.org/package/simple-money) |
 |--|--|--|--|--|--|--|
-| Amounts with    type-level currency              | ✔️  | ✔️  | C [1] | ✖ | ✔️[2] | ✔️ |
-| Amounts without type-level currency              | ✔️  | ✖️  | C     | ✔ | ✖    | ✖ |
-| A type for positive-only amounts                 | ✔️  | ✖  | C     | ✖️ | ✔    | ✖ |
-| A type for positive or negative amounts          | ✔️  | ✔  | C     | ✔ | ✖    | ✔ |
-| No 'Dense'                                       | ✔️  | ✖️  | ✔️     | ✔️ | ✔️    | ✔️ |
-| No-floating-point representation                 | ✔️  | ✔️  | ✖️     | ✔️ | ✔️    | ✖ |
-| Fixed-sized representation                       | ✔️  | ✖  | C     | ✖️ | ✖    | ✔️ |
-| No 'Num' instance for amounts                    | ✔️  | ✔️  | ✖     | ✔️ | ✖    | ✔️ |
-| Type-errors for instances that must not exist    | ✔️  | ✔  | ✖     | ✖ | ✖    | ✖ |
-| Multi-amounts                                    | 🚧 | ✖️  | ✖️     | ✔️ | ✖    | ✖ |
+| Amounts with    type-level currency               | ✔️  | ✔️  | C [1] | ✖ | ✔️[2] | ✔️ |
+| Amounts without type-level currency               | ✔️  | ✖️  | C     | ✔ | ✖    | ✖ |
+| A type for positive-only amounts                  | ✔️  | ✖  | C     | ✖️ | ✔    | ✖ |
+| A type for positive or negative amounts           | ✔️  | ✔  | C     | ✔ | ✖    | ✔ |
+| No amounts without minimal quantisation           | ✔️  | ✖️  | ✖️     | ✔️ | ✖️    | ✖️ |
+| No-floating-point representation                  | ✔️  | ✔️  | ✖️     | ✔️ | ✔️    | ✖ |
+| Fixed-sized representation                        | ✔️  | ✖  | C     | ✖️ | ✖    | ✔️ |
+| No 'Num' instance for amounts                     | ✔️  | ✖  | ✖     | ✔️ | ✖    | ✔️ |
+| Type-errors for instances that must not exist     | ✔️  | ✔  | ✖     | ✖ | ✖    | ✖ |
+| Multi-amounts                                     | 🚧 | ✖️  | ✖️     | ✔️ | ✖    | ✖ |
+| Addition                                          | ✔  | ✔  | ✔     | ✖ | ✔️    | ✔ |
+| Subtraction                                       | ✔  | ✔  | ✔     | ✖ | ✔️    | ✔ |
+| Integer scalar multiplication                     | ✔  | ✔️  | ✔️     | ✖ | ✔️    | ✔ |
+| Integer division                                  | ✔  | ✖️  | ✖️     | ✖ | ✖    | ✖ |
+| Distribution                                      | ✔  | ✖️  | ✖️     | ✖ | ✖    | ✖ |
+| Fractional multiplication                         | ✔  | ✔  | ✔     | ✖ | ✔️    | ✔️ |
+| Fractional multiplication with correct accounting | ✔  | ✖️  | ✖️     | ✖ | ✖    | ✖ |
 
 [1]: Dollaridoos technically supports multiple currencies, but [its `Show` instance](https://github.com/qfpl/dollaridoos/blob/fd0686edad9fee855f4651cb9494a9214f570e6a/src/Data/Money.hs) always uses `$`.
 
