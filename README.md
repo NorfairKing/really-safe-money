@@ -2,8 +2,8 @@
 
 ## Status
 
-Not ready for anything.
-Come back no sooner than when this has a passing CI.
+Ready to try out!
+This is not used in production anywhere yet, and the docs are incomplete, so try it out with the appropriate amount of caution.
 
 ## Features
 
