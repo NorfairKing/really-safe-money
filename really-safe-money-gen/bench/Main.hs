@@ -56,6 +56,11 @@ main = do
                 bgroup
                   "multiply"
                   [ bench "multiply" $ nf (V.map (uncurry Amount.multiply)) args
+                  ],
+              withArgs $ \args ->
+                bgroup
+                  "divide"
+                  [ bench "divide" $ nf (V.map (uncurry Amount.divide)) args
                   ]
             ]
         ],

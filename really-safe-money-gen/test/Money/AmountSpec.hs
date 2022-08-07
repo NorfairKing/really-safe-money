@@ -336,8 +336,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                 `shouldBe` integerResult
 
   describe "divide" $ do
-    it "produces valid amounts" $
-      producesValid2 Amount.divide
+    it "Correctly divides 10 by 3" $
+      Amount.divide (Amount 10) 3 `shouldBe` Just (Amount 3)
 
     it "fails with a zero divisor" $
       forAllValid $ \a ->
@@ -347,8 +347,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       forAllValid $ \a ->
         Amount.divide a 1 `shouldBe` Just a
 
-    it "Correctly divides 10 by 3" $
-      Amount.divide (Amount 10) 3 `shouldBe` Just (Amount 3)
+    it "produces valid amounts" $
+      producesValid2 Amount.divide
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a ->

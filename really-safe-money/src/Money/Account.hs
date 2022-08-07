@@ -14,6 +14,7 @@ module Money.Account
     subtract,
     abs,
     multiply,
+    divide,
   )
 where
 
@@ -176,7 +177,7 @@ abs = \case
 
 -- | Multiply an account by an integer scalar
 --
--- This operation may fail when overflow over either bound occurs.
+-- This operation will fail when overflow over either bound occurs.
 multiply :: Int32 -> Account -> Maybe Account
 multiply factor account =
   let af = (fromIntegral :: Int32 -> Word32) ((Prelude.abs :: Int32 -> Int32) factor)
@@ -188,3 +189,24 @@ multiply factor account =
         (LT, GT) -> Negative
         (LT, LT) -> Positive
    in f <$> Amount.multiply af (abs account)
+
+-- | Divide an account by an integer denominator
+--
+-- This operation will fail when dividing by zero.
+--
+-- WARNING: This function uses integer division, which means that money can
+-- "dissappear" if the function is used incorrectly.
+-- For example, when dividing 10 by 4, which results in 2, we cannot then multiply 4 by 2 again to get 10.
+--
+-- See also 'distribute'.
+divide :: Account -> Int32 -> Maybe Account
+divide account denominator =
+  let ad = (fromIntegral :: Int32 -> Word32) ((Prelude.abs :: Int32 -> Int32) denominator)
+      f = case (compare account zero, compare denominator 0) of
+        (EQ, _) -> const (Just zero)
+        (_, EQ) -> const Nothing
+        (GT, GT) -> Just . Positive
+        (GT, LT) -> Just . Negative
+        (LT, GT) -> Just . Negative
+        (LT, LT) -> Just . Positive
+   in Amount.divide (abs account) ad >>= f
