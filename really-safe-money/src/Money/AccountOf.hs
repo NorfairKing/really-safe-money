@@ -5,13 +5,16 @@
 
 module Money.AccountOf
   ( AccountOf (..),
+    Currency (..),
+    zero,
+    fromAccount,
+    toAccount,
     fromMinimalQuantisations,
     toMinimalQuantisations,
     fromDouble,
     toDouble,
     fromRational,
     toRational,
-    zero,
     add,
     sum,
     subtract,
@@ -37,6 +40,7 @@ import Money.Account (Account (..))
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
 import Money.AmountOf (AmountOf (..))
+import Money.Currency
 import Numeric.Natural
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
 import qualified Prelude
@@ -48,22 +52,28 @@ instance Validity (AccountOf currency)
 
 instance NFData (AccountOf currency)
 
+fromAccount :: Account -> AccountOf currency
+fromAccount = undefined
+
+toAccount :: AccountOf currency -> Account
+toAccount = undefined
+
 fromMinimalQuantisations :: Integer -> Maybe (AccountOf currency)
 fromMinimalQuantisations = undefined
 
 toMinimalQuantisations :: AccountOf currency -> Integer
 toMinimalQuantisations = undefined
 
-toDouble :: Word32 -> AccountOf currency -> Double
+toDouble :: Currency currency => AccountOf currency -> Double
 toDouble = undefined
 
-fromDouble :: Word32 -> Double -> Maybe (AccountOf currency)
+fromDouble :: Currency currency => Double -> Maybe (AccountOf currency)
 fromDouble = undefined
 
-toRational :: Word32 -> AccountOf currency -> Rational
+toRational :: Currency currency => AccountOf currency -> Rational
 toRational = undefined
 
-fromRational :: Word32 -> Rational -> Maybe (AccountOf currency)
+fromRational :: Currency currency => Rational -> Maybe (AccountOf currency)
 fromRational = undefined
 
 zero :: AccountOf currency
