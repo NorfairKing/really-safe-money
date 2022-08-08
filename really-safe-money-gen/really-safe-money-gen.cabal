@@ -18,6 +18,7 @@ source-repository head
 library
   exposed-modules:
       Money.Account.Gen
+      Money.AccountOf.Gen
       Money.Amount.Gen
       Money.AmountOf.Gen
   other-modules:
@@ -34,9 +35,11 @@ test-suite really-safe-money-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Money.AccountOfSpec
       Money.AccountSpec
       Money.AmountOfSpec
       Money.AmountSpec
+      Money.Currency.TestUtils
       Paths_really_safe_money_gen
   hs-source-dirs:
       test

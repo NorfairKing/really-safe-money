@@ -17,7 +17,6 @@ import qualified Data.Vector as V
 import Money.Account (Account)
 import qualified Money.Account as Account
 import Money.Account.Gen ()
-import Money.AccountOf (AccountOf)
 import qualified Money.AccountOf as AccountOf
 import Money.Amount (Amount)
 import qualified Money.Amount as Amount

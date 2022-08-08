@@ -155,16 +155,16 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       Account.sum [Positive (Amount maxBound), Positive (Amount 1), Positive (Amount 2), Negative (Amount 3)] `shouldBe` Just (Positive (Amount maxBound))
 
     it "produces valid amounts" $
-      producesValid (Amount.sum @Vector)
+      producesValid (Account.sum @Vector)
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \as -> do
-        let errOrAmount = Amount.sum as
-        case errOrAmount of
+        let errOrAccount = Account.sum as
+        case errOrAccount of
           Nothing -> pure () -- Fine.
           Just amountResult -> do
-            let integerResult = sum $ V.map (toInteger . Amount.toMinimalQuantisations) as
-            toInteger (Amount.toMinimalQuantisations amountResult)
+            let integerResult = sum $ V.map Account.toMinimalQuantisations as
+            Account.toMinimalQuantisations amountResult
               `shouldBe` integerResult
 
   describe "subtract" $ do

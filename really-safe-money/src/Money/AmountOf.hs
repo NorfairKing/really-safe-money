@@ -134,7 +134,7 @@ sum ::
   Foldable f =>
   f (AmountOf currency) ->
   Maybe (AmountOf currency)
-sum as = fromAmount <$> Amount.sum (map unAmountOf (Foldable.toList as))
+sum as = fromAmount <$> Amount.sum (map toAmount (Foldable.toList as))
 
 -- | See 'Amount.subtract'
 subtract ::
@@ -155,7 +155,7 @@ divide ::
   AmountOf currency ->
   Word32 ->
   Maybe (AmountOf currency)
-divide (AmountOf a) i = fromAmount <$> Amount.divide a i
+divide (AmountOf a) d = fromAmount <$> Amount.divide a d
 
 -- | See 'Amount.distribute'
 distribute :: AmountOf currency -> Word32 -> AmountDistributionOf currency

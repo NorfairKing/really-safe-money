@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Money.AccountOf
   ( AccountOf (..),
@@ -28,22 +28,21 @@ module Money.AccountOf
 where
 
 import Control.DeepSeq
-import Data.Foldable hiding (sum)
+import Data.Foldable as Foldable hiding (sum)
 import Data.Function
 import Data.Int
 import Data.Monoid
+import Data.Proxy
 import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
 import Money.Account (Account (..))
-import Money.Amount (Amount (..))
-import qualified Money.Amount as Amount
+import qualified Money.Account as Account
 import Money.AmountOf (AmountOf (..))
+import qualified Money.AmountOf as AmountOf
 import Money.Currency
-import Numeric.Natural
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
-import qualified Prelude
 
 newtype AccountOf (currency :: k) = AccountOf {unAccountOf :: Account}
   deriving (Show, Read, Eq, Ord, Generic)
@@ -53,52 +52,56 @@ instance Validity (AccountOf currency)
 instance NFData (AccountOf currency)
 
 fromAccount :: Account -> AccountOf currency
-fromAccount = undefined
+fromAccount = AccountOf
 
 toAccount :: AccountOf currency -> Account
-toAccount = undefined
+toAccount = unAccountOf
 
 fromMinimalQuantisations :: Integer -> Maybe (AccountOf currency)
-fromMinimalQuantisations = undefined
+fromMinimalQuantisations = fmap fromAccount . Account.fromMinimalQuantisations
 
 toMinimalQuantisations :: AccountOf currency -> Integer
-toMinimalQuantisations = undefined
+toMinimalQuantisations = Account.toMinimalQuantisations . toAccount
 
-toDouble :: Currency currency => AccountOf currency -> Double
-toDouble = undefined
+toDouble :: forall currency. Currency currency => AccountOf currency -> Double
+toDouble = Account.toDouble (quantisationFactor (Proxy @currency)) . toAccount
 
-fromDouble :: Currency currency => Double -> Maybe (AccountOf currency)
-fromDouble = undefined
+fromDouble :: forall currency. Currency currency => Double -> Maybe (AccountOf currency)
+fromDouble = fmap fromAccount . Account.fromDouble (quantisationFactor (Proxy @currency))
 
-toRational :: Currency currency => AccountOf currency -> Rational
-toRational = undefined
+toRational :: forall currency. Currency currency => AccountOf currency -> Rational
+toRational = Account.toRational (quantisationFactor (Proxy @currency)) . toAccount
 
-fromRational :: Currency currency => Rational -> Maybe (AccountOf currency)
-fromRational = undefined
+fromRational :: forall currency. Currency currency => Rational -> Maybe (AccountOf currency)
+fromRational = fmap fromAccount . Account.fromRational (quantisationFactor (Proxy @currency))
 
 zero :: AccountOf currency
-zero = undefined
+zero = fromAccount Account.zero
 
 add :: AccountOf currency -> AccountOf currency -> Maybe (AccountOf currency)
-add = undefined
+add (AccountOf a1) (AccountOf a2) = fromAccount <$> Account.add a1 a2
 
 sum :: forall f currency. Foldable f => f (AccountOf currency) -> Maybe (AccountOf currency)
-sum = undefined
+sum as = fromAccount <$> Account.sum (map toAccount (Foldable.toList as))
 
 subtract :: AccountOf currency -> AccountOf currency -> Maybe (AccountOf currency)
-subtract = undefined
+subtract (AccountOf a1) (AccountOf a2) = fromAccount <$> Account.subtract a1 a2
 
 abs :: AccountOf currency -> AmountOf currency
-abs = undefined
+abs = AmountOf.fromAmount . Account.abs . toAccount
 
 multiply :: Int32 -> AccountOf currency -> Maybe (AccountOf currency)
-multiply = undefined
+multiply f (AccountOf a) = fromAccount <$> Account.multiply f a
 
 divide :: AccountOf currency -> Int32 -> Maybe (AccountOf currency)
-divide = undefined
+divide (AccountOf a) d = fromAccount <$> Account.divide a d
 
 distribute :: AccountOf currency -> Word16 -> AccountDistributionOf currency
-distribute = undefined
+distribute (AccountOf a) w = case Account.distribute a w of
+  Account.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
+  Account.DistributedZeroAccount -> DistributedZeroAccount
+  Account.DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (fromAccount a')
+  Account.DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (fromAccount a1) w2 (fromAccount a2)
 
 -- | The result of 'distribute'
 data AccountDistributionOf (currency :: k)
@@ -130,4 +133,6 @@ fraction ::
   AccountOf currency ->
   Rational ->
   (AccountOf currency, Rational)
-fraction = undefined
+fraction (AccountOf a) f =
+  let (a', r) = Account.fraction a f
+   in (fromAccount a', r)

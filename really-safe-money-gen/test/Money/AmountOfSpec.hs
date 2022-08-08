@@ -6,7 +6,6 @@ module Money.AmountOfSpec (spec) where
 
 import Data.GenValidity.Vector ()
 import Data.Proxy
-import Data.Typeable
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import GHC.Real
@@ -15,10 +14,9 @@ import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency (Currency (..))
-import qualified Money.Currency as Currency
+import Money.Currency.TestUtils
 import Test.Syd
 import Test.Syd.Validity
-import Test.Syd.Validity.Utils
 import Prelude hiding (subtract, sum)
 import qualified Prelude
 
@@ -298,18 +296,3 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     let fraction = AmountOf.fraction @currency
     it "produces valid amounts" $
       producesValid2 fraction
-
-forallCurrencies ::
-  ( forall currency.
-    (Typeable currency, Currency currency) =>
-    Proxy currency ->
-    Spec
-  ) ->
-  Spec
-forallCurrencies func = do
-  let d :: forall currency. (Typeable currency, Currency currency) => Proxy currency -> Spec
-      d p = describe (nameOf @currency) $ func p
-  d (Proxy @Currency.USD)
-  d (Proxy @Currency.CHF)
-  d (Proxy @Currency.BTC)
-  d (Proxy @Currency.ADA)
