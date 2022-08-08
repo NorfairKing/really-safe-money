@@ -1,4 +1,5 @@
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE PolyKinds #-}
 
 module Money.Currency
   ( Currency (..),
@@ -13,7 +14,7 @@ import Data.Proxy
 import Data.Typeable
 import Data.Word
 
-class Currency currency where
+class Currency (currency :: k) where
   quantisationFactor :: Proxy currency -> Word32
 
 data CHF
