@@ -24,6 +24,7 @@ module Money.Account
 where
 
 import Control.DeepSeq
+import Control.Monad
 import Data.Foldable hiding (sum)
 import Data.Function
 import Data.Int
@@ -161,12 +162,9 @@ add a1 a2 =
 --
 -- See 'add'
 --
--- Note that this function may not fail in certain cases where 'add' would fail.
+-- Note that this function will fail in the same ways that iteratively 'add' will fail.
 sum :: forall f. Foldable f => f Account -> Maybe Account
-sum accounts =
-  let r :: Integer
-      r = foldl' (\acc a -> toMinimalQuantisations a + acc) 0 accounts
-   in fromMinimalQuantisations r
+sum = foldM add zero
 
 -- | Add two accounts of money.
 --

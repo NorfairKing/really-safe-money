@@ -151,8 +151,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "fails to sum above maxBound" $
       Account.sum [Positive (Amount maxBound), Positive (Amount 1), Positive (Amount 2)] `shouldBe` Nothing
 
-    it "succeeds to sum above maxBound if the result is back below maxBound" $
-      Account.sum [Positive (Amount maxBound), Positive (Amount 1), Positive (Amount 2), Negative (Amount 3)] `shouldBe` Just (Positive (Amount maxBound))
+    it "fails to sum above maxBound even if the result is back below maxBound" $
+      Account.sum [Positive (Amount maxBound), Positive (Amount 1), Positive (Amount 2), Negative (Amount 3)] `shouldBe` Nothing
 
     it "produces valid amounts" $
       producesValid (Account.sum @Vector)
