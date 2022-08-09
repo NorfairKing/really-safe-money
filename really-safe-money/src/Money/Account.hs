@@ -2,6 +2,21 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- === Importing this module
+--
+-- This module is designed to be imported as follows:
+--
+-- @
+-- import Money.Account (Account)
+-- import qualified Money.Account as Account
+-- @
+--
+-- Or, if you have an @Account@ type already, maybe in a
+--
+-- @
+-- import qualified Money.Account as Money (Account)
+-- import qualified Money.Account as Account
+-- @
 module Money.Account
   ( Account (..),
     fromMinimalQuantisations,

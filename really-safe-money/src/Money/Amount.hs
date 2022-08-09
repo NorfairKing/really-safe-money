@@ -33,6 +33,9 @@ module Money.Amount
     distribute,
     AmountDistribution (..),
     fraction,
+
+    -- ** Validation functions
+    validateStrictlyPositive,
   )
 where
 
@@ -457,3 +460,7 @@ fraction (Amount a) f =
         (fromIntegral :: Word64 -> Natural) roundedResult
           % (fromIntegral :: Word64 -> Natural) a
    in (Amount roundedResult, actualRate)
+
+-- | Validate that an 'Amount' is strictly positive. I.e. not 'zero'.
+validateStrictlyPositive :: Amount -> Validation
+validateStrictlyPositive amount = declare "The Amount is strictly positive" $ amount > zero
