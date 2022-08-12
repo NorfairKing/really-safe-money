@@ -1,6 +1,7 @@
 resolver: lts-19.6
 packages:
 - really-safe-money
+- really-safe-money-autodocodec
 - really-safe-money-gen
 
 # These are duplicated in nix/overlay.nix

@@ -1,0 +1,38 @@
+name: really-safe-money-autodocodec
+version: 0.0.0.0
+github: "NorfairKing/really-safe-money"
+license: AllRightsReserved
+
+extra-source-files:
+- test_resources/**/*
+
+dependencies:
+- base >= 4.7 && < 5
+- really-safe-money
+- autodocodec
+
+library:
+  source-dirs: src
+  dependencies:
+  - genvalidity
+  - text
+
+tests:
+  really-safe-money-autodocodec-test:
+    main: Spec.hs
+    build-tools: sydtest-discover
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - aeson
+    - autodocodec-yaml
+    - deepseq
+    - genvalidity-sydtest
+    - really-safe-money
+    - really-safe-money-autodocodec
+    - really-safe-money-gen
+    - safe-coloured-text
+    - sydtest

@@ -31,6 +31,7 @@ with final.haskell.lib;
     in
     final.lib.genAttrs [
       "really-safe-money"
+      "really-safe-money-autodocodec"
       "really-safe-money-gen"
     ]
       reallySafeMoneyPkg;

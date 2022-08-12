@@ -1,0 +1,58 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.7.
+--
+-- see: https://github.com/sol/hpack
+
+name:           really-safe-money-autodocodec
+version:        0.0.0.0
+homepage:       https://github.com/NorfairKing/really-safe-money#readme
+bug-reports:    https://github.com/NorfairKing/really-safe-money/issues
+license:        AllRightsReserved
+build-type:     Simple
+extra-source-files:
+    test_resources/amount.txt
+
+source-repository head
+  type: git
+  location: https://github.com/NorfairKing/really-safe-money
+
+library
+  exposed-modules:
+      Money.Amount.Codec
+  other-modules:
+      Paths_really_safe_money_autodocodec
+  hs-source-dirs:
+      src
+  build-depends:
+      autodocodec
+    , base >=4.7 && <5
+    , genvalidity
+    , really-safe-money
+    , text
+  default-language: Haskell2010
+
+test-suite really-safe-money-autodocodec-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Money.CodecSpec
+      Paths_really_safe_money_autodocodec
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-tool-depends:
+      sydtest-discover:sydtest-discover
+  build-depends:
+      aeson
+    , autodocodec
+    , autodocodec-yaml
+    , base >=4.7 && <5
+    , deepseq
+    , genvalidity-sydtest
+    , really-safe-money
+    , really-safe-money-autodocodec
+    , really-safe-money-gen
+    , safe-coloured-text
+    , sydtest
+  default-language: Haskell2010
