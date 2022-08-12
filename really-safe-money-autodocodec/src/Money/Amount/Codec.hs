@@ -9,6 +9,9 @@ import qualified Money.Amount as Amount
 import Text.Read (readMaybe)
 
 -- | A 'JSONCodec' for 'Amount' which encodes amounts as a JSON String that contains a decimal number which represents the minimal quantisations of the 'Amount'
+--
+-- WARNING: This codec does not protect you against deserialising an amount in
+-- a different currency than the amount that was serialised.
 amountCodecViaString :: JSONCodec Amount
 amountCodecViaString = bimapCodec f g stringCodec <?> "Amount"
   where

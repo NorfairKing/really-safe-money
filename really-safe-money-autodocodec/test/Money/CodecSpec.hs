@@ -7,12 +7,15 @@ import Control.Exception
 import Data.Aeson.Types as JSON
 import Money.Amount.Codec
 import Money.Amount.Gen ()
+import Money.AmountOf.Codec
+import Money.AmountOf.Gen ()
 import Test.Syd
 import Test.Syd.Validity
 
 spec :: Spec
 spec = do
   codecSpec "amount" amountCodecViaString
+  codecSpec "amount-of" amountOfCodecViaString
 
 codecSpec :: (Show a, Eq a, GenValid a) => String -> JSONCodec a -> Spec
 codecSpec name c = describe name $ do
