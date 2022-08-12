@@ -11,6 +11,7 @@ bug-reports:    https://github.com/NorfairKing/really-safe-money/issues
 license:        AllRightsReserved
 build-type:     Simple
 extra-source-files:
+    test_resources/account.txt
     test_resources/amount-of.txt
     test_resources/amount.txt
 
@@ -20,6 +21,8 @@ source-repository head
 
 library
   exposed-modules:
+      Money.Account.Codec
+      Money.AccountOf.Codec
       Money.Amount.Codec
       Money.AmountOf.Codec
   other-modules:

@@ -5,6 +5,10 @@ import Autodocodec.Yaml
 import Control.DeepSeq
 import Control.Exception
 import Data.Aeson.Types as JSON
+import Money.Account.Codec
+import Money.Account.Gen ()
+import Money.AccountOf.Codec
+import Money.AccountOf.Gen ()
 import Money.Amount.Codec
 import Money.Amount.Gen ()
 import Money.AmountOf.Codec
@@ -16,6 +20,8 @@ spec :: Spec
 spec = do
   codecSpec "amount" amountCodecViaString
   codecSpec "amount-of" amountOfCodecViaString
+  codecSpec "account" accountCodecViaString
+  codecSpec "account-of" accountOfCodecViaString
 
 codecSpec :: (Show a, Eq a, GenValid a) => String -> JSONCodec a -> Spec
 codecSpec name c = describe name $ do
