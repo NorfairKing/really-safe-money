@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PolyKinds #-}
 
 module Money.Currency
@@ -7,6 +8,7 @@ where
 
 import Data.Proxy
 import Data.Word
+import GHC.Generics (Generic)
 
 -- | Class of type-level currencies
 --
@@ -24,3 +26,10 @@ import Data.Word
 -- @
 class IsCurrencyType (currency :: k) where
   quantisationFactor :: Proxy currency -> Word32
+
+-- | Term-level currency
+data Currency = Currency
+  { currencySymbol :: !String,
+    currencyQuantisationFactor :: !Word32
+  }
+  deriving (Show, Eq, Generic)
