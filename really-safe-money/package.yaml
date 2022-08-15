@@ -11,8 +11,10 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+  - containers
   - deepseq
   - validity
+  - validity-containers
 
 tests:
   really-safe-money-dummy-test:

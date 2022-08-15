@@ -1,12 +1,16 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PolyKinds #-}
 
 module Money.Currency
   ( IsCurrencyType (..),
+    Currency (..),
   )
 where
 
-import Data.Proxy
+import Control.DeepSeq
+import Data.Data
+import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
 
@@ -32,4 +36,8 @@ data Currency = Currency
   { currencySymbol :: !String,
     currencyQuantisationFactor :: !Word32
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
+
+instance Validity Currency
+
+instance NFData Currency

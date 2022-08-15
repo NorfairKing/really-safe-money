@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -40,8 +41,8 @@ module Money.Amount
 where
 
 import Control.DeepSeq
+import Data.Data
 import Data.Foldable hiding (sum)
-import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
@@ -138,7 +139,7 @@ import qualified Prelude
 newtype Amount = Amount
   { unAmount :: Word64
   }
-  deriving (Show, Read, Eq, Ord, Typeable, Generic)
+  deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Validity Amount
 

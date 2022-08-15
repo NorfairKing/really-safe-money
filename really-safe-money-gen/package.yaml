@@ -11,6 +11,7 @@ library:
   source-dirs: src
   dependencies:
   - genvalidity
+  - genvalidity-containers
 
 
 benchmarks:
