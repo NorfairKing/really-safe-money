@@ -12,6 +12,7 @@
 -- @
 module Money.MultiAmount
   ( MultiAmount (..),
+    fromAmount,
     zero,
     add,
   )
@@ -37,6 +38,9 @@ newtype MultiAmount = MultiAmount
 instance Validity MultiAmount
 
 instance NFData MultiAmount
+
+fromAmount :: Currency -> Amount -> MultiAmount
+fromAmount currency amount = MultiAmount $ M.singleton currency amount
 
 -- | No money of any currency
 zero :: MultiAmount

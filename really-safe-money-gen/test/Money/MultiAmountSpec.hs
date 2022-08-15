@@ -17,6 +17,14 @@ spec = do
     eqSpec @MultiAmount
     ordSpec @MultiAmount
 
+    describe "fromAmount" $ do
+      it "produces valid amounts" $ do
+        producesValid2 MultiAmount.fromAmount
+
+    describe "zero" $ do
+      it "is valid" $
+        shouldBeValid MultiAmount.zero
+
     describe "add" $ do
       it "produces valid amounts" $
         producesValid2 MultiAmount.add
