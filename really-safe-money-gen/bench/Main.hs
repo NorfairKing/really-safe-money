@@ -393,13 +393,15 @@ main = do
 
 forAllCurrencies :: (forall currency. (Typeable currency, IsCurrencyType currency) => Proxy currency -> Benchmark) -> [Benchmark]
 forAllCurrencies func =
-  [ func (Proxy @Currency.USD)
+  [ func (Proxy @Hypothetical)
   -- The others don't actually matter for benchmarking purposes, it turns out.
-  -- ,
-  -- func (Proxy @Currency.CHF),
-  -- func (Proxy @Currency.BTC),
-  -- func (Proxy @Currency.ADA)
   ]
+
+data Hypothetical
+  deriving (Typeable)
+
+instance IsCurrencyType Hypothetical where
+  quantisationFactor Proxy = 47
 
 nameOf ::
   forall a.
