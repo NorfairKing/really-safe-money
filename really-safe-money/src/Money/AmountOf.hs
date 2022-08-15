@@ -9,7 +9,7 @@
 
 module Money.AmountOf
   ( AmountOf (..),
-    Currency (..),
+    IsCurrencyType (..),
     zero,
     fromAmount,
     toAmount,
@@ -106,19 +106,19 @@ fromMinimalQuantisations :: Word64 -> AmountOf currency
 fromMinimalQuantisations = fromAmount . Amount.fromMinimalQuantisations
 
 -- | See 'Amount.fromDouble'
-fromDouble :: forall currency. Currency currency => Double -> Maybe (AmountOf currency)
+fromDouble :: forall currency. IsCurrencyType currency => Double -> Maybe (AmountOf currency)
 fromDouble = fmap fromAmount . Amount.fromDouble (quantisationFactor (Proxy @currency))
 
 -- | See 'Amount.toDouble'
-toDouble :: forall currency. Currency currency => AmountOf currency -> Double
+toDouble :: forall currency. IsCurrencyType currency => AmountOf currency -> Double
 toDouble = Amount.toDouble (quantisationFactor (Proxy @currency)) . toAmount
 
 -- | See 'Amount.fromRational'
-fromRational :: forall currency. Currency currency => Rational -> Maybe (AmountOf currency)
+fromRational :: forall currency. IsCurrencyType currency => Rational -> Maybe (AmountOf currency)
 fromRational = fmap fromAmount . Amount.fromRational (quantisationFactor (Proxy @currency))
 
 -- | See 'Amount.toRational'
-toRational :: forall currency. Currency currency => AmountOf currency -> Rational
+toRational :: forall currency. IsCurrencyType currency => AmountOf currency -> Rational
 toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . toAmount
 
 -- | See 'Amount.add'

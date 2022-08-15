@@ -391,7 +391,7 @@ main = do
         ]
     ]
 
-forAllCurrencies :: (forall currency. (Typeable currency, Currency currency) => Proxy currency -> Benchmark) -> [Benchmark]
+forAllCurrencies :: (forall currency. (Typeable currency, IsCurrencyType currency) => Proxy currency -> Benchmark) -> [Benchmark]
 forAllCurrencies func =
   [ func (Proxy @Currency.USD)
   -- The others don't actually matter for benchmarking purposes, it turns out.

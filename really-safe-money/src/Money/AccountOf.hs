@@ -5,7 +5,7 @@
 
 module Money.AccountOf
   ( AccountOf (..),
-    Currency (..),
+    IsCurrencyType (..),
     zero,
     fromAccount,
     toAccount,
@@ -63,16 +63,16 @@ fromMinimalQuantisations = fmap fromAccount . Account.fromMinimalQuantisations
 toMinimalQuantisations :: AccountOf currency -> Integer
 toMinimalQuantisations = Account.toMinimalQuantisations . toAccount
 
-toDouble :: forall currency. Currency currency => AccountOf currency -> Double
+toDouble :: forall currency. IsCurrencyType currency => AccountOf currency -> Double
 toDouble = Account.toDouble (quantisationFactor (Proxy @currency)) . toAccount
 
-fromDouble :: forall currency. Currency currency => Double -> Maybe (AccountOf currency)
+fromDouble :: forall currency. IsCurrencyType currency => Double -> Maybe (AccountOf currency)
 fromDouble = fmap fromAccount . Account.fromDouble (quantisationFactor (Proxy @currency))
 
-toRational :: forall currency. Currency currency => AccountOf currency -> Rational
+toRational :: forall currency. IsCurrencyType currency => AccountOf currency -> Rational
 toRational = Account.toRational (quantisationFactor (Proxy @currency)) . toAccount
 
-fromRational :: forall currency. Currency currency => Rational -> Maybe (AccountOf currency)
+fromRational :: forall currency. IsCurrencyType currency => Rational -> Maybe (AccountOf currency)
 fromRational = fmap fromAccount . Account.fromRational (quantisationFactor (Proxy @currency))
 
 zero :: AccountOf currency

@@ -13,13 +13,13 @@ import Test.Syd.Validity.Utils
 
 forallCurrencies ::
   ( forall currency.
-    (Typeable currency, Currency currency) =>
+    (Typeable currency, IsCurrencyType currency) =>
     Proxy currency ->
     Spec
   ) ->
   Spec
 forallCurrencies func = do
-  let d :: forall currency. (Typeable currency, Currency currency) => Proxy currency -> Spec
+  let d :: forall currency. (Typeable currency, IsCurrencyType currency) => Proxy currency -> Spec
       d p = describe (nameOf @currency) $ func p
   d (Proxy @Currency.USD)
   d (Proxy @Currency.CHF)

@@ -2,7 +2,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 module Money.Currency
-  ( Currency (..),
+  ( IsCurrencyType (..),
     CHF,
     USD,
     BTC,
@@ -14,29 +14,39 @@ import Data.Proxy
 import Data.Typeable
 import Data.Word
 
-class Currency (currency :: k) where
+-- | Class of type-level currencies
+--
+-- For example:
+-- @
+-- instance Currency USD where
+--   quantisationFactor Proxy = 100
+--
+-- instance Currency BTC where
+--   quantisationFactor Proxy = 100_000_000
+-- @
+class IsCurrencyType (currency :: k) where
   quantisationFactor :: Proxy currency -> Word32
 
 data CHF
   deriving (Typeable)
 
-instance Currency CHF where
+instance IsCurrencyType CHF where
   quantisationFactor Proxy = 20
 
 data USD
   deriving (Typeable)
 
-instance Currency USD where
+instance IsCurrencyType USD where
   quantisationFactor Proxy = 100
 
 data BTC
   deriving (Typeable)
 
-instance Currency BTC where
+instance IsCurrencyType BTC where
   quantisationFactor Proxy = 100_000_000
 
 data ADA
   deriving (Typeable)
 
-instance Currency ADA where
+instance IsCurrencyType ADA where
   quantisationFactor Proxy = 1_000_000

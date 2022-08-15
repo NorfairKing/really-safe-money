@@ -13,7 +13,7 @@ import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
-import Money.Currency (Currency (..))
+import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
 import Test.Syd
 import Test.Syd.Validity
