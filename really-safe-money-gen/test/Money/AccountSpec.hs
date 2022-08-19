@@ -198,6 +198,15 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       producesValid Account.abs
 
   describe "multiply" $ do
+    it "succeeds for 3 * 6" $
+      Account.multiply 3 (Positive (Amount 6)) `shouldBe` Just (Positive (Amount 18))
+
+    it "fails for 2 * maxbound" $
+      Account.multiply 2 (Positive (Amount maxBound)) `shouldBe` Nothing
+
+    it "fails for 3 * minBound" $
+      Account.multiply 3 (Negative (Amount maxBound)) `shouldBe` Nothing
+
     it "produces valid amounts" $
       producesValid2 Account.multiply
 

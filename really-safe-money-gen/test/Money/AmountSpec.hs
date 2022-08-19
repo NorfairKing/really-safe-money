@@ -293,6 +293,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                 `shouldBe` integerResult
 
   describe "multiply" $ do
+    it "succeeds for 3 * 6" $
+      Amount.multiply 3 (Amount 6) `shouldBe` Just (Amount 18)
+
+    it "fails for 2 * maxbound" $
+      Amount.multiply 2 (Amount maxBound) `shouldBe` Nothing
+
     it "produces valid amounts" $
       producesValid2 Amount.multiply
 
