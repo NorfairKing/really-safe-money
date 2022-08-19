@@ -16,23 +16,28 @@ This is not used in production anywhere yet, and the docs are incomplete, so try
 
 |  | Really Safe Money | [Safe Money](https://github.com/k0001/safe-money) | [Dollaridoos](https://github.com/qfpl/dollaridoos) | [Plutus values](https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/Plutus-V1-Ledger-Value.html#t:Value) | [Money](https://github.com/jpvillaisaza/money) | [Simple Money](https://hackage.haskell.org/package/simple-money) |
 |--|--|--|--|--|--|--|
-| Amounts with    type-level currency               | ✔️  | ✔️  | C [1] | ✖ | ✔️[2] | ✔️ |
-| Amounts without type-level currency               | ✔️  | ✖️  | C     | ✔ | ✖    | ✖ |
-| A type for positive-only amounts                  | ✔️  | ✖  | C     | ✖️ | ✔    | ✖ |
-| A type for positive or negative amounts           | ✔️  | ✔  | C     | ✔ | ✖    | ✔ |
+| Cannot create or destroy money through errors     | ✔️  | ✔️  | C     | ✔️ | ✔️    | ✖️ |
+| No silent overflow or underflow                   | ✔️  | ✔️  | C     | ✔️ | ✔️    | ✖️ |
+| Cannot represent nonsense values of money         | ✔️  | ✔️  | C     | ✔️ | ✔️    | ✖️ |
+| Computations use constant time and space          | ✔️  | ✖️  | C     | ✖️ | ✖️    | ✔️ |
+| Cannot represent amounts that are too granular    | ✔️  | ✔️  | C     | ✔️ | ✔️    | ✖️ |
+| No-floating-point representation                  | ✔️  | ✔️  | ✖️     | ✔️ | ✔️    | ✖️ |
+| Fixed-sized representation                        | ✔️  | ✖️  | C     | ✖️ | ✖️    | ✔️ |
+| Amounts with    type-level currency               | ✔️  | ✔️  | C [1] | ✖️ | ✔️[2] | ✔️ |
+| Amounts without type-level currency               | ✔️  | ✖️  | C     | ✔️ | ✖️    | ✖️ |
+| A type for positive-only amounts                  | ✔️  | ✖️  | C     | ✖️ | ✔️    | ✖️ |
+| A type for positive or negative amounts           | ✔️  | ✔️  | C     | ✔️ | ✖️    | ✔️ |
 | No amounts without minimal quantisation           | ✔️  | ✖️  | ✖️     | ✔️ | ✖️    | ✖️ |
-| No-floating-point representation                  | ✔️  | ✔️  | ✖️     | ✔️ | ✔️    | ✖ |
-| Fixed-sized representation                        | ✔️  | ✖  | C     | ✖️ | ✖    | ✔️ |
-| No 'Num' instance for amounts                     | ✔️  | ✖  | ✖     | ✔️ | ✖    | ✔️ |
-| Type-errors for instances that must not exist     | ✔️  | ✔  | ✖     | ✖ | ✖    | ✖ |
-| Multi-amounts                                     | 🚧 | ✖️  | ✖️     | ✔️ | ✖    | ✖ |
-| Addition                                          | ✔  | ✔  | ✔     | ✖ | ✔️    | ✔ |
-| Subtraction                                       | ✔  | ✔  | ✔     | ✖ | ✔️    | ✔ |
-| Integer scalar multiplication                     | ✔  | ✔️  | ✔️     | ✖ | ✔️    | ✔ |
-| Integer division                                  | ✔  | ✖️  | ✖️     | ✖ | ✖    | ✖ |
-| Distribution                                      | ✔  | ✖️  | ✖️     | ✖ | ✖    | ✖ |
-| Fractional multiplication                         | ✔  | ✔  | ✔     | ✖ | ✔️    | ✔️ |
-| Fractional multiplication with correct accounting | ✔  | ✖️  | ✖️     | ✖ | ✖    | ✖ |
+| No 'Num' instance for amounts                     | ✔️  | ✖️  | ✖️     | ✔️ | ✖️    | ✔️ |
+| Type-errors for instances that must not exist     | ✔️  | ✔️  | ✖️     | ✖️ | ✖️    | ✖️ |
+| Multi-amounts                                     | 🚧 | ✖️  | ✖️     | ✔️ | ✖️    | ✖️ |
+| Addition                                          | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
+| Subtraction                                       | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
+| Integer scalar multiplication                     | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
+| Integer division                                  | ✔️  | ✖️  | ✖️     | ✖️ | ✖️    | ✖️ |
+| Distribution                                      | ✔️  | ✖️  | ✖️     | ✖️ | ✖️    | ✖️ |
+| Fractional multiplication                         | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
+| Fractional multiplication with correct accounting | ✔️  | ✖️  | ✖️     | ✖️ | ✖️    | ✖️ |
 
 [1]: Dollaridoos technically supports multiple currencies, but [its `Show` instance](https://github.com/qfpl/dollaridoos/blob/fd0686edad9fee855f4651cb9494a9214f570e6a/src/Data/Money.hs) always uses `$`.
 
@@ -40,7 +45,7 @@ This is not used in production anywhere yet, and the docs are incomplete, so try
 
 
 * ✔️: Supported
-* C: Possible but you have to write some code yourself
+* C: Possible but you have to write some code yourself. This is not good enough for a money library.
 * 🚧: Under development
 * ✖️: Not supported
 * ?: I don't know.
