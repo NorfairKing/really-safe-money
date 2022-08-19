@@ -176,20 +176,6 @@ main = do
                     ],
               withArgs $ \args ->
                 bgroup
-                  "divide"
-                  $ concat
-                    [ [ bench "divide" $ nf (V.map (uncurry Account.divide)) args
-                      ],
-                      forAllCurrencies
-                        ( \(Proxy :: Proxy currency) ->
-                            let makeTyped = V.map (\(l, r) -> (AccountOf.fromAccount l, r))
-                             in env (pure $ makeTyped args) $ \args' ->
-                                  bench (nameOf @currency) $
-                                    nf (V.map (uncurry AccountOf.divide)) args'
-                        )
-                    ],
-              withArgs $ \args ->
-                bgroup
                   "distribute"
                   $ concat
                     [ [ bench "distribute" $ nf (V.map (uncurry Account.distribute)) args
@@ -346,19 +332,6 @@ main = do
                              in env (pure $ makeTyped args) $ \args' ->
                                   bench (nameOf @currency) $
                                     nf (V.map (uncurry AmountOf.multiply)) args'
-                        )
-                    ],
-              withArgs $ \args ->
-                bgroup "divide" $
-                  concat
-                    [ [ bench "divide" $ nf (V.map (uncurry Amount.divide)) args
-                      ],
-                      forAllCurrencies
-                        ( \(Proxy :: Proxy currency) ->
-                            let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
-                             in env (pure $ makeTyped args) $ \args' ->
-                                  bench (nameOf @currency) $
-                                    nf (V.map (uncurry AmountOf.divide)) args'
                         )
                     ],
               withArgs $ \args ->

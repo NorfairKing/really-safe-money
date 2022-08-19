@@ -30,7 +30,6 @@ module Money.Amount
     sum,
     subtract,
     multiply,
-    divide,
     distribute,
     AmountDistribution (..),
     fraction,
@@ -371,27 +370,6 @@ multiply s (Amount a) =
    in if r > maxBoundI
         then Nothing
         else Just (Amount ((fromInteger :: Integer -> Word64) r))
-
--- | Divide an amount of money by an integer denominator
---
--- This operation may fail, when dividing by zero.
---
--- WARNING: This function uses integer division, which means that money can
--- "dissappear" if the function is used incorrectly.
--- For example, when dividing 10 by 4, which results in 2, we cannot then multiply 4 by 2 again to get 10.
--- See also 'distribute'.
---
--- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
-divide ::
-  Amount ->
-  Word32 ->
-  Maybe Amount
-divide _ 0 = Nothing
-divide (Amount a) d =
-  -- We always round down here, because it is the least surprising.
-  let r :: Word64
-      r = a `div` (fromIntegral :: Word32 -> Word64) d
-   in Just (Amount r)
 
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
 distribute :: Amount -> Word32 -> AmountDistribution

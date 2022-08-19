@@ -23,7 +23,6 @@ module Money.AmountOf
     sum,
     subtract,
     multiply,
-    divide,
     AmountDistributionOf (..),
     distribute,
     fraction,
@@ -149,13 +148,6 @@ multiply ::
   AmountOf currency ->
   Maybe (AmountOf currency)
 multiply f (AmountOf a) = fromAmount <$> Amount.multiply f a
-
--- | See 'Amount.divide'
-divide ::
-  AmountOf currency ->
-  Word32 ->
-  Maybe (AmountOf currency)
-divide (AmountOf a) d = fromAmount <$> Amount.divide a d
 
 -- | See 'Amount.distribute'
 distribute :: AmountOf currency -> Word32 -> AmountDistributionOf currency

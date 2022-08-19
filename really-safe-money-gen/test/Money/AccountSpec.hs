@@ -249,37 +249,6 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
               Account.toMinimalQuantisations amountResult
                 `shouldBe` integerResult
 
-  describe "divide" $ do
-    it "Correctly divides 10 by 3" $
-      Account.divide (Positive (Amount 10)) 3 `shouldBe` Just (Positive (Amount 3))
-
-    it "Correctly divides 10 by -3" $
-      Account.divide (Positive (Amount 10)) (-3) `shouldBe` Just (Negative (Amount 3))
-
-    it "fails with a zero divisor" $
-      forAllValid $ \a ->
-        Account.divide a 0 `shouldBe` Nothing
-
-    it "succeeds when dividing by 1" $
-      forAllValid $ \a ->
-        Account.divide a 1 `shouldBe` Just a
-
-    it "produces valid amounts" $
-      producesValid2 Account.divide
-
-    it "matches what you would get with Integer, if nothing fails" $
-      forAllValid $ \a ->
-        forAllValid $ \d -> do
-          let errOrAccount = Account.divide a d
-          case errOrAccount of
-            Nothing -> pure () -- Fine.
-            Just amountResult -> do
-              let integerResult =
-                    Account.toMinimalQuantisations a
-                      `quot` toInteger d
-              Account.toMinimalQuantisations amountResult
-                `shouldBe` integerResult
-
   describe "distribute" $ do
     eqSpec @Account.AccountDistribution
     showReadSpec @Account.AccountDistribution

@@ -192,30 +192,6 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
               AccountOf.toMinimalQuantisations amountResult
                 `shouldBe` integerResult
 
-  let divide = AccountOf.divide @currency
-  describe "divide" $ do
-    it "fails with a zero divisor" $
-      forAllValid $ \a ->
-        divide a 0 `shouldBe` Nothing
-
-    it "succeeds when dividing by 1" $
-      forAllValid $ \a ->
-        divide a 1 `shouldBe` Just a
-
-    it "produces valid amounts" $
-      producesValid2 divide
-
-    it "matches what you would get with Integer, if nothing fails" $
-      forAllValid $ \a ->
-        forAllValid $ \d -> do
-          let errOrAccountOf = divide a d
-          case errOrAccountOf of
-            Nothing -> pure () -- Fine.
-            Just amountResult -> do
-              let integerResult = toMinimalQuantisations a `quot` toInteger d
-              toMinimalQuantisations amountResult
-                `shouldBe` integerResult
-
   let distribute = AccountOf.distribute @currency
   describe "distribute" $ do
     eqSpec @(AccountOf.AccountDistributionOf currency)

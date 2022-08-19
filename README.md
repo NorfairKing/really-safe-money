@@ -34,7 +34,6 @@ This is not used in production anywhere yet, and the docs are incomplete, so try
 | Addition                                          | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
 | Subtraction                                       | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
 | Integer scalar multiplication                     | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
-| Integer division                                  | ✔️  | ✖️  | ✖️     | ✖️ | ✖️    | ✖️ |
 | Distribution                                      | ✔️  | ✖️  | ✖️     | ✖️ | ✖️    | ✖️ |
 | Fractional multiplication                         | ✔️  | ✔️  | ✔️     | ✖️ | ✔️    | ✔️ |
 | Fractional multiplication with correct accounting | ✔️  | ✖️  | ✖️     | ✖️ | ✖️    | ✖️ |

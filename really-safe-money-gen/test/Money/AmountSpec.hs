@@ -341,34 +341,6 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
               toInteger (Amount.toMinimalQuantisations amountResult)
                 `shouldBe` integerResult
 
-  describe "divide" $ do
-    it "Correctly divides 10 by 3" $
-      Amount.divide (Amount 10) 3 `shouldBe` Just (Amount 3)
-
-    it "fails with a zero divisor" $
-      forAllValid $ \a ->
-        Amount.divide a 0 `shouldBe` Nothing
-
-    it "succeeds when dividing by 1" $
-      forAllValid $ \a ->
-        Amount.divide a 1 `shouldBe` Just a
-
-    it "produces valid amounts" $
-      producesValid2 Amount.divide
-
-    it "matches what you would get with Integer, if nothing fails" $
-      forAllValid $ \a ->
-        forAllValid $ \d -> do
-          let errOrAmount = Amount.divide a d
-          case errOrAmount of
-            Nothing -> pure () -- Fine.
-            Just amountResult -> do
-              let integerResult =
-                    toInteger (Amount.toMinimalQuantisations a)
-                      `div` toInteger d
-              toInteger (Amount.toMinimalQuantisations amountResult)
-                `shouldBe` integerResult
-
   describe "distribute" $ do
     eqSpec @Amount.AmountDistribution
     showReadSpec @Amount.AmountDistribution

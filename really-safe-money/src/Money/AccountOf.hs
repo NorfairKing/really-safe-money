@@ -20,7 +20,6 @@ module Money.AccountOf
     subtract,
     abs,
     multiply,
-    divide,
     distribute,
     AccountDistributionOf (..),
     fraction,
@@ -92,9 +91,6 @@ abs = AmountOf.fromAmount . Account.abs . toAccount
 
 multiply :: Int32 -> AccountOf currency -> Maybe (AccountOf currency)
 multiply f (AccountOf a) = fromAccount <$> Account.multiply f a
-
-divide :: AccountOf currency -> Int32 -> Maybe (AccountOf currency)
-divide (AccountOf a) d = fromAccount <$> Account.divide a d
 
 distribute :: AccountOf currency -> Word16 -> AccountDistributionOf currency
 distribute (AccountOf a) w = case Account.distribute a w of
