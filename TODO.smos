@@ -9,4 +9,3 @@ value:
   - entry: API usage tests
     forest:
     - Datakind currencies
-  - compare safe-decimal
