@@ -1,4 +1,4 @@
-resolver: lts-19.6
+resolver: lts-20.23
 packages:
 - really-safe-money
 - really-safe-money-autodocodec
@@ -8,66 +8,7 @@ packages:
 ghc-options:
   "$locals": -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Widentities -Wredundant-constraints -Wcpp-undef
 
-extra-deps:
-- github: NorfairKing/safe-coloured-text
-  commit: 675cb01fce5f46718416d7746de5b856ed90a63f
-  subdirs:
-    - safe-coloured-text
-    - safe-coloured-text-terminfo
-
-
-- github: NorfairKing/sydtest
-  commit: 130de92053c1c3d60a8f45d509210415ffbea530
-  subdirs:
-    - sydtest
-    - sydtest-discover
-- github: NorfairKing/autodocodec
-  commit: 71c4dcb3c890590cf1a4e42fb9f9f422a7c49ec0
-  subdirs:
-    - autodocodec
-    - autodocodec-yaml
-    - autodocodec-schema
-- github: NorfairKing/validity
-  commit: 8373ac5f0f02ad66f1b83c9bf572290430e84062
-  subdirs:
-    - genvalidity
-    - genvalidity-aeson
-    - genvalidity-bytestring
-    - genvalidity-containers
-    - genvalidity-criterion
-    - genvalidity-hspec
-    - genvalidity-hspec-aeson
-    - genvalidity-hspec-binary
-    - genvalidity-hspec-cereal
-    - genvalidity-hspec-hashable
-    - genvalidity-hspec-optics
-    - genvalidity-hspec-persistent
-    - genvalidity-path
-    - genvalidity-persistent
-    - genvalidity-property
-    - genvalidity-scientific
-    - genvalidity-sydtest
-    - genvalidity-sydtest-aeson
-    - genvalidity-sydtest-hashable
-    - genvalidity-sydtest-lens
-    - genvalidity-sydtest-persistent
-    - genvalidity-text
-    - genvalidity-time
-    - genvalidity-unordered-containers
-    - genvalidity-uuid
-    - genvalidity-vector
-    - validity
-    - validity-aeson
-    - validity-bytestring
-    - validity-containers
-    - validity-path
-    - validity-persistent
-    - validity-primitive
-    - validity-scientific
-    - validity-text
-    - validity-time
-    - validity-unordered-containers
-    - validity-uuid
-    - validity-vector
-
-
+system-ghc: true
+nix:
+  enable: false
+with-hpack: hpack

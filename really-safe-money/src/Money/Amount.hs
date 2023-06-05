@@ -47,7 +47,6 @@ import Data.Word
 import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
-import Numeric.Natural
 import Prelude hiding (fromRational, subtract, sum, toRational)
 import qualified Prelude
 
