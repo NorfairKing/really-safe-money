@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports #-}
+{-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports -Wno-unused-imports #-}
 
 -- === Importing this module
 --
@@ -47,6 +47,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
+import Numeric.Natural
 import Prelude hiding (fromRational, subtract, sum, toRational)
 import qualified Prelude
 
