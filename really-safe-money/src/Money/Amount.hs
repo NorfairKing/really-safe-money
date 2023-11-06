@@ -58,6 +58,7 @@ import qualified Prelude
 -- === Representation
 --
 -- Negative amounts of money are considered amounts of a different unit, so only positive amounts are allowed.
+-- (If you need to represent negative amounts of money, see 'Account'.)
 --
 -- The underlying representation is 'Word64'.
 -- This supports 2^64 (about 1E18) minimal quantisations.
@@ -242,7 +243,7 @@ fromRatio quantisationFactor r = fromRational quantisationFactor (Prelude.toRati
 --
 -- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
 --
--- > toRatio 100 (Amount 1)
+-- >>> toRatio 100 (Amount 1)
 -- 1 % 100
 toRatio :: Word32 -> Amount -> Ratio Natural
 toRatio 0 a = fromIntegral (toMinimalQuantisations a) :% 0
@@ -293,7 +294,7 @@ fromDouble quantisationFactor d
 -- 1.0e-2
 --
 -- >>> toDouble 100 (Amount 100)
--- 1.00
+-- 1.0
 toDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   Word32 ->
@@ -312,6 +313,15 @@ toDouble quantisationFactor a =
 -- * Is non-normalised (5 :% 5)
 -- * Is negative
 -- * Does represent an integer number of minimal quantisations.
+--
+-- >>> fromRational 100 (1 % 100)
+-- Just (Amount 1)
+--
+-- >>> fromRational 100 (1 % 1000)
+-- Nothing
+--
+-- >>> fromRational 100 (-1 % 100)
+-- Nothing
 fromRational :: Word32 -> Rational -> Maybe Amount
 fromRational quantisationFactor r
   | isInvalid r = Nothing
@@ -329,7 +339,10 @@ fromRational quantisationFactor r
 
 -- | Turn an amount of money into a 'Rational'.
 --
--- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
+-- WARNING: the result will be @Amount :% 0@ if the quantisation factor is @0@.
+--
+-- >>> toRational 100 (Amount 1)
+-- 1 % 100
 toRational :: Word32 -> Amount -> Rational
 toRational quantisationFactor amount = (Prelude.toRational :: Ratio Natural -> Rational) $ toRatio quantisationFactor amount
 
@@ -338,6 +351,12 @@ toRational quantisationFactor amount = (Prelude.toRational :: Ratio Natural -> R
 -- This operation may fail when overflow over the maxBound occurs.
 --
 -- WARNING: This function can be used to accidentally add up two amounts of different currencies.
+--
+-- >>> add (Amount 2) (Amount 3)
+-- Just (Amount 5)
+--
+-- >>> add (Amount (2 ^ 64 - 1)) (Amount 1)
+-- Nothing
 add :: Amount -> Amount -> Maybe Amount
 add (Amount a1) (Amount a2) =
   let i1 :: Integer
@@ -355,6 +374,12 @@ add (Amount a1) (Amount a2) =
 -- | Add a number of amounts of money together.
 --
 -- See 'add'
+--
+-- >>> sum [Amount 4, Amount 5, Amount 6]
+-- Just (Amount 15)
+--
+-- >>> sum [Amount (2 ^ 64 - 3), Amount 1, Amount 2]
+-- Nothing
 sum :: forall f. Foldable f => f Amount -> Maybe Amount
 sum l =
   let maxBoundI :: Integer
@@ -370,6 +395,12 @@ sum l =
 -- This operation may fail when the amount becomes negative.
 --
 -- WARNING: This function can be used to accidentally subtract two amounts of different currencies.
+--
+-- >>> subtract (Amount 7) (Amount 6)
+-- Just (Amount 1)
+--
+-- >>> subtract (Amount 8) (Amount 9)
+-- Nothing
 subtract :: Amount -> Amount -> Maybe Amount
 subtract (Amount a1) (Amount a2) =
   let i1 :: Integer
@@ -387,6 +418,12 @@ subtract (Amount a1) (Amount a2) =
 -- This operation may fail when overflow over the maxBound occurs.
 --
 -- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
+--
+-- >>> multiply 3 (Amount 1)
+-- Just (Amount 3)
+--
+-- >>> multiply 2 (Amount (2 ^ 63))
+-- Nothing
 multiply ::
   Word32 ->
   Amount ->
@@ -401,6 +438,18 @@ multiply s (Amount a) =
         else Just (Amount ((fromInteger :: Integer -> Word64) r))
 
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
+--
+-- >>> distribute (Amount 0) 1
+-- DistributedZeroAmount
+--
+-- >>> distribute (Amount 2) 0
+-- DistributedIntoZeroChunks
+--
+-- >>> distribute (Amount 2) 2
+-- DistributedIntoEqualChunks 2 (Amount 1)
+--
+-- >>> distribute (Amount 11) 3
+-- DistributedIntoUnequalChunks 2 (Amount 4) 1 (Amount 3)
 distribute :: Amount -> Word32 -> AmountDistribution
 distribute (Amount 0) _ = DistributedZeroAmount
 distribute _ 0 = DistributedIntoZeroChunks
@@ -452,6 +501,12 @@ instance Validity AmountDistribution where
 instance NFData AmountDistribution
 
 -- | Fractional multiplication
+--
+-- >>> fraction (Amount 100) (1 % 2)
+-- (Amount 50,1 % 2)
+--
+-- >>> fraction (Amount 20) (1 % 6)
+-- (Amount 3,3 % 20)
 fraction ::
   Amount ->
   Ratio Natural ->
