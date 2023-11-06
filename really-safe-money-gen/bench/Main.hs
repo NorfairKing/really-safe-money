@@ -192,14 +192,14 @@ main = do
                 bgroup
                   "fraction"
                   $ concat
-                    [ [ bench "fraction" $ nf (V.map (uncurry Account.fraction)) args
+                    [ [ bench "fraction" $ nf (V.map (uncurry3 Account.fraction)) args
                       ],
                       forAllCurrencies
                         ( \(Proxy :: Proxy currency) ->
-                            let makeTyped = V.map (\(l, r) -> (AccountOf.fromAccount l, r))
+                            let makeTyped = V.map (\(ro, l, r) -> (ro, AccountOf.fromAccount l, r))
                              in env (pure $ makeTyped args) $ \args' ->
                                   bench (nameOf @currency) $
-                                    nf (V.map (uncurry AccountOf.fraction)) args'
+                                    nf (V.map (uncurry3 AccountOf.fraction)) args'
                         )
                     ]
             ]
@@ -350,14 +350,14 @@ main = do
               withArgs $ \args ->
                 bgroup "fraction" $
                   concat
-                    [ [ bench "fraction" $ nf (V.map (uncurry Amount.fraction)) args
+                    [ [ bench "fraction" $ nf (V.map (uncurry3 Amount.fraction)) args
                       ],
                       forAllCurrencies
                         ( \(Proxy :: Proxy currency) ->
-                            let makeTyped = V.map (\(l, r) -> (AmountOf.fromAmount l, r))
+                            let makeTyped = V.map (\(ro, l, r) -> (ro, AmountOf.fromAmount l, r))
                              in env (pure $ makeTyped args) $ \args' ->
                                   bench (nameOf @currency) $
-                                    nf (V.map (uncurry AmountOf.fraction)) args'
+                                    nf (V.map (uncurry3 AmountOf.fraction)) args'
                         )
                     ]
             ]
@@ -394,3 +394,6 @@ generateDeterministically (MkGen f) = f seed size
   where
     seed = mkQCGen 42
     size = 30
+
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 func (a, b, c) = func a b c

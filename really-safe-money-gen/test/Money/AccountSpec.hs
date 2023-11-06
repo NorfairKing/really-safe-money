@@ -11,7 +11,7 @@ import qualified Data.Vector as V
 import Money.Account (Account (..))
 import qualified Money.Account as Account
 import Money.Account.Gen ()
-import Money.Amount (Amount (..))
+import Money.Amount (Amount (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Test.QuickCheck hiding (Negative (..), Positive (..))
 import Test.Syd
@@ -296,24 +296,25 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "fraction" $ do
     it "Correctly fractions 100 with 1 % 100" $
-      Account.fraction (Positive (Amount 100)) (1 % 100)
+      Account.fraction RoundNearest (Positive (Amount 100)) (1 % 100)
         `shouldBe` (Positive (Amount 1), 1 % 100)
 
     it "Correctly fractions 101 with 1 % 100" $
-      Account.fraction (Positive (Amount 101)) (1 % 100)
+      Account.fraction RoundNearest (Positive (Amount 101)) (1 % 100)
         `shouldBe` (Positive (Amount 1), 1 % 101)
 
     it "produces valid amounts" $
-      producesValid2 Account.fraction
+      producesValid3 Account.fraction
 
     it "Produces a result that can be multiplied back" $
-      forAllValid $ \account ->
-        forAllValid $ \requestedFraction ->
-          let result = Account.fraction account requestedFraction
-              (fractionalAccount, actualFraction) = result
-           in if actualFraction == 0
-                then pure () -- Fine.
-                else
-                  context (show result) $
-                    fromIntegral (Account.toMinimalQuantisations fractionalAccount) / actualFraction
-                      `shouldBe` fromIntegral (Account.toMinimalQuantisations account)
+      forAllValid $ \rounding ->
+        forAllValid $ \account ->
+          forAllValid $ \requestedFraction ->
+            let result = Account.fraction rounding account requestedFraction
+                (fractionalAccount, actualFraction) = result
+             in if actualFraction == 0
+                  then pure () -- Fine.
+                  else
+                    context (show result) $
+                      fromIntegral (Account.toMinimalQuantisations fractionalAccount) / actualFraction
+                        `shouldBe` fromIntegral (Account.toMinimalQuantisations account)

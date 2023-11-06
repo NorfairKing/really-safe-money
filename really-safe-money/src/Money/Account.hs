@@ -34,6 +34,7 @@ module Money.Account
     distribute,
     AccountDistribution (..),
     fraction,
+    Rounding (..),
   )
 where
 
@@ -47,7 +48,7 @@ import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount (..))
+import Money.Amount (Amount (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Numeric.Natural
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
@@ -266,15 +267,16 @@ instance Validity AccountDistribution where
 
 instance NFData AccountDistribution
 
--- | Fractional multiplication
+-- | Fractional multiplication, see 'Amount.fraction'
 fraction ::
+  Rounding ->
   Account ->
   Rational ->
   (Account, Rational)
-fraction account f =
+fraction rounding account f =
   let af = (realToFrac :: Rational -> Ratio Natural) ((Prelude.abs :: Rational -> Rational) f)
       aa = abs account
-      (amount, actualFraction) = Amount.fraction aa af
+      (amount, actualFraction) = Amount.fraction rounding aa af
       func :: Amount -> Rational -> (Account, Rational)
       func a r = case (compare account zero, compare f 0) of
         (EQ, _) -> (zero, r)

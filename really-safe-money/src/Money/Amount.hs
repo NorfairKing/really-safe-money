@@ -33,6 +33,7 @@ module Money.Amount
     distribute,
     AmountDistribution (..),
     fraction,
+    Rounding (..),
 
     -- ** Validation functions
     validateStrictlyPositive,
@@ -502,27 +503,75 @@ instance NFData AmountDistribution
 
 -- | Fractional multiplication
 --
--- >>> fraction (Amount 100) (1 % 2)
+-- Multiply an amount by a dimensionless fraction.
+-- If the given rate cannot be used to produce an integer number of minimal
+-- quantisations, the closest possible rate that can is used and returned
+-- instead.
+-- The rounding you pass to this function determines in which direction the
+-- given rate will be rounded to produce the actual rate.
+--
+-- In this example the actual fraction equals the given fraction:
+--
+-- >>> fraction RoundNearest (Amount 100) (1 % 2)
 -- (Amount 50,1 % 2)
 --
--- >>> fraction (Amount 20) (1 % 6)
+-- In this example the given fraction cannot be used to produce an integer number of minimal quantisations, so the actual fraction is rounded (down) to 0.15 instead of 0.1666...
+--
+-- >>> fraction RoundNearest (Amount 20) (1 % 6)
 -- (Amount 3,3 % 20)
+--
+-- If instead we ask to round the rate up, we get this result:
+--
+-- >>> fraction RoundUp (Amount 20) (1 % 6)
+-- (Amount 4,1 % 5)
+--
+-- In this example the same problem occurs, but we can choose to round down instead.
+--
+-- >>> fraction RoundNearest (Amount 21) (1 % 6)
+-- (Amount 4,4 % 21)
+-- >>> fraction RoundDown (Amount 21) (1 % 6)
+-- (Amount 3,1 % 7)
 fraction ::
+  -- | Where to round the real ratio to
+  Rounding ->
+  -- | Amount to multiply
   Amount ->
+  -- | Fraction to multiply by
   Ratio Natural ->
+  -- | The amount and the real rate that was used, considering the 'Rounding'
   (Amount, Ratio Natural)
-fraction (Amount 0) f = (zero, f)
-fraction _ 0 = (zero, 0)
-fraction (Amount a) f =
-  let theoreticalResult :: Ratio Natural
-      theoreticalResult = (fromIntegral :: Word64 -> Ratio Natural) a * f
+fraction _ (Amount 0) f = (zero, f)
+fraction _ _ 0 = (zero, 0)
+fraction r (Amount a) f =
+  let amountAsRatio :: Ratio Natural
+      amountAsRatio = (fromIntegral :: Word64 -> Ratio Natural) a
+      theoreticalResult :: Ratio Natural
+      theoreticalResult = amountAsRatio * f
+      rounder :: Ratio Natural -> Word64
+      rounder = case r of
+        RoundUp -> ceiling
+        RoundDown -> floor
+        RoundNearest -> round
       roundedResult :: Word64
-      roundedResult = (round :: Ratio Natural -> Word64) theoreticalResult
+      roundedResult = rounder theoreticalResult
       actualRate :: Ratio Natural
       actualRate =
         (fromIntegral :: Word64 -> Natural) roundedResult
           % (fromIntegral :: Word64 -> Natural) a
    in (Amount roundedResult, actualRate)
+
+data Rounding
+  = -- | Round up, with 'ceiling'
+    RoundUp
+  | -- | Round down, with 'floor'
+    RoundDown
+  | -- | Round to the nearest value, with 'round'
+    RoundNearest
+  deriving (Show, Eq, Generic)
+
+instance Validity Rounding
+
+instance NFData Rounding
 
 -- | Validate that an 'Amount' is strictly positive. I.e. not 'zero'.
 validateStrictlyPositive :: Amount -> Validation

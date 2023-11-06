@@ -232,16 +232,17 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
   let fraction = AccountOf.fraction @currency
   describe "fraction" $ do
     it "produces valid amounts" $
-      producesValid2 fraction
+      producesValid3 fraction
 
     it "Produces a result that can be multiplied back" $
-      forAllValid $ \account ->
-        forAllValid $ \requestedFraction ->
-          let result = fraction account requestedFraction
-              (fractionalAccountOf, actualFraction) = result
-           in if actualFraction == 0
-                then pure () -- Fine.
-                else
-                  context (show result) $
-                    fromIntegral (toMinimalQuantisations fractionalAccountOf) / actualFraction
-                      `shouldBe` fromIntegral (toMinimalQuantisations account)
+      forAllValid $ \rounding ->
+        forAllValid $ \account ->
+          forAllValid $ \requestedFraction ->
+            let result = fraction rounding account requestedFraction
+                (fractionalAccountOf, actualFraction) = result
+             in if actualFraction == 0
+                  then pure () -- Fine.
+                  else
+                    context (show result) $
+                      fromIntegral (toMinimalQuantisations fractionalAccountOf) / actualFraction
+                        `shouldBe` fromIntegral (toMinimalQuantisations account)

@@ -27,6 +27,7 @@ module Money.AmountOf
     AmountDistributionOf (..),
     distribute,
     fraction,
+    Rounding (..),
   )
 where
 
@@ -38,7 +39,7 @@ import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount)
+import Money.Amount (Amount, Rounding (..))
 import qualified Money.Amount as Amount
 import Money.Currency as Currency
 import Numeric.Natural
@@ -185,9 +186,10 @@ instance NFData (AmountDistributionOf currency)
 
 -- | See 'Amount.fraction'
 fraction ::
+  Rounding ->
   AmountOf currency ->
   Ratio Natural ->
   (AmountOf currency, Ratio Natural)
-fraction (AmountOf a) f =
-  let (a', r) = Amount.fraction a f
+fraction rounding (AmountOf a) f =
+  let (a', r) = Amount.fraction rounding a f
    in (fromAmount a', r)

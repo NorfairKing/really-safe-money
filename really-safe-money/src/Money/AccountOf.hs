@@ -23,6 +23,7 @@ module Money.AccountOf
     distribute,
     AccountDistributionOf (..),
     fraction,
+    Rounding (..),
   )
 where
 
@@ -36,7 +37,7 @@ import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Account (Account (..))
+import Money.Account (Account (..), Rounding (..))
 import qualified Money.Account as Account
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
@@ -124,11 +125,12 @@ instance Validity (AccountDistributionOf currency) where
 
 instance NFData (AccountDistributionOf currency)
 
--- | Fractional multiplication
+-- | Fractional multiplication, see 'Account.fraction'
 fraction ::
+  Rounding ->
   AccountOf currency ->
   Rational ->
   (AccountOf currency, Rational)
-fraction (AccountOf a) f =
-  let (a', r) = Account.fraction a f
+fraction rounding (AccountOf a) f =
+  let (a', r) = Account.fraction rounding a f
    in (fromAccount a', r)

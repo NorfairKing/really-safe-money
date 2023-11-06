@@ -12,3 +12,7 @@ instance GenValid Amount where
 instance GenValid AmountDistribution where
   genValid = genValidStructurallyWithoutExtraChecking
   shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
+
+instance GenValid Rounding where
+  genValid = genValidStructurallyWithoutExtraChecking
+  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering

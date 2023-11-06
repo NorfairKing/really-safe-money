@@ -269,4 +269,4 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
   describe "fraction" $ do
     let fraction = AmountOf.fraction @currency
     it "produces valid amounts" $
-      producesValid2 fraction
+      producesValid3 fraction

@@ -9,7 +9,7 @@ import Data.Ratio
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import GHC.Real (Ratio ((:%)))
-import Money.Amount (Amount (..))
+import Money.Amount (Amount (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
 import Numeric.Natural
@@ -388,24 +388,37 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "fraction" $ do
     it "Correctly fractions 100 with 1 % 100" $
-      Amount.fraction (Amount 100) (1 % 100)
+      Amount.fraction RoundNearest (Amount 100) (1 % 100)
         `shouldBe` (Amount 1, 1 % 100)
 
     it "Correctly fractions 101 with 1 % 100" $
-      Amount.fraction (Amount 101) (1 % 100)
+      Amount.fraction RoundNearest (Amount 101) (1 % 100)
         `shouldBe` (Amount 1, 1 % 101)
 
     it "produces valid amounts" $
-      producesValid2 Amount.fraction
+      producesValid3 Amount.fraction
 
     it "Produces a result that can be multiplied back" $
+      forAllValid $ \rounding ->
+        forAllValid $ \a ->
+          forAllValid $ \requestedFraction ->
+            let result = Amount.fraction rounding a requestedFraction
+                (Amount fractionalAmount, actualFraction) = result
+             in if actualFraction == 0
+                  then pure () -- Fine.
+                  else
+                    context (show result) $
+                      fromIntegral fractionalAmount / actualFraction
+                        `shouldBe` fromIntegral (Amount.toMinimalQuantisations a)
+
+    it "Produces a result that has been rounded in the right direction when using RoundDown" $
       forAllValid $ \a ->
         forAllValid $ \requestedFraction ->
-          let result = Amount.fraction a requestedFraction
-              (Amount fractionalAmount, actualFraction) = result
-           in if actualFraction == 0
-                then pure () -- Fine.
-                else
-                  context (show result) $
-                    fromIntegral fractionalAmount / actualFraction
-                      `shouldBe` fromIntegral (Amount.toMinimalQuantisations a)
+          let (_, actualFraction) = Amount.fraction RoundDown a requestedFraction
+           in actualFraction <= requestedFraction
+
+    it "Produces a result that has been rounded in the right direction when using RoundUp" $
+      forAllValid $ \a ->
+        forAllValid $ \requestedFraction ->
+          let (_, actualFraction) = Amount.fraction RoundUp a requestedFraction
+           in actualFraction >= requestedFraction
