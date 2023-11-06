@@ -239,10 +239,13 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
         forAllValid $ \account ->
           forAllValid $ \requestedFraction ->
             let result = fraction rounding account requestedFraction
-                (fractionalAccountOf, actualFraction) = result
-             in if actualFraction == 0
-                  then pure () -- Fine.
-                  else
-                    context (show result) $
-                      fromIntegral (toMinimalQuantisations fractionalAccountOf) / actualFraction
-                        `shouldBe` fromIntegral (toMinimalQuantisations account)
+                (mFractionalAccountOf, actualFraction) = result
+             in case mFractionalAccountOf of
+                  Nothing -> pure () -- Fine.
+                  Just fractionalAccountOf ->
+                    if actualFraction == 0
+                      then pure () -- Fine.
+                      else
+                        context (show result) $
+                          fromIntegral (toMinimalQuantisations fractionalAccountOf) / actualFraction
+                            `shouldBe` fromIntegral (toMinimalQuantisations account)

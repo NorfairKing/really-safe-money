@@ -389,11 +389,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "fraction" $ do
     it "Correctly fractions 100 with 1 % 100" $
       Amount.fraction RoundNearest (Amount 100) (1 % 100)
-        `shouldBe` (Amount 1, 1 % 100)
+        `shouldBe` (Just (Amount 1), 1 % 100)
 
     it "Correctly fractions 101 with 1 % 100" $
       Amount.fraction RoundNearest (Amount 101) (1 % 100)
-        `shouldBe` (Amount 1, 1 % 101)
+        `shouldBe` (Just (Amount 1), 1 % 101)
 
     it "produces valid amounts" $
       producesValid3 Amount.fraction
@@ -403,13 +403,16 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \a ->
           forAllValid $ \requestedFraction ->
             let result = Amount.fraction rounding a requestedFraction
-                (Amount fractionalAmount, actualFraction) = result
-             in if actualFraction == 0
-                  then pure () -- Fine.
-                  else
-                    context (show result) $
-                      fromIntegral fractionalAmount / actualFraction
-                        `shouldBe` fromIntegral (Amount.toMinimalQuantisations a)
+                (mFractionalAmount, actualFraction) = result
+             in case mFractionalAmount of
+                  Nothing -> pure () -- Fine.
+                  Just (Amount fractionalAmount) ->
+                    if actualFraction == 0
+                      then pure () -- Fine.
+                      else
+                        context (show result) $
+                          fromIntegral fractionalAmount / actualFraction
+                            `shouldBe` fromIntegral (Amount.toMinimalQuantisations a)
 
     it "Produces a result that has been rounded in the right direction when using RoundDown" $
       forAllValid $ \a ->

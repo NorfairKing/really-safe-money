@@ -272,17 +272,17 @@ fraction ::
   Rounding ->
   Account ->
   Rational ->
-  (Account, Rational)
+  (Maybe Account, Rational)
 fraction rounding account f =
   let af = (realToFrac :: Rational -> Ratio Natural) ((Prelude.abs :: Rational -> Rational) f)
       aa = abs account
       (amount, actualFraction) = Amount.fraction rounding aa af
-      func :: Amount -> Rational -> (Account, Rational)
-      func a r = case (compare account zero, compare f 0) of
-        (EQ, _) -> (zero, r)
-        (_, EQ) -> (zero, 0)
-        (GT, GT) -> (Positive a, r)
-        (GT, LT) -> (Negative a, -r)
-        (LT, GT) -> (Negative a, r)
-        (LT, LT) -> (Positive a, -r)
+      func :: Maybe Amount -> Rational -> (Maybe Account, Rational)
+      func ma r = case (compare account zero, compare f 0) of
+        (EQ, _) -> (Just zero, r)
+        (_, EQ) -> (Just zero, 0)
+        (GT, GT) -> (Positive <$> ma, r)
+        (GT, LT) -> (Negative <$> ma, -r)
+        (LT, GT) -> (Negative <$> ma, r)
+        (LT, LT) -> (Positive <$> ma, -r)
    in func amount ((realToFrac :: Ratio Natural -> Rational) actualFraction)

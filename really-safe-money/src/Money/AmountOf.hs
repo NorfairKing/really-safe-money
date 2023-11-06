@@ -189,7 +189,7 @@ fraction ::
   Rounding ->
   AmountOf currency ->
   Ratio Natural ->
-  (AmountOf currency, Ratio Natural)
+  (Maybe (AmountOf currency), Ratio Natural)
 fraction rounding (AmountOf a) f =
   let (a', r) = Amount.fraction rounding a f
-   in (fromAmount a', r)
+   in (fromAmount <$> a', r)

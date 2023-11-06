@@ -297,11 +297,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "fraction" $ do
     it "Correctly fractions 100 with 1 % 100" $
       Account.fraction RoundNearest (Positive (Amount 100)) (1 % 100)
-        `shouldBe` (Positive (Amount 1), 1 % 100)
+        `shouldBe` (Just (Positive (Amount 1)), 1 % 100)
 
     it "Correctly fractions 101 with 1 % 100" $
       Account.fraction RoundNearest (Positive (Amount 101)) (1 % 100)
-        `shouldBe` (Positive (Amount 1), 1 % 101)
+        `shouldBe` (Just (Positive (Amount 1)), 1 % 101)
 
     it "produces valid amounts" $
       producesValid3 Account.fraction
@@ -311,10 +311,13 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \account ->
           forAllValid $ \requestedFraction ->
             let result = Account.fraction rounding account requestedFraction
-                (fractionalAccount, actualFraction) = result
-             in if actualFraction == 0
-                  then pure () -- Fine.
-                  else
-                    context (show result) $
-                      fromIntegral (Account.toMinimalQuantisations fractionalAccount) / actualFraction
-                        `shouldBe` fromIntegral (Account.toMinimalQuantisations account)
+                (mFractionalAmount, actualFraction) = result
+             in case mFractionalAmount of
+                  Nothing -> pure () -- Fine.
+                  Just fractionalAccount ->
+                    if actualFraction == 0
+                      then pure () -- Fine.
+                      else
+                        context (show result) $
+                          fromIntegral (Account.toMinimalQuantisations fractionalAccount) / actualFraction
+                            `shouldBe` fromIntegral (Account.toMinimalQuantisations account)

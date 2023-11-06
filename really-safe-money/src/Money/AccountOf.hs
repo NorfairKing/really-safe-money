@@ -130,7 +130,7 @@ fraction ::
   Rounding ->
   AccountOf currency ->
   Rational ->
-  (AccountOf currency, Rational)
+  (Maybe (AccountOf currency), Rational)
 fraction rounding (AccountOf a) f =
   let (a', r) = Account.fraction rounding a f
-   in (fromAccount a', r)
+   in (fromAccount <$> a', r)

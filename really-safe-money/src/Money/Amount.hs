@@ -510,6 +510,9 @@ instance NFData AmountDistribution
 -- The rounding you pass to this function determines in which direction the
 -- given rate will be rounded to produce the actual rate.
 --
+-- This function will fail to produce an 'Amount' if the result would be too big.
+--
+--
 -- In this example the actual fraction equals the given fraction:
 --
 -- >>> fraction RoundNearest (Amount 100) (1 % 2)
@@ -531,6 +534,11 @@ instance NFData AmountDistribution
 -- (Amount 4,4 % 21)
 -- >>> fraction RoundDown (Amount 21) (1 % 6)
 -- (Amount 3,1 % 7)
+--
+-- In this example the result would be too big:
+--
+-- >>> fraction Roundnearest (Amount (2^63)) 3
+-- Nothing
 fraction ::
   -- | Where to round the real ratio to
   Rounding ->
@@ -539,26 +547,33 @@ fraction ::
   -- | Fraction to multiply by
   Ratio Natural ->
   -- | The amount and the real rate that was used, considering the 'Rounding'
-  (Amount, Ratio Natural)
-fraction _ (Amount 0) f = (zero, f)
-fraction _ _ 0 = (zero, 0)
+  (Maybe Amount, Ratio Natural)
+fraction _ (Amount 0) f = (Just zero, f)
+fraction _ _ 0 = (Just zero, 0)
 fraction r (Amount a) f =
   let amountAsRatio :: Ratio Natural
       amountAsRatio = (fromIntegral :: Word64 -> Ratio Natural) a
       theoreticalResult :: Ratio Natural
       theoreticalResult = amountAsRatio * f
-      rounder :: Ratio Natural -> Word64
+      rounder :: Ratio Natural -> Natural
       rounder = case r of
         RoundUp -> ceiling
         RoundDown -> floor
         RoundNearest -> round
-      roundedResult :: Word64
+      roundedResult :: Natural
       roundedResult = rounder theoreticalResult
       actualRate :: Ratio Natural
       actualRate =
-        (fromIntegral :: Word64 -> Natural) roundedResult
+        roundedResult
           % (fromIntegral :: Word64 -> Natural) a
-   in (Amount roundedResult, actualRate)
+      maxBoundN :: Natural
+      maxBoundN = fromIntegral (maxBound :: Word64)
+      result = Amount ((fromIntegral :: Natural -> Word64) roundedResult)
+   in ( if roundedResult > maxBoundN
+          then Nothing
+          else Just result,
+        actualRate
+      )
 
 data Rounding
   = -- | Round up, with 'ceiling'
