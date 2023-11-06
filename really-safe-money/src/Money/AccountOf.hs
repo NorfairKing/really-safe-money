@@ -9,6 +9,8 @@ module Money.AccountOf
     zero,
     fromAccount,
     toAccount,
+    fromAmountOf,
+    fromAmount,
     fromMinimalQuantisations,
     toMinimalQuantisations,
     fromDouble,
@@ -39,6 +41,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import Money.Account (Account (..), Rounding (..))
 import qualified Money.Account as Account
+import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
 import Money.Currency
@@ -56,6 +59,12 @@ fromAccount = AccountOf
 
 toAccount :: AccountOf currency -> Account
 toAccount = unAccountOf
+
+fromAmountOf :: AmountOf currency -> AccountOf currency
+fromAmountOf = fromAccount . Account.fromAmount . AmountOf.toAmount
+
+fromAmount :: Amount -> AccountOf currency
+fromAmount = fromAccount . Account.fromAmount
 
 fromMinimalQuantisations :: Integer -> Maybe (AccountOf currency)
 fromMinimalQuantisations = fmap fromAccount . Account.fromMinimalQuantisations
