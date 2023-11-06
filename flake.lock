@@ -16,6 +16,22 @@
         "type": "github"
       }
     },
+    "dekking": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1697914016,
+        "narHash": "sha256-f7GKRmZQMztuEHLdu3B29j+mldMunzwO03GcEFw+7eY=",
+        "owner": "NorfairKing",
+        "repo": "dekking",
+        "rev": "930252d59c3bb5c2d51cb02ecc6863d93e623c6a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NorfairKing",
+        "repo": "dekking",
+        "type": "github"
+      }
+    },
     "fast-myers-diff": {
       "flake": false,
       "locked": {
@@ -518,6 +534,7 @@
     "root": {
       "inputs": {
         "autodocodec": "autodocodec",
+        "dekking": "dekking",
         "fast-myers-diff": "fast-myers-diff",
         "horizon-advance": "horizon-advance",
         "nixpkgs": "nixpkgs_5",

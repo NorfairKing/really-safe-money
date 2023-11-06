@@ -17,6 +17,8 @@
     fast-myers-diff.flake = false;
     sydtest.url = "github:NorfairKing/sydtest";
     sydtest.flake = false;
+    dekking.url = "github:NorfairKing/dekking";
+    dekking.flake = false;
   };
 
   outputs =
@@ -32,6 +34,7 @@
     , fast-myers-diff
     , sydtest
     , autodocodec
+    , dekking
     }:
     let
       system = "x86_64-linux";
@@ -43,6 +46,7 @@
         (pkgs.callPackage (autodocodec + "/nix/overrides.nix") { })
         (pkgs.callPackage (safe-coloured-text + "/nix/overrides.nix") { })
         (pkgs.callPackage (sydtest + "/nix/overrides.nix") { })
+        (pkgs.callPackage (dekking + "/nix/overrides.nix") { })
         self.overrides.${system}
       ];
       horizonPkgs = horizon-advance.legacyPackages.${system}.extend allOverrides;
@@ -67,6 +71,16 @@
         backwardCompatibilityChecks // {
           forwardCompatibility = horizonPkgs.reallySafeMoneyRelease;
           shell = self.devShells.${system}.default;
+          coverage-report = haskellPackages.dekking.makeCoverageReport {
+            name = "test-coverage-report";
+            packages = [
+              "really-safe-money"
+              "really-safe-money-autodocodec"
+            ];
+            coverage = [
+              "really-safe-money-gen"
+            ];
+          };
           pre-commit = pre-commit-hooks.lib.${system}.run {
             src = ./.;
             hooks = {

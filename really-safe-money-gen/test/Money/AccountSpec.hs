@@ -47,6 +47,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       forAllValid $ \account ->
         Account.fromMinimalQuantisations (Account.toMinimalQuantisations account) `shouldBe` Just account
 
+  describe "fromAmount" $ do
+    it "produces valid accounts" $
+      producesValid Account.fromAmount
+
   describe "toRational" $ do
     it "produces valid Rationals when the quantisation factor is nonzero" $
       forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
