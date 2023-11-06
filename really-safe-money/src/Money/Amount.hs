@@ -516,29 +516,29 @@ instance NFData AmountDistribution
 -- In this example the actual fraction equals the given fraction:
 --
 -- >>> fraction RoundNearest (Amount 100) (1 % 2)
--- (Amount 50,1 % 2)
+-- (Just (Amount 50),1 % 2)
 --
 -- In this example the given fraction cannot be used to produce an integer number of minimal quantisations, so the actual fraction is rounded (down) to 0.15 instead of 0.1666...
 --
 -- >>> fraction RoundNearest (Amount 20) (1 % 6)
--- (Amount 3,3 % 20)
+-- (Just (Amount 3),3 % 20)
 --
 -- If instead we ask to round the rate up, we get this result:
 --
 -- >>> fraction RoundUp (Amount 20) (1 % 6)
--- (Amount 4,1 % 5)
+-- (Just (Amount 4),1 % 5)
 --
 -- In this example the same problem occurs, but we can choose to round down instead.
 --
 -- >>> fraction RoundNearest (Amount 21) (1 % 6)
--- (Amount 4,4 % 21)
+-- (Just (Amount 4),4 % 21)
 -- >>> fraction RoundDown (Amount 21) (1 % 6)
--- (Amount 3,1 % 7)
+-- (Just (Amount 3),1 % 7)
 --
 -- In this example the result would be too big:
 --
--- >>> fraction Roundnearest (Amount (2^63)) 3
--- Nothing
+-- >>> fraction RoundNearest (Amount (2^63)) 3
+-- (Nothing,3 % 1)
 fraction ::
   -- | Where to round the real ratio to
   Rounding ->
