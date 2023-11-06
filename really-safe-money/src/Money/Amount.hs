@@ -135,9 +135,7 @@ import qualified Prelude
 --
 --     * 'RealFloat', because an amount of money is not represented using a floating-point number.
 --     * 'Monoid' could work if there was a 'Semigroup Amount', but there isn't and there shouldn't be.
-newtype Amount = Amount
-  { unAmount :: Word64
-  }
+newtype Amount = Amount Word64
   deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Validity Amount
@@ -203,14 +201,23 @@ instance
   (<>) = undefined
 
 -- | No money
+--
+-- >>> zero
+-- Amount 0
 zero :: Amount
 zero = Amount 0
 
 -- | Turn an amount into a number of minimal quantisations.
+--
+-- >>> toMinimalQuantisations (Amount 1)
+-- 1
 toMinimalQuantisations :: Amount -> Word64
-toMinimalQuantisations = unAmount
+toMinimalQuantisations (Amount mq) = mq
 
 -- | Turn a number of minimal quantisations into an amount.
+--
+-- >>> fromMinimalQuantisations 2
+-- Amount 2
 fromMinimalQuantisations :: Word64 -> Amount
 fromMinimalQuantisations = Amount
 
@@ -221,13 +228,22 @@ fromMinimalQuantisations = Amount
 -- * Is NaN (0 :% 0)
 -- * Is infinite (1 :% 0) or (-1 :% 0)
 -- * Is non-normalised (5 :% 5)
--- * Does represent an integer number of minimal quantisations.
+-- * Does not represent an integer number of minimal quantisations.
+--
+-- >>> fromRatio 100 (1 % 100)
+-- Just (Amount 1)
+--
+-- >>> fromRatio 100 (1 % 1000)
+-- Nothing
 fromRatio :: Word32 -> Ratio Natural -> Maybe Amount
 fromRatio quantisationFactor r = fromRational quantisationFactor (Prelude.toRational r)
 
 -- | Turn an amount of money into a 'Ratio'.
 --
 -- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
+--
+-- > toRatio 100 (Amount 1)
+-- 1 % 100
 toRatio :: Word32 -> Amount -> Ratio Natural
 toRatio 0 a = fromIntegral (toMinimalQuantisations a) :% 0
 toRatio quantisationFactor a =
@@ -242,6 +258,13 @@ toRatio quantisationFactor a =
 -- * is infinite
 -- * Is negative
 -- * does not represent an integral amount of minimal quantisations
+--
+--
+-- >>> fromDouble 100 0.01
+-- Just (Amount 1)
+--
+-- >>> fromDouble 100 0.001
+-- Nothing
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   Word32 ->
@@ -265,6 +288,12 @@ fromDouble quantisationFactor d
 -- | Turn an amount of money into a 'Double'.
 --
 -- WARNING: the result will be infinite or NaN if the quantisation factor is @0@
+--
+-- >>> toDouble 100 (Amount 1)
+-- 1.0e-2
+--
+-- >>> toDouble 100 (Amount 100)
+-- 1.00
 toDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   Word32 ->
@@ -331,7 +360,7 @@ sum l =
   let maxBoundI :: Integer
       maxBoundI = fromIntegral (maxBound :: Word64)
       r :: Integer
-      r = foldl' (\acc a -> (toInteger :: Word64 -> Integer) (unAmount a) + acc) 0 l
+      r = foldl' (\acc a -> (toInteger :: Word64 -> Integer) (toMinimalQuantisations a) + acc) 0 l
    in if r > maxBoundI
         then Nothing
         else Just (Amount ((fromInteger :: Integer -> Word64) r))

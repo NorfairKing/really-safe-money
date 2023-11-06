@@ -17,9 +17,14 @@ library:
   - validity-containers
 
 tests:
-  really-safe-money-dummy-test:
-    main: Spec.hs
-    source-dirs: test
+  really-safe-money-doctest:
+    main: DocTest.hs             
+    source-dirs: doctest/
+    ghc-options:              
+    - -main-is DocTest     
+    - -threaded                            
+    - -rtsopts                                
+    - -with-rtsopts=-N
+    - -Wall        
     dependencies:
-    - really-safe-money
-
+    - doctest 

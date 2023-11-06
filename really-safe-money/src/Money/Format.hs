@@ -36,16 +36,19 @@ formatAccountOf ao = formatAccount (quantisationFactor (Proxy @currency)) (Accou
 
 -- | Produce a printf-style format string for a currency with a given quantisation factor.
 --
--- > quantisationFactorFormatString 100000000
+-- >>> quantisationFactorFormatString 100000000
 -- "%0.8f"
--- > quantisationFactorFormatString 100
+--
+-- >>> quantisationFactorFormatString 100
 -- "%0.2f"
--- > quantisationFactorFormatString 20
+--
+-- >>> quantisationFactorFormatString 20
 -- "%0.2f"
--- > quantisationFactorFormatString 1
+--
+-- >>> quantisationFactorFormatString 1
 -- "%0.0f"
 quantisationFactorFormatString :: Word32 -> String
 quantisationFactorFormatString qf =
   let decimals :: Int
       decimals = ceiling $ logBase 10 (fromIntegral qf :: Float)
-   in printf "%%0.%df" $ show decimals
+   in printf "%%0.%df" decimals

@@ -37,14 +37,15 @@ library
     , validity-containers
   default-language: Haskell2010
 
-test-suite really-safe-money-dummy-test
+test-suite really-safe-money-doctest
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: DocTest.hs
   other-modules:
       Paths_really_safe_money
   hs-source-dirs:
-      test
+      doctest/
+  ghc-options: -main-is DocTest -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
       base >=4.7 && <5
-    , really-safe-money
+    , doctest
   default-language: Haskell2010
