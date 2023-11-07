@@ -57,7 +57,7 @@ module Money.Account
     fraction,
 
     -- * Formatting
-    formatAccount,
+    format,
     quantisationFactorFormatString,
   )
 where
@@ -403,17 +403,17 @@ fraction rounding account f =
 
 -- | Format an account of money without a symbol.
 --
--- >>> formatAccount 100 (Negative (Amount 1))
+-- >>> format 100 (Negative (Amount 1))
 -- "-0.01"
 --
--- >>> formatAccount 20 (Positive (Amount 100))
+-- >>> format 20 (Positive (Amount 100))
 -- "5.00"
 --
--- >>> formatAccount 1 (Negative (Amount 1000))
+-- >>> format 1 (Negative (Amount 1000))
 -- "-1000"
 --
--- >>> formatAccount 100000000 (Positive (Amount 50000))
+-- >>> format 100000000 (Positive (Amount 50000))
 -- "0.00050000"
-formatAccount :: Word32 -> Account -> String
-formatAccount qf a =
+format :: Word32 -> Account -> String
+format qf a =
   printf (quantisationFactorFormatString qf) (toDouble qf a)

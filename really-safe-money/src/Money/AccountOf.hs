@@ -47,7 +47,7 @@ module Money.AccountOf
     fraction,
 
     -- * Formatting
-    formatAccountOf,
+    format,
     quantisationFactorFormatString,
   )
 where
@@ -164,5 +164,5 @@ fraction rounding (AccountOf a) f =
    in (fromAccount <$> a', r)
 
 -- | See 'formatAccount'
-formatAccountOf :: forall currency. IsCurrencyType currency => AccountOf currency -> String
-formatAccountOf ao = Account.formatAccount (quantisationFactor (Proxy @currency)) (toAccount ao)
+format :: forall currency. IsCurrencyType currency => AccountOf currency -> String
+format ao = Account.format (quantisationFactor (Proxy @currency)) (toAccount ao)

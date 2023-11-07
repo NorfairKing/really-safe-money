@@ -53,7 +53,7 @@ module Money.Amount
     fraction,
 
     -- * Formatting
-    formatAmount,
+    format,
     quantisationFactorFormatString,
 
     -- * Validation functions
@@ -614,19 +614,19 @@ instance NFData Rounding
 
 -- | Format an amount of money without a symbol.
 --
--- >>> formatAmount 100 (Amount 1)
+-- >>> format 100 (Amount 1)
 -- "0.01"
 --
--- >>> formatAmount 20 (Amount 10)
+-- >>> format 20 (Amount 10)
 -- "0.50"
 --
--- >>> formatAmount 1 (Amount 100)
+-- >>> format 1 (Amount 100)
 -- "100"
 --
--- >>> formatAmount 100000000 (Amount 500)
+-- >>> format 100000000 (Amount 500)
 -- "0.00000500"
-formatAmount :: Word32 -> Amount -> String
-formatAmount qf a =
+format :: Word32 -> Amount -> String
+format qf a =
   printf (quantisationFactorFormatString qf) (toDouble qf a)
 
 -- | Produce a printf-style format string for a currency with a given quantisation factor.

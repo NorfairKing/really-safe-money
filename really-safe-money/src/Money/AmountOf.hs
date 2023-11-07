@@ -49,7 +49,7 @@ module Money.AmountOf
     fraction,
 
     -- * Formatting
-    formatAmountOf,
+    format,
     quantisationFactorFormatString,
   )
 where
@@ -205,5 +205,5 @@ fraction rounding (AmountOf a) f =
    in (fromAmount <$> a', r)
 
 -- | See 'Amount.formatAmount'
-formatAmountOf :: forall currency. IsCurrencyType currency => AmountOf currency -> String
-formatAmountOf ao = Amount.formatAmount (quantisationFactor (Proxy @currency)) (toAmount ao)
+format :: forall currency. IsCurrencyType currency => AmountOf currency -> String
+format ao = Amount.format (quantisationFactor (Proxy @currency)) (toAmount ao)
