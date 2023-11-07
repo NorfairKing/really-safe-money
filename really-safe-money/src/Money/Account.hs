@@ -19,23 +19,41 @@
 -- @
 module Money.Account
   ( Account (..),
+
+    -- * Construction
+    zero,
     fromMinimalQuantisations,
-    toMinimalQuantisations,
     fromAmount,
     fromDouble,
-    toDouble,
     fromRational,
+
+    -- * Destruction
+    toMinimalQuantisations,
+    toDouble,
     toRational,
-    zero,
+
+    -- * Operations
+
+    -- ** Addition
     add,
     sum,
+
+    -- ** Subtraction
     subtract,
+
+    -- ** Absolute value
     abs,
+
+    -- ** Integral multiplication
     multiply,
+
+    -- ** Integral distribution
     distribute,
     AccountDistribution (..),
-    fraction,
+
+    -- ** Fractional multiplication
     Rounding (..),
+    fraction,
   )
 where
 

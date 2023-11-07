@@ -24,6 +24,7 @@ forallCurrencies func = do
       d p = describe (nameOf @currency) $ func p
   d (Proxy @USD)
   d (Proxy @CHF)
+  d (Proxy @INR)
   d (Proxy @BTC)
   d (Proxy @ADA)
 
@@ -38,6 +39,12 @@ data USD
 
 instance IsCurrencyType USD where
   quantisationFactor Proxy = 100
+
+data INR
+  deriving (Typeable)
+
+instance IsCurrencyType INR where
+  quantisationFactor Proxy = 1
 
 data BTC
   deriving (Typeable)

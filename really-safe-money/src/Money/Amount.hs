@@ -17,23 +17,39 @@
 -- @
 module Money.Amount
   ( Amount (..),
+
+    -- * Construction
     zero,
-    toMinimalQuantisations,
     fromMinimalQuantisations,
     fromRatio,
-    toRatio,
     fromDouble,
-    toDouble,
     fromRational,
+
+    -- * Destruction
+    toMinimalQuantisations,
+    toRatio,
+    toDouble,
     toRational,
+
+    -- * Operations
+
+    -- ** Addition
     add,
     sum,
+
+    -- ** Subtraction
     subtract,
+
+    -- ** Integral multiplication
     multiply,
+
+    -- ** Integral distribution
     distribute,
     AmountDistribution (..),
-    fraction,
+
+    -- ** Fractional multiplication
     Rounding (..),
+    fraction,
 
     -- ** Validation functions
     validateStrictlyPositive,
@@ -65,8 +81,8 @@ import qualified Prelude
 -- This supports 2^64 (about 1E18) minimal quantisations.
 -- For example:
 --
--- * 10 quadrillion USD ((much) more than the M1 money supply as of 2022)
--- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2022)
+-- * 10 quadrillion USD ((much) more than the M1 money supply as of 2023: Less than 20 trillion USD)
+-- * 50 quadrillion CHF ((much) more than the M1 money supply as of 2023: Less than 1 trillion CHF)
 -- * 10 billion BTC (more than the 21 million that can exist)
 --
 -- === Instances

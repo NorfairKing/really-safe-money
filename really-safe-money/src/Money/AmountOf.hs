@@ -11,23 +11,41 @@
 module Money.AmountOf
   ( AmountOf (..),
     IsCurrencyType (..),
+
+    -- * Construction
     zero,
-    fromAmount,
-    toAmount,
-    toMinimalQuantisations,
     fromMinimalQuantisations,
+    fromAmount,
+    fromRatio,
     fromDouble,
-    toDouble,
     fromRational,
+
+    -- * Destruction
+    toMinimalQuantisations,
+    toAmount,
+    toRatio,
+    toDouble,
     toRational,
+
+    -- * Operations
+
+    -- ** Addition
     add,
     sum,
+
+    -- ** Subtraction
     subtract,
+
+    -- ** Integral multiplication
     multiply,
+
+    -- ** Integral distribution
     AmountDistributionOf (..),
     distribute,
-    fraction,
+
+    -- ** Fractional multiplication
     Rounding (..),
+    fraction,
   )
 where
 
@@ -95,6 +113,8 @@ fromAmount :: Amount -> AmountOf currency
 fromAmount = AmountOf
 
 -- | Remove an amount's currency annotation
+--
+-- WARNING: This removes the type-safety of the phantom type.
 toAmount :: AmountOf currency -> Amount
 toAmount = unAmountOf
 
@@ -121,6 +141,14 @@ fromRational = fmap fromAmount . Amount.fromRational (quantisationFactor (Proxy 
 -- | See 'Amount.toRational'
 toRational :: forall currency. IsCurrencyType currency => AmountOf currency -> Rational
 toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . toAmount
+
+-- | See 'Amount.fromRatio'
+fromRatio :: forall currency. IsCurrencyType currency => Ratio Natural -> Maybe (AmountOf currency)
+fromRatio = fmap fromAmount . Amount.fromRatio (quantisationFactor (Proxy @currency))
+
+-- | See 'Amount.toRatio'
+toRatio :: forall currency. IsCurrencyType currency => AmountOf currency -> Ratio Natural
+toRatio = Amount.toRatio (quantisationFactor (Proxy @currency)) . toAmount
 
 -- | See 'Amount.add'
 add ::

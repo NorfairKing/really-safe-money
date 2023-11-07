@@ -5,6 +5,7 @@
 module Money.AmountOfSpec (spec) where
 
 import Data.GenValidity.Vector ()
+import Data.Maybe
 import Data.Proxy
 import Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -15,6 +16,7 @@ import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
+import Numeric.Natural
 import Test.Syd
 import Test.Syd.Validity
 import Prelude hiding (subtract, sum)
@@ -41,6 +43,46 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     it "roundtrips with fromMinimalQuantisations" $
       forAllValid $ \amount ->
         AmountOf.fromMinimalQuantisations (toMinimalQuantisations amount) `shouldBe` amount
+
+  describe "fromRatio" $ do
+    let from = AmountOf.fromRatio :: Ratio Natural -> Maybe (AmountOf currency)
+    let to = AmountOf.toRatio :: AmountOf currency -> Ratio Natural
+    it "fails on NaN" $ do
+      let nan = 0 :% 0 :: Ratio Natural
+       in from nan `shouldBe` Nothing
+
+    it "fails on +Infinity" $
+      let pinf = 1 :% 0 :: Ratio Natural
+       in from pinf `shouldBe` Nothing
+
+    it "fails on 7.123" $
+      from 7.123456789 `shouldSatisfy` isNothing
+
+    it "succeeds on 77" $
+      from 77 `shouldSatisfy` isJust
+
+    it "succeeds on 0" $
+      from 0.0 `shouldBe` Just AmountOf.zero
+
+    it "succeeds on 1" $
+      from 1
+        `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor (Proxy @currency)))))
+
+    it "produces valid AmountOfs" $
+      producesValid from
+
+    it "roundtrips with toRatio" $
+      forAllValid $ \amount ->
+        let r = to amount
+         in context (show r) $ case from r of
+              Nothing -> pure () -- Fine
+              Just amount' -> amount' `shouldBe` amount
+
+  describe "toRatio" $ do
+    let to = AmountOf.toRatio :: AmountOf currency -> Ratio Natural
+
+    it "produces valid Rationals when the quantisation factor is nonzero" $
+      producesValid to
 
   describe "fromDouble" $ do
     let from = AmountOf.fromDouble :: Double -> Maybe (AmountOf currency)
