@@ -17,17 +17,16 @@ import GHC.Generics (Generic)
 -- | Class of type-level currencies
 --
 -- For example:
--- @
--- data USD
---  deriving (Generic, Typeable)
--- instance Currency USD where
---   quantisationFactor Proxy = 100
 --
--- data BTC
---  deriving (Generic, Typeable)
--- instance Currency BTC where
---   quantisationFactor Proxy = 100_000_000
--- @
+-- > data USD
+-- >  deriving (Generic, Typeable)
+-- > instance Currency USD where
+-- >   quantisationFactor Proxy = 100
+--
+-- > data BTC
+-- >  deriving (Generic, Typeable)
+-- > instance Currency BTC where
+-- >   quantisationFactor Proxy = 100_000_000
 class IsCurrencyType (currency :: k) where
   quantisationFactor :: Proxy currency -> Word32
 
