@@ -325,3 +325,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                         context (show result) $
                           fromIntegral (Account.toMinimalQuantisations fractionalAccount) / actualFraction
                             `shouldBe` fromIntegral (Account.toMinimalQuantisations account)
+
+  describe "format" $ do
+    it "produces valid strings" $
+      producesValid2 Account.format

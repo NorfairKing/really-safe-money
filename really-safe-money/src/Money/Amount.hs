@@ -625,6 +625,9 @@ instance NFData Rounding
 --
 -- >>> format 100000000 (Amount 500)
 -- "0.00000500"
+--
+-- >>> format 0 (Amount 1)
+-- "Infinity"
 format :: Word32 -> Amount -> String
 format qf a =
   printf (quantisationFactorFormatString qf) (toDouble qf a)
@@ -643,6 +646,7 @@ format qf a =
 -- >>> quantisationFactorFormatString 1
 -- "%0.0f"
 quantisationFactorFormatString :: Word32 -> String
+quantisationFactorFormatString 0 = "%f"
 quantisationFactorFormatString qf =
   let decimals :: Int
       decimals = ceiling $ logBase 10 (fromIntegral qf :: Float)

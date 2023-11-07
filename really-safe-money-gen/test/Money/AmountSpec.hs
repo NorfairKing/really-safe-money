@@ -426,3 +426,13 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \requestedFraction ->
           let (_, actualFraction) = Amount.fraction RoundUp a requestedFraction
            in actualFraction >= requestedFraction
+
+  describe "format" $ do
+    it "formats 1 correctly with quantisation factor 1" $
+      Amount.format 1 (Amount 1) `shouldBe` "1"
+
+    it "formats 1 correctly with quantisation factor 10" $
+      Amount.format 10 (Amount 1) `shouldBe` "0.1"
+
+    it "produces valid strings" $
+      producesValid2 Amount.format

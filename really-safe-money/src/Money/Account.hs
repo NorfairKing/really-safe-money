@@ -414,6 +414,9 @@ fraction rounding account f =
 --
 -- >>> format 100000000 (Positive (Amount 50000))
 -- "0.00050000"
+--
+-- >>> format 0 (Positive (Amount 1))
+-- "Infinity"
 format :: Word32 -> Account -> String
 format qf a =
   printf (quantisationFactorFormatString qf) (toDouble qf a)

@@ -312,3 +312,8 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     let fraction = AmountOf.fraction @currency
     it "produces valid amounts" $
       producesValid3 fraction
+
+  describe "format" $ do
+    let format = AmountOf.format @currency
+    it "produces valid strings" $
+      producesValid format

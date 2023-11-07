@@ -258,3 +258,8 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
                         context (show result) $
                           fromIntegral (toMinimalQuantisations fractionalAccountOf) / actualFraction
                             `shouldBe` fromIntegral (toMinimalQuantisations account)
+
+  describe "format" $ do
+    let format = AccountOf.format @currency
+    it "produces valid strings" $
+      producesValid format
