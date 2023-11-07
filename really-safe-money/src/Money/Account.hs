@@ -362,8 +362,6 @@ type AccountDistribution = Amount.Distribution Account
 
 -- | Fractional multiplication, see 'Amount.fraction'
 --
--- Note that the rounding happens to the absolute value of the fraction.
---
 -- >>> fraction RoundNearest (Positive (Amount 100)) (1 % 2)
 -- (Just (Positive (Amount 50)),1 % 2)
 --
@@ -396,10 +394,18 @@ fraction ::
 fraction rounding account f =
   let af = (realToFrac :: Rational -> Ratio Natural) ((Prelude.abs :: Rational -> Rational) f)
       aa = abs account
-      (amount, actualFraction) = Amount.fraction rounding aa af
+      ro =
+        if f >= 0
+          then rounding
+          else case rounding of
+            RoundUp -> RoundDown
+            RoundDown -> RoundUp
+            RoundNearest -> RoundNearest
+      (amount, actualFraction) = Amount.fraction ro aa af
       func :: Maybe Amount -> Rational -> (Maybe Account, Rational)
       func ma r = case (compare account zero, compare f 0) of
-        (EQ, _) -> (Just zero, r)
+        (EQ, GT) -> (Just zero, r)
+        (EQ, LT) -> (Just zero, -r)
         (_, EQ) -> (Just zero, 0)
         (GT, GT) -> (Positive <$> ma, r)
         (GT, LT) -> (Negative <$> ma, -r)

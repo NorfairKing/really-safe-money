@@ -314,8 +314,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       forAllValid $ \rounding ->
         forAllValid $ \account ->
           forAllValid $ \requestedFraction ->
-            let result = Account.fraction rounding account requestedFraction
-                (mFractionalAmount, actualFraction) = result
+            let result@(mFractionalAmount, actualFraction) = Account.fraction rounding account requestedFraction
              in case mFractionalAmount of
                   Nothing -> pure () -- Fine.
                   Just fractionalAccount ->
@@ -325,6 +324,18 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                         context (show result) $
                           fromIntegral (Account.toMinimalQuantisations fractionalAccount) / actualFraction
                             `shouldBe` fromIntegral (Account.toMinimalQuantisations account)
+
+    it "Produces a result that has been rounded in the right direction when using RoundDown" $
+      forAllValid $ \a ->
+        forAllValid $ \requestedFraction ->
+          let result@(_, actualFraction) = Account.fraction RoundDown a requestedFraction
+           in context (show result) $ actualFraction `shouldSatisfy` (<= requestedFraction)
+
+    it "Produces a result that has been rounded in the right direction when using RoundUp" $
+      forAllValid $ \a ->
+        forAllValid $ \requestedFraction ->
+          let result@(_, actualFraction) = Account.fraction RoundUp a requestedFraction
+           in context (show result) $ actualFraction `shouldSatisfy` (>= requestedFraction)
 
   describe "format" $ do
     it "produces valid strings" $
