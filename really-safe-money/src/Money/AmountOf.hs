@@ -47,6 +47,10 @@ module Money.AmountOf
     -- ** Fractional multiplication
     Rounding (..),
     fraction,
+
+    -- * Formatting
+    formatAmountOf,
+    quantisationFactorFormatString,
   )
 where
 
@@ -58,7 +62,7 @@ import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount, Distribution (..), Rounding (..))
+import Money.Amount (Amount, Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Amount as Amount
 import Money.Currency as Currency
 import Numeric.Natural
@@ -199,3 +203,7 @@ fraction ::
 fraction rounding (AmountOf a) f =
   let (a', r) = Amount.fraction rounding a f
    in (fromAmount <$> a', r)
+
+-- | See 'Amount.formatAmount'
+formatAmountOf :: forall currency. IsCurrencyType currency => AmountOf currency -> String
+formatAmountOf ao = Amount.formatAmount (quantisationFactor (Proxy @currency)) (toAmount ao)

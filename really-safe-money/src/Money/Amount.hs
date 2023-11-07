@@ -52,7 +52,11 @@ module Money.Amount
     Rounding (..),
     fraction,
 
-    -- ** Validation functions
+    -- * Formatting
+    formatAmount,
+    quantisationFactorFormatString,
+
+    -- * Validation functions
     validateStrictlyPositive,
   )
 where
@@ -66,6 +70,7 @@ import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
 import Numeric.Natural
+import Text.Printf
 import Prelude hiding (fromRational, subtract, sum, toRational)
 import qualified Prelude
 
@@ -606,6 +611,42 @@ data Rounding
 instance Validity Rounding
 
 instance NFData Rounding
+
+-- | Format an amount of money without a symbol.
+--
+-- >>> formatAmount 100 (Amount 1)
+-- "0.01"
+--
+-- >>> formatAmount 20 (Amount 10)
+-- "0.50"
+--
+-- >>> formatAmount 1 (Amount 100)
+-- "100"
+--
+-- >>> formatAmount 100000000 (Amount 500)
+-- "0.00000500"
+formatAmount :: Word32 -> Amount -> String
+formatAmount qf a =
+  printf (quantisationFactorFormatString qf) (toDouble qf a)
+
+-- | Produce a printf-style format string for a currency with a given quantisation factor.
+--
+-- >>> quantisationFactorFormatString 100000000
+-- "%0.8f"
+--
+-- >>> quantisationFactorFormatString 100
+-- "%0.2f"
+--
+-- >>> quantisationFactorFormatString 20
+-- "%0.2f"
+--
+-- >>> quantisationFactorFormatString 1
+-- "%0.0f"
+quantisationFactorFormatString :: Word32 -> String
+quantisationFactorFormatString qf =
+  let decimals :: Int
+      decimals = ceiling $ logBase 10 (fromIntegral qf :: Float)
+   in printf "%%0.%df" decimals
 
 -- | Validate that an 'Amount' is strictly positive. I.e. not 'zero'.
 validateStrictlyPositive :: Amount -> Validation

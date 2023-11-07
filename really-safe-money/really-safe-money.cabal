@@ -23,7 +23,6 @@ library
       Money.Amount
       Money.AmountOf
       Money.Currency
-      Money.Format
       Money.MultiAmount
   other-modules:
       Paths_really_safe_money

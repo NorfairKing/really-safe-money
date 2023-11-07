@@ -45,6 +45,10 @@ module Money.AccountOf
     -- ** Fractional multiplication
     Rounding (..),
     fraction,
+
+    -- * Formatting
+    formatAccountOf,
+    quantisationFactorFormatString,
   )
 where
 
@@ -57,9 +61,9 @@ import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Account (Account (..))
+import Money.Account (Account (..), Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Account as Account
-import Money.Amount (Amount (..), Distribution (..), Rounding (..))
+import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
 import Money.Currency
@@ -158,3 +162,7 @@ fraction ::
 fraction rounding (AccountOf a) f =
   let (a', r) = Account.fraction rounding a f
    in (fromAccount <$> a', r)
+
+-- | See 'formatAccount'
+formatAccountOf :: forall currency. IsCurrencyType currency => AccountOf currency -> String
+formatAccountOf ao = Account.formatAccount (quantisationFactor (Proxy @currency)) (toAccount ao)

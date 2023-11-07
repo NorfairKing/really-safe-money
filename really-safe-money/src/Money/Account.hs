@@ -55,6 +55,10 @@ module Money.Account
     -- ** Fractional multiplication
     Rounding (..),
     fraction,
+
+    -- * Formatting
+    formatAccount,
+    quantisationFactorFormatString,
   )
 where
 
@@ -67,9 +71,10 @@ import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount (..), Distribution (..), Rounding (..))
+import Money.Amount (Amount (..), Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Amount as Amount
 import Numeric.Natural
+import Text.Printf
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
 import qualified Prelude
 
@@ -395,3 +400,20 @@ fraction rounding account f =
         (LT, GT) -> (Negative <$> ma, r)
         (LT, LT) -> (Positive <$> ma, -r)
    in func amount ((realToFrac :: Ratio Natural -> Rational) actualFraction)
+
+-- | Format an account of money without a symbol.
+--
+-- >>> formatAccount 100 (Negative (Amount 1))
+-- "-0.01"
+--
+-- >>> formatAccount 20 (Positive (Amount 100))
+-- "5.00"
+--
+-- >>> formatAccount 1 (Negative (Amount 1000))
+-- "-1000"
+--
+-- >>> formatAccount 100000000 (Positive (Amount 50000))
+-- "0.00050000"
+formatAccount :: Word32 -> Account -> String
+formatAccount qf a =
+  printf (quantisationFactorFormatString qf) (toDouble qf a)
