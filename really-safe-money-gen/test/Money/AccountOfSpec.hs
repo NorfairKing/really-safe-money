@@ -12,6 +12,7 @@ import Money.Account.Gen ()
 import Money.AccountOf (AccountOf (..), Distribution (..))
 import qualified Money.AccountOf as AccountOf
 import Money.AccountOf.Gen ()
+import Money.AmountOf.Gen ()
 import Money.Currency.TestUtils
 import Test.Syd
 import Test.Syd.Validity
@@ -37,6 +38,14 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
     it "roundtrips with toMinimalQuantisations" $
       forAllValid $ \account ->
         fromMinimalQuantisations (toMinimalQuantisations account) `shouldBe` Just account
+
+  describe "fromAmount" $
+    it "produces valid AccountOfs" $
+      producesValid (AccountOf.fromAmount @currency)
+
+  describe "fromAmountOf" $
+    it "produces valid AccountOfs" $
+      producesValid (AccountOf.fromAmountOf @currency)
 
   let toRational = AccountOf.toRational @currency
   describe "toRational" $ do
