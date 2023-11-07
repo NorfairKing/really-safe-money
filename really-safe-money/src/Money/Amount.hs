@@ -45,7 +45,8 @@ module Money.Amount
 
     -- ** Integral distribution
     distribute,
-    AmountDistribution (..),
+    AmountDistribution,
+    Distribution (..),
 
     -- ** Fractional multiplication
     Rounding (..),
@@ -457,7 +458,7 @@ multiply s (Amount a) =
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
 --
 -- >>> distribute (Amount 0) 1
--- DistributedZeroAmount
+-- DistributedZero
 --
 -- >>> distribute (Amount 2) 0
 -- DistributedIntoZeroChunks
@@ -468,7 +469,7 @@ multiply s (Amount a) =
 -- >>> distribute (Amount 11) 3
 -- DistributedIntoUnequalChunks 2 (Amount 4) 1 (Amount 3)
 distribute :: Amount -> Word32 -> AmountDistribution
-distribute (Amount 0) _ = DistributedZeroAmount
+distribute (Amount 0) _ = DistributedZero
 distribute _ 0 = DistributedIntoZeroChunks
 distribute (Amount a) f =
   let smallerChunkSize, rest :: Word64
@@ -493,18 +494,20 @@ distribute (Amount a) f =
                 smallerChunk
 
 -- | The result of 'distribute'
-data AmountDistribution
+type AmountDistribution = Distribution Amount
+
+data Distribution amount
   = -- | The second argument was zero.
     DistributedIntoZeroChunks
   | -- | The first argument was a zero amount.
-    DistributedZeroAmount
+    DistributedZero
   | -- | Distributed into this many equal chunks of this amount
-    DistributedIntoEqualChunks !Word32 !Amount
+    DistributedIntoEqualChunks !Word32 !amount
   | -- | Distributed into unequal chunks, this many of the first (larger) amount, and this many of the second (slightly smaller) amount.
-    DistributedIntoUnequalChunks !Word32 !Amount !Word32 !Amount
+    DistributedIntoUnequalChunks !Word32 !amount !Word32 !amount
   deriving (Show, Read, Eq, Generic)
 
-instance Validity AmountDistribution where
+instance (Validity amount, Ord amount) => Validity (Distribution amount) where
   validate ad =
     mconcat
       [ genericValidate ad,
@@ -515,7 +518,7 @@ instance Validity AmountDistribution where
           _ -> valid
       ]
 
-instance NFData AmountDistribution
+instance NFData amount => NFData (Distribution amount)
 
 -- | Fractional multiplication
 --

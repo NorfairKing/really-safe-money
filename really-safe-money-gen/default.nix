@@ -8,7 +8,8 @@ mkDerivation {
   version = "0.0.0.0";
   src = ./.;
   libraryHaskellDepends = [
-    base genvalidity genvalidity-containers really-safe-money
+    base genvalidity genvalidity-containers QuickCheck
+    really-safe-money
   ];
   testHaskellDepends = [
     base genvalidity-sydtest genvalidity-vector QuickCheck

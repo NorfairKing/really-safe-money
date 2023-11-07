@@ -9,7 +9,7 @@ import Data.Proxy
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Money.Account.Gen ()
-import Money.AccountOf (AccountOf (..))
+import Money.AccountOf (AccountOf (..), Distribution (..))
 import qualified Money.AccountOf as AccountOf
 import Money.AccountOf.Gen ()
 import Money.Currency.TestUtils
@@ -205,10 +205,10 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
         forAllValid $ \f ->
           let distribution = distribute a f
            in case distribution of
-                AccountOf.DistributedIntoZeroChunks -> f `shouldBe` 0
-                AccountOf.DistributedZeroAccount -> a `shouldBe` zero
-                AccountOf.DistributedIntoEqualChunks chunks chunkSize -> multiply (fromIntegral chunks) chunkSize `shouldBe` Just a
-                AccountOf.DistributedIntoUnequalChunks
+                DistributedIntoZeroChunks -> f `shouldBe` 0
+                DistributedZero -> a `shouldBe` zero
+                DistributedIntoEqualChunks chunks chunkSize -> multiply (fromIntegral chunks) chunkSize `shouldBe` Just a
+                DistributedIntoUnequalChunks
                   numberOfLargerChunks
                   largerChunk
                   numberOfSmallerChunks

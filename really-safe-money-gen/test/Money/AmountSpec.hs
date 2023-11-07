@@ -9,7 +9,7 @@ import Data.Ratio
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import GHC.Real (Ratio ((:%)))
-import Money.Amount (Amount (..), Rounding (..))
+import Money.Amount (Amount (..), Distribution (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
 import Numeric.Natural
@@ -342,6 +342,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                 `shouldBe` integerResult
 
   describe "distribute" $ do
+    genValidSpec @Amount.AmountDistribution
     eqSpec @Amount.AmountDistribution
     showReadSpec @Amount.AmountDistribution
 
@@ -362,10 +363,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \a ->
           let distribution = Amount.distribute a f
            in context (show distribution) $ case distribution of
-                Amount.DistributedIntoZeroChunks -> f `shouldBe` 0
-                Amount.DistributedZeroAmount -> a `shouldBe` Amount.zero
-                Amount.DistributedIntoEqualChunks chunks chunkSize -> Amount.multiply chunks chunkSize `shouldBe` Just a
-                Amount.DistributedIntoUnequalChunks
+                DistributedIntoZeroChunks -> f `shouldBe` 0
+                DistributedZero -> a `shouldBe` Amount.zero
+                DistributedIntoEqualChunks chunks chunkSize -> Amount.multiply chunks chunkSize `shouldBe` Just a
+                DistributedIntoUnequalChunks
                   numberOfLargerChunks
                   largerChunk
                   numberOfSmallerChunks

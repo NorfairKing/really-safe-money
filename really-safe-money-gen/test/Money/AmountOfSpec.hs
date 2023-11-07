@@ -11,7 +11,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import GHC.Real
 import Money.Amount (Amount (..))
-import Money.AmountOf (AmountOf (..))
+import Money.AmountOf (AmountOf (..), Distribution (..))
 import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
@@ -286,10 +286,10 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
         forAllValid $ \a ->
           let distribution = distribute a f
            in context (show distribution) $ case distribution of
-                AmountOf.DistributedIntoZeroChunks -> f `shouldBe` 0
-                AmountOf.DistributedZeroAmount -> a `shouldBe` zero
-                AmountOf.DistributedIntoEqualChunks chunks chunkSize -> AmountOf.multiply chunks chunkSize `shouldBe` Just a
-                AmountOf.DistributedIntoUnequalChunks
+                DistributedIntoZeroChunks -> f `shouldBe` 0
+                DistributedZero -> a `shouldBe` zero
+                DistributedIntoEqualChunks chunks chunkSize -> AmountOf.multiply chunks chunkSize `shouldBe` Just a
+                DistributedIntoUnequalChunks
                   numberOfLargerChunks
                   largerChunk
                   numberOfSmallerChunks

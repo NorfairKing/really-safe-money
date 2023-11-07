@@ -8,10 +8,10 @@ import Data.GenValidity.Vector ()
 import Data.Ratio
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import Money.Account (Account (..))
+import Money.Account (Account (..), Distribution (..), Rounding (..))
 import qualified Money.Account as Account
 import Money.Account.Gen ()
-import Money.Amount (Amount (..), Rounding (..))
+import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
 import Test.QuickCheck hiding (Negative (..), Positive (..))
 import Test.Syd
@@ -274,10 +274,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \f ->
           let distribution = Account.distribute a f
            in case distribution of
-                Account.DistributedIntoZeroChunks -> f `shouldBe` 0
-                Account.DistributedZeroAccount -> a `shouldBe` Account.zero
-                Account.DistributedIntoEqualChunks chunks chunkSize -> Account.multiply (fromIntegral chunks) chunkSize `shouldBe` Just a
-                Account.DistributedIntoUnequalChunks
+                DistributedIntoZeroChunks -> f `shouldBe` 0
+                DistributedZero -> a `shouldBe` Account.zero
+                DistributedIntoEqualChunks chunks chunkSize -> Account.multiply (fromIntegral chunks) chunkSize `shouldBe` Just a
+                DistributedIntoUnequalChunks
                   numberOfLargerChunks
                   largerChunk
                   numberOfSmallerChunks

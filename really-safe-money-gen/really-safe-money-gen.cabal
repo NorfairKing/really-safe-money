@@ -28,7 +28,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      QuickCheck
+    , base >=4.7 && <5
     , genvalidity
     , genvalidity-containers
     , really-safe-money

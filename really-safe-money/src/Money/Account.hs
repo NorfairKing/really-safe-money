@@ -49,7 +49,8 @@ module Money.Account
 
     -- ** Integral distribution
     distribute,
-    AccountDistribution (..),
+    AccountDistribution,
+    Distribution (..),
 
     -- ** Fractional multiplication
     Rounding (..),
@@ -62,12 +63,11 @@ import Control.Monad
 import Data.Foldable hiding (sum)
 import Data.Function
 import Data.Int
-import Data.Monoid
 import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount (..), Rounding (..))
+import Money.Amount (Amount (..), Distribution (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Numeric.Natural
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
@@ -321,7 +321,7 @@ multiply factor account =
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
 --
 -- >>> distribute (Positive (Amount 0)) 1
--- DistributedZeroAccount
+-- DistributedZero
 --
 -- >>> distribute (Negative (Amount 2)) 0
 -- DistributedIntoZeroChunks
@@ -335,44 +335,19 @@ distribute :: Account -> Word16 -> AccountDistribution
 distribute a f =
   let aa = abs a
       af = (fromIntegral :: Word16 -> Word32) (Prelude.abs f)
-      func =
-        if a >= zero
-          then Positive
-          else Negative
    in case Amount.distribute aa af of
-        Amount.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
-        Amount.DistributedZeroAmount -> DistributedZeroAccount
-        Amount.DistributedIntoEqualChunks numberOfChunks chunk ->
-          DistributedIntoEqualChunks
-            numberOfChunks
-            (func chunk)
-        Amount.DistributedIntoUnequalChunks numberOfLargerChunks largerChunk numberOfSmallerChunks smallerChunk ->
-          DistributedIntoUnequalChunks numberOfLargerChunks (func largerChunk) numberOfSmallerChunks (func smallerChunk)
+        DistributedIntoZeroChunks -> DistributedIntoZeroChunks
+        DistributedZero -> DistributedZero
+        DistributedIntoEqualChunks numberOfChunks chunk ->
+          if a >= zero
+            then DistributedIntoEqualChunks numberOfChunks (Positive chunk)
+            else DistributedIntoEqualChunks numberOfChunks (Negative chunk)
+        DistributedIntoUnequalChunks numberOfLargerChunks largerChunk numberOfSmallerChunks smallerChunk ->
+          if a >= zero
+            then DistributedIntoUnequalChunks numberOfLargerChunks (Positive largerChunk) numberOfSmallerChunks (Positive smallerChunk)
+            else DistributedIntoUnequalChunks numberOfSmallerChunks (Negative smallerChunk) numberOfLargerChunks (Negative largerChunk)
 
--- | The result of 'distribute'
-data AccountDistribution
-  = -- | The second argument was zero.
-    DistributedIntoZeroChunks
-  | -- | The first argument was a zero amount.
-    DistributedZeroAccount
-  | -- | Distributed into this many equal chunks of this amount
-    DistributedIntoEqualChunks !Word32 !Account
-  | -- | Distributed into unequal chunks, this many of the first (larger, in absolute value) amount, and this many of the second (slightly smaller) amount.
-    DistributedIntoUnequalChunks !Word32 !Account !Word32 !Account
-  deriving (Show, Read, Eq, Generic)
-
-instance Validity AccountDistribution where
-  validate ad =
-    mconcat
-      [ genericValidate ad,
-        case ad of
-          DistributedIntoUnequalChunks _ a1 _ a2 ->
-            declare "The larger chunks are larger in absolute value" $
-              abs a1 > abs a2
-          _ -> valid
-      ]
-
-instance NFData AccountDistribution
+type AccountDistribution = Amount.Distribution Account
 
 -- | Fractional multiplication, see 'Amount.fraction'
 --

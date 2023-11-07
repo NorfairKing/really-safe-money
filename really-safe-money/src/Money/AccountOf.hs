@@ -39,7 +39,8 @@ module Money.AccountOf
 
     -- ** Integral distribution
     distribute,
-    AccountDistributionOf (..),
+    AccountDistributionOf,
+    Distribution (..),
 
     -- ** Fractional multiplication
     Rounding (..),
@@ -51,15 +52,14 @@ import Control.DeepSeq
 import Data.Foldable as Foldable hiding (sum)
 import Data.Function
 import Data.Int
-import Data.Monoid
 import Data.Proxy
 import Data.Ratio
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Account (Account (..), Rounding (..))
+import Money.Account (Account (..))
 import qualified Money.Account as Account
-import Money.Amount (Amount (..))
+import Money.Amount (Amount (..), Distribution (..), Rounding (..))
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
 import Money.Currency
@@ -141,35 +141,13 @@ multiply f (AccountOf a) = fromAccount <$> Account.multiply f a
 -- | See 'Account.distribute'
 distribute :: AccountOf currency -> Word16 -> AccountDistributionOf currency
 distribute (AccountOf a) w = case Account.distribute a w of
-  Account.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
-  Account.DistributedZeroAccount -> DistributedZeroAccount
-  Account.DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (fromAccount a')
-  Account.DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (fromAccount a1) w2 (fromAccount a2)
+  DistributedIntoZeroChunks -> DistributedIntoZeroChunks
+  DistributedZero -> DistributedZero
+  DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (fromAccount a')
+  DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (fromAccount a1) w2 (fromAccount a2)
 
 -- | The result of 'distribute'
-data AccountDistributionOf (currency :: k)
-  = -- | The second argument was zero.
-    DistributedIntoZeroChunks
-  | -- | The first argument was a zero amount.
-    DistributedZeroAccount
-  | -- | Distributed into this many equal chunks of this amount
-    DistributedIntoEqualChunks !Word32 !(AccountOf currency)
-  | -- | Distributed into unequal chunks, this many of the first (larger, in absolute value) amount, and this many of the second (slightly smaller) amount.
-    DistributedIntoUnequalChunks !Word32 !(AccountOf currency) !Word32 !(AccountOf currency)
-  deriving (Show, Read, Eq, Generic)
-
-instance Validity (AccountDistributionOf currency) where
-  validate ad =
-    mconcat
-      [ genericValidate ad,
-        case ad of
-          DistributedIntoUnequalChunks _ a1 _ a2 ->
-            declare "The larger chunks are larger in absolute value" $
-              abs a1 > abs a2
-          _ -> valid
-      ]
-
-instance NFData (AccountDistributionOf currency)
+type AccountDistributionOf (currency :: k) = Distribution (AccountOf currency)
 
 -- | Fractional multiplication, see 'Account.fraction'
 fraction ::

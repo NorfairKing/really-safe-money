@@ -9,7 +9,3 @@ import Money.AccountOf
 instance GenValid (AccountOf currency) where
   genValid = genValidStructurallyWithoutExtraChecking
   shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
-
-instance GenValid (AccountDistributionOf currency) where
-  genValid = genValidStructurallyWithoutExtraChecking
-  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering

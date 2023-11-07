@@ -40,7 +40,8 @@ module Money.AmountOf
     multiply,
 
     -- ** Integral distribution
-    AmountDistributionOf (..),
+    AmountDistributionOf,
+    Distribution (..),
     distribute,
 
     -- ** Fractional multiplication
@@ -57,7 +58,7 @@ import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount, Rounding (..))
+import Money.Amount (Amount, Distribution (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.Currency as Currency
 import Numeric.Natural
@@ -182,35 +183,12 @@ multiply f (AmountOf a) = fromAmount <$> Amount.multiply f a
 -- | See 'Amount.distribute'
 distribute :: AmountOf currency -> Word32 -> AmountDistributionOf currency
 distribute (AmountOf a) w = case Amount.distribute a w of
-  Amount.DistributedIntoZeroChunks -> DistributedIntoZeroChunks
-  Amount.DistributedZeroAmount -> DistributedZeroAmount
-  Amount.DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (fromAmount a')
-  Amount.DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (fromAmount a1) w2 (fromAmount a2)
+  DistributedIntoZeroChunks -> DistributedIntoZeroChunks
+  DistributedZero -> DistributedZero
+  DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (fromAmount a')
+  DistributedIntoUnequalChunks w1 a1 w2 a2 -> DistributedIntoUnequalChunks w1 (fromAmount a1) w2 (fromAmount a2)
 
--- | The result of 'distribute'
-data AmountDistributionOf currency
-  = -- | The second argument was zero.
-    DistributedIntoZeroChunks
-  | -- | The first argument was a zero amount.
-    DistributedZeroAmount
-  | -- | Distributed into this many equal chunks of this amount
-    DistributedIntoEqualChunks !Word32 !(AmountOf currency)
-  | -- | Distributed into unequal chunks, this many of the first (larger) amount, and this many of the second (slightly smaller) amount.
-    DistributedIntoUnequalChunks !Word32 !(AmountOf currency) !Word32 !(AmountOf currency)
-  deriving (Show, Read, Eq, Generic)
-
-instance Validity (AmountDistributionOf currency) where
-  validate ad =
-    mconcat
-      [ genericValidate ad,
-        case ad of
-          DistributedIntoUnequalChunks _ a1 _ a2 ->
-            declare "The larger chunks are larger" $
-              a1 > a2
-          _ -> valid
-      ]
-
-instance NFData (AmountDistributionOf currency)
+type AmountDistributionOf (currency :: k) = Distribution (AmountOf currency)
 
 -- | See 'Amount.fraction'
 fraction ::

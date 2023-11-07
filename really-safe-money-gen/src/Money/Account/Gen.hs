@@ -9,7 +9,3 @@ import Money.Amount.Gen ()
 instance GenValid Account where
   genValid = genValidStructurallyWithoutExtraChecking
   shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
-
-instance GenValid AccountDistribution where
-  genValid = genValidStructurallyWithoutExtraChecking
-  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
