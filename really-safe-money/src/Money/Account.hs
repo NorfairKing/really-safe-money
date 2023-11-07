@@ -127,15 +127,15 @@ fromAmount = Positive
 
 -- | Turn an amount into a number of minimal quantisations.
 --
--- === API Note
---
--- We return 'Integer' because the result does not fit into a 'Word64'
---
 -- >>> toMinimalQuantisations (Positive (Amount 1))
 -- 1
 --
 -- >>> toMinimalQuantisations (Negative (Amount 2))
 -- -2
+--
+-- ==== API Note
+--
+-- We return 'Integer' because the result does not fit into a 'Word64'
 toMinimalQuantisations :: Account -> Integer
 toMinimalQuantisations account =
   let f = case account of
@@ -207,6 +207,12 @@ toRational quantisationFactor account =
 -- * Is infinite (1 :% 0) or (-1 :% 0)
 -- * Is non-normalised (5 :% 5)
 -- * Does represent an integer number of minimal quantisations.
+--
+-- >>> fromRational 100 ((-1) % 100)
+-- Just (Negative (Amount 1))
+--
+-- >>> fromRational 100 (1 % 1000)
+-- Nothing
 fromRational :: Word32 -> Rational -> Maybe Account
 fromRational quantisationFactor r =
   let r' = Prelude.abs r

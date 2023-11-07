@@ -440,13 +440,15 @@ subtract (Amount a1) (Amount a2) =
 --
 -- This operation may fail when overflow over the maxBound occurs.
 --
--- API Note: The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
---
 -- >>> multiply 3 (Amount 1)
 -- Just (Amount 3)
 --
 -- >>> multiply 2 (Amount (2 ^ 63))
 -- Nothing
+--
+-- ==== API Note
+--
+-- The order of arguments in 'multiply' and 'divide' is reversed to increase the likelyhood of a compile-error when refactoring.
 multiply ::
   Word32 ->
   Amount ->
