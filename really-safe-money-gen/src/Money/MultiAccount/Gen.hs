@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Money.MultiAmount.Gen where
+module Money.MultiAccount.Gen where
 
 import Data.GenValidity
 import Data.GenValidity.Map ()
-import Money.Amount.Gen ()
+import Money.Account.Gen ()
 import Money.Currency.Gen ()
-import Money.MultiAmount
+import Money.MultiAccount
 
-instance (Show currency, Ord currency, GenValid currency) => GenValid (MultiAmount currency) where
+instance (Show currency, Ord currency, GenValid currency) => GenValid (MultiAccount currency) where
   genValid = genValidStructurallyWithoutExtraChecking
   shrinkValid = shrinkValidStructurallyWithoutExtraFiltering

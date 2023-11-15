@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -64,6 +65,7 @@ where
 
 import Control.DeepSeq
 import Control.Monad
+import Data.Data
 import Data.Foldable hiding (sum)
 import Data.Function
 import Data.Int
@@ -82,7 +84,7 @@ import qualified Prelude
 data Account
   = Positive !Amount
   | Negative !Amount
-  deriving (Show, Read, Generic)
+  deriving (Show, Read, Data, Typeable, Generic)
 
 instance Validity Account
 

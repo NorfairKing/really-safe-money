@@ -22,6 +22,7 @@ library
       Money.Amount.Gen
       Money.AmountOf.Gen
       Money.Currency.Gen
+      Money.MultiAccount.Gen
       Money.MultiAmount.Gen
   other-modules:
       Paths_really_safe_money_gen
@@ -45,6 +46,7 @@ test-suite really-safe-money-test
       Money.AmountSpec
       Money.Currency.TestUtils
       Money.CurrencySpec
+      Money.MultiAccountSpec
       Money.MultiAmountSpec
       Paths_really_safe_money_gen
   hs-source-dirs:

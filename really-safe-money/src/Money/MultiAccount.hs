@@ -7,12 +7,12 @@
 -- This module is designed to be imported as follows:
 --
 -- @
--- import Money.MultiAmount (MultiAmount)
--- import qualified Money.MultiAmount as MultiAmount
+-- import Money.MultiAccount (MultiAccount)
+-- import qualified Money.MultiAccount as MultiAccount
 -- @
-module Money.MultiAmount
-  ( MultiAmount (..),
-    fromAmount,
+module Money.MultiAccount
+  ( MultiAccount (..),
+    fromAccount,
     zero,
     add,
   )
@@ -25,39 +25,39 @@ import qualified Data.Map as M
 import Data.Validity
 import Data.Validity.Map ()
 import GHC.Generics (Generic)
-import Money.Amount (Amount)
-import qualified Money.Amount as Amount
+import Money.Account (Account)
+import qualified Money.Account as Account
 
 -- | A type for a combination of amounts of different currencies
 --
 -- This uses a 'currency' type parameter so that you can choose how to
 -- represent the currencies that are being accounted for.
-newtype MultiAmount currency = MultiAmount
-  { unMultiAmount :: Map currency Amount
+newtype MultiAccount currency = MultiAccount
+  { unMultiAccount :: Map currency Account
   }
   deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
-instance (Validity currency, Show currency, Ord currency) => Validity (MultiAmount currency)
+instance (Validity currency, Show currency, Ord currency) => Validity (MultiAccount currency)
 
-instance NFData currency => NFData (MultiAmount currency)
+instance NFData currency => NFData (MultiAccount currency)
 
-fromAmount :: currency -> Amount -> MultiAmount currency
-fromAmount currency amount = MultiAmount $ M.singleton currency amount
+fromAccount :: currency -> Account -> MultiAccount currency
+fromAccount currency amount = MultiAccount $ M.singleton currency amount
 
 -- | No money of any currency
-zero :: MultiAmount currency
-zero = MultiAmount M.empty
+zero :: MultiAccount currency
+zero = MultiAccount M.empty
 
--- | Add two 'MultiAmount's
-add :: Ord currency => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
-add (MultiAmount m1) (MultiAmount m2) =
-  MultiAmount
+-- | Add two 'MultiAccount's
+add :: Ord currency => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
+add (MultiAccount m1) (MultiAccount m2) =
+  MultiAccount
     <$> sequenceA
       ( M.unionWith
           ( \ma1 ma2 -> do
               a1 <- ma1
               a2 <- ma2
-              Amount.add a1 a2
+              Account.add a1 a2
           )
           (M.map Just m1)
           (M.map Just m2)
