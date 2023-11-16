@@ -69,6 +69,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
+import Money.QuantisationFactor
 import Numeric.Natural
 import Text.Printf
 import Prelude hiding (fromRational, subtract, sum, toRational)
@@ -254,23 +255,23 @@ fromMinimalQuantisations = Amount
 -- * Is non-normalised (5 :% 5)
 -- * Does not represent an integer number of minimal quantisations.
 --
--- >>> fromRatio 100 (1 % 100)
+-- >>> fromRatio (QuantisationFactor 100) (1 % 100)
 -- Just (Amount 1)
 --
--- >>> fromRatio 100 (1 % 1000)
+-- >>> fromRatio (QuantisationFactor 100) (1 % 1000)
 -- Nothing
-fromRatio :: Word32 -> Ratio Natural -> Maybe Amount
+fromRatio :: QuantisationFactor -> Ratio Natural -> Maybe Amount
 fromRatio quantisationFactor r = fromRational quantisationFactor (Prelude.toRational r)
 
 -- | Turn an amount of money into a 'Ratio'.
 --
--- WARNING: that the result will be @Amount :% 0@ if the quantisation factor is @0@.
+-- WARNING: the result will be @Amount :% 0@ if the quantisation factor is @0@.
 --
--- >>> toRatio 100 (Amount 1)
+-- >>> toRatio (QuantisationFactor 100) (Amount 1)
 -- 1 % 100
-toRatio :: Word32 -> Amount -> Ratio Natural
-toRatio 0 a = fromIntegral (toMinimalQuantisations a) :% 0
-toRatio quantisationFactor a =
+toRatio :: QuantisationFactor -> Amount -> Ratio Natural
+toRatio (QuantisationFactor 0) a = fromIntegral (toMinimalQuantisations a) :% 0
+toRatio (QuantisationFactor quantisationFactor) a =
   (fromIntegral :: Word64 -> Natural) (toMinimalQuantisations a)
     % (fromIntegral :: Word32 -> Natural) quantisationFactor
 
@@ -284,23 +285,23 @@ toRatio quantisationFactor a =
 -- * does not represent an integral amount of minimal quantisations
 --
 --
--- >>> fromDouble 100 0.01
+-- >>> fromDouble (QuantisationFactor 100) 0.01
 -- Just (Amount 1)
 --
--- >>> fromDouble 100 0.001
+-- >>> fromDouble (QuantisationFactor 100) 0.001
 -- Nothing
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
-  Word32 ->
+  QuantisationFactor ->
   Double ->
   Maybe Amount
-fromDouble quantisationFactor d
+fromDouble (QuantisationFactor qf) d
   | isNaN d = Nothing
   | isInfinite d = Nothing
   | d < 0 = Nothing
   | otherwise =
       let resultDouble :: Double
-          resultDouble = d * (fromIntegral :: Word32 -> Double) quantisationFactor
+          resultDouble = d * (fromIntegral :: Word32 -> Double) qf
           ceiled :: Word64
           ceiled = (ceiling :: Double -> Word64) resultDouble
           floored :: Word64
@@ -313,19 +314,19 @@ fromDouble quantisationFactor d
 --
 -- WARNING: the result will be infinite or NaN if the quantisation factor is @0@
 --
--- >>> toDouble 100 (Amount 1)
+-- >>> toDouble (QuantisationFactor 100) (Amount 1)
 -- 1.0e-2
 --
--- >>> toDouble 100 (Amount 100)
+-- >>> toDouble (QuantisationFactor 100) (Amount 100)
 -- 1.0
 toDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
-  Word32 ->
+  QuantisationFactor ->
   Amount ->
   Double
-toDouble quantisationFactor a =
+toDouble (QuantisationFactor qf) a =
   (fromIntegral :: Word64 -> Double) (toMinimalQuantisations a)
-    / (fromIntegral :: Word32 -> Double) quantisationFactor
+    / (fromIntegral :: Word32 -> Double) qf
 
 -- | Turn a 'Rational' into an amount of money.
 --
@@ -337,21 +338,21 @@ toDouble quantisationFactor a =
 -- * Is negative
 -- * Does represent an integer number of minimal quantisations.
 --
--- >>> fromRational 100 (1 % 100)
+-- >>> fromRational (QuantisationFactor 100) (1 % 100)
 -- Just (Amount 1)
 --
--- >>> fromRational 100 (1 % 1000)
+-- >>> fromRational (QuantisationFactor 100) (1 % 1000)
 -- Nothing
 --
--- >>> fromRational 100 (-1 % 100)
+-- >>> fromRational (QuantisationFactor 100) (-1 % 100)
 -- Nothing
-fromRational :: Word32 -> Rational -> Maybe Amount
-fromRational quantisationFactor r
+fromRational :: QuantisationFactor -> Rational -> Maybe Amount
+fromRational (QuantisationFactor qf) r
   | isInvalid r = Nothing
   | r < 0 = Nothing
   | otherwise =
       let resultRational :: Rational
-          resultRational = r * (fromIntegral :: Word32 -> Rational) quantisationFactor
+          resultRational = r * (fromIntegral :: Word32 -> Rational) qf
           ceiled :: Word64
           ceiled = (ceiling :: Rational -> Word64) resultRational
           floored :: Word64
@@ -364,9 +365,9 @@ fromRational quantisationFactor r
 --
 -- WARNING: the result will be @Amount :% 0@ if the quantisation factor is @0@.
 --
--- >>> toRational 100 (Amount 1)
+-- >>> toRational (QuantisationFactor 100) (Amount 1)
 -- 1 % 100
-toRational :: Word32 -> Amount -> Rational
+toRational :: QuantisationFactor -> Amount -> Rational
 toRational quantisationFactor amount = (Prelude.toRational :: Ratio Natural -> Rational) $ toRatio quantisationFactor amount
 
 -- | Add two amounts of money.
@@ -453,11 +454,11 @@ multiply ::
   Word32 ->
   Amount ->
   Maybe Amount
-multiply s (Amount a) =
+multiply f (Amount a) =
   let maxBoundI :: Integer
       maxBoundI = (fromIntegral :: Word64 -> Integer) (maxBound :: Word64)
       r :: Integer
-      r = (fromIntegral :: Word32 -> Integer) s * (fromIntegral :: Word64 -> Integer) a
+      r = (fromIntegral :: Word32 -> Integer) f * (fromIntegral :: Word64 -> Integer) a
    in if r > maxBoundI
         then Nothing
         else Just (Amount ((fromInteger :: Integer -> Word64) r))
@@ -616,40 +617,40 @@ instance NFData Rounding
 
 -- | Format an amount of money without a symbol.
 --
--- >>> format 100 (Amount 1)
+-- >>> format (QuantisationFactor 100) (Amount 1)
 -- "0.01"
 --
--- >>> format 20 (Amount 10)
+-- >>> format (QuantisationFactor 20) (Amount 10)
 -- "0.50"
 --
--- >>> format 1 (Amount 100)
+-- >>> format (QuantisationFactor 1) (Amount 100)
 -- "100"
 --
--- >>> format 100000000 (Amount 500)
+-- >>> format (QuantisationFactor 100000000) (Amount 500)
 -- "0.00000500"
 --
--- >>> format 0 (Amount 1)
+-- >>> format (QuantisationFactor 0) (Amount 1)
 -- "Infinity"
-format :: Word32 -> Amount -> String
+format :: QuantisationFactor -> Amount -> String
 format qf a =
   printf (quantisationFactorFormatString qf) (toDouble qf a)
 
 -- | Produce a printf-style format string for a currency with a given quantisation factor.
 --
--- >>> quantisationFactorFormatString 100000000
+-- >>> quantisationFactorFormatString (QuantisationFactor 100000000)
 -- "%0.8f"
 --
--- >>> quantisationFactorFormatString 100
+-- >>> quantisationFactorFormatString (QuantisationFactor 100)
 -- "%0.2f"
 --
--- >>> quantisationFactorFormatString 20
+-- >>> quantisationFactorFormatString (QuantisationFactor 20)
 -- "%0.2f"
 --
--- >>> quantisationFactorFormatString 1
+-- >>> quantisationFactorFormatString (QuantisationFactor 1)
 -- "%0.0f"
-quantisationFactorFormatString :: Word32 -> String
-quantisationFactorFormatString 0 = "%f"
-quantisationFactorFormatString qf =
+quantisationFactorFormatString :: QuantisationFactor -> String
+quantisationFactorFormatString (QuantisationFactor 0) = "%f"
+quantisationFactorFormatString (QuantisationFactor qf) =
   let decimals :: Int
       decimals = ceiling $ logBase 10 (fromIntegral qf :: Float)
    in printf "%%0.%df" decimals

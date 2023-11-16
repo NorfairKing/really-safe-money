@@ -75,6 +75,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import Money.Amount (Amount (..), Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Amount as Amount
+import Money.QuantisationFactor
 import Numeric.Natural
 import Text.Printf
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
@@ -149,12 +150,12 @@ toMinimalQuantisations account =
 --
 -- WARNING: the result will be infinite or NaN if the quantisation factor is @0@
 --
--- >>> toDouble 100 (Positive (Amount 100))
+-- >>> toDouble (QuantisationFactor 100) (Positive (Amount 100))
 -- 1.0
 --
--- >>> toDouble 20 (Negative (Amount 5))
+-- >>> toDouble (QuantisationFactor 20) (Negative (Amount 5))
 -- -0.25
-toDouble :: Word32 -> Account -> Double
+toDouble :: QuantisationFactor -> Account -> Double
 toDouble quantisationFactor account =
   let f = case account of
         Positive _ -> id
@@ -171,15 +172,15 @@ toDouble quantisationFactor account =
 --
 -- WARNING: This function _does not_ roundtrip with toDouble because 'Account' contains more precision than 'Double' does.
 --
--- >>> fromDouble 100 0.01
+-- >>> fromDouble (QuantisationFactor 100) 0.01
 -- Just (Positive (Amount 1))
 --
--- >>> fromDouble 20 (-0.10)
+-- >>> fromDouble (QuantisationFactor 20) (-0.10)
 -- Just (Negative (Amount 2))
 --
--- >>> fromDouble 100 (-0.001)
+-- >>> fromDouble (QuantisationFactor 100) (-0.001)
 -- Nothing
-fromDouble :: Word32 -> Double -> Maybe Account
+fromDouble :: QuantisationFactor -> Double -> Maybe Account
 fromDouble quantisationFactor d =
   let d' = Prelude.abs d
       f = if d >= 0 then Positive else Negative
@@ -189,12 +190,12 @@ fromDouble quantisationFactor d =
 --
 -- WARNING: that the result will be @Account :% 0@ if the quantisation factor is @0@.
 --
--- >>> toRational 100 (Positive (Amount 2))
+-- >>> toRational (QuantisationFactor 100) (Positive (Amount 2))
 -- 1 % 50
 --
--- >>> toRational 20 (Negative (Amount 3))
+-- >>> toRational (QuantisationFactor 20) (Negative (Amount 3))
 -- (-3) % 20
-toRational :: Word32 -> Account -> Rational
+toRational :: QuantisationFactor -> Account -> Rational
 toRational quantisationFactor account =
   let f = case account of
         Positive _ -> id
@@ -210,12 +211,12 @@ toRational quantisationFactor account =
 -- * Is non-normalised (5 :% 5)
 -- * Does represent an integer number of minimal quantisations.
 --
--- >>> fromRational 100 ((-1) % 100)
+-- >>> fromRational (QuantisationFactor 100) ((-1) % 100)
 -- Just (Negative (Amount 1))
 --
--- >>> fromRational 100 (1 % 1000)
+-- >>> fromRational (QuantisationFactor 100) (1 % 1000)
 -- Nothing
-fromRational :: Word32 -> Rational -> Maybe Account
+fromRational :: QuantisationFactor -> Rational -> Maybe Account
 fromRational quantisationFactor r =
   let r' = Prelude.abs r
       f = if r >= 0 then Positive else Negative
@@ -417,20 +418,20 @@ fraction rounding account f =
 
 -- | Format an account of money without a symbol.
 --
--- >>> format 100 (Negative (Amount 1))
+-- >>> format (QuantisationFactor 100) (Negative (Amount 1))
 -- "-0.01"
 --
--- >>> format 20 (Positive (Amount 100))
+-- >>> format (QuantisationFactor 20) (Positive (Amount 100))
 -- "5.00"
 --
--- >>> format 1 (Negative (Amount 1000))
+-- >>> format (QuantisationFactor 1) (Negative (Amount 1000))
 -- "-1000"
 --
--- >>> format 100000000 (Positive (Amount 50000))
+-- >>> format (QuantisationFactor 100000000) (Positive (Amount 50000))
 -- "0.00050000"
 --
--- >>> format 0 (Positive (Amount 1))
+-- >>> format (QuantisationFactor 0) (Positive (Amount 1))
 -- "Infinity"
-format :: Word32 -> Account -> String
+format :: QuantisationFactor -> Account -> String
 format qf a =
   printf (quantisationFactorFormatString qf) (toDouble qf a)

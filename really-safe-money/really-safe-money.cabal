@@ -25,6 +25,7 @@ library
       Money.Currency
       Money.MultiAccount
       Money.MultiAmount
+      Money.QuantisationFactor
   other-modules:
       Paths_really_safe_money
   hs-source-dirs:

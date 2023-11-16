@@ -13,7 +13,8 @@ import qualified Money.Account as Account
 import Money.Account.Gen ()
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
-import Test.QuickCheck hiding (Negative (..), Positive (..))
+import Money.QuantisationFactor
+import Money.QuantisationFactor.Gen ()
 import Test.Syd
 import Test.Syd.Validity
 
@@ -53,12 +54,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "toRational" $ do
     it "produces valid Rationals when the quantisation factor is nonzero" $
-      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+      forAllValid $ \quantisationFactor ->
         producesValid (Account.toRational quantisationFactor)
 
     it "produces an invalid Rational with quantisation factor 0" $
       forAllValid $ \a ->
-        shouldBeInvalid $ Account.toRational 0 a
+        shouldBeInvalid $ Account.toRational (QuantisationFactor 0) a
 
   describe "fromRational" $ do
     it "produces valid rational" $
@@ -73,12 +74,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "toDouble" $ do
     it "produces valid Doubles when the quantisation factor is nonzero" $
-      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+      forAllValid $ \quantisationFactor ->
         producesValid (Account.toDouble quantisationFactor)
 
     it "produces an infinite or NaN Double with quantisation factor 0" $
       forAllValid $ \a ->
-        Account.toDouble 0 a `shouldSatisfy` (\d -> isInfinite d || isNaN d)
+        Account.toDouble (QuantisationFactor 0) a `shouldSatisfy` (\d -> isInfinite d || isNaN d)
 
   describe "fromDouble" $ do
     it "produces valid rational" $

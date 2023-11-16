@@ -16,6 +16,7 @@ import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
+import Money.QuantisationFactor
 import Numeric.Natural
 import Test.Syd
 import Test.Syd.Validity
@@ -66,7 +67,7 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
     it "succeeds on 1" $
       from 1
-        `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor (Proxy @currency)))))
+        `shouldBe` Just (AmountOf (Amount (fromIntegral (unQuantisationFactor (quantisationFactor (Proxy @currency))))))
 
     it "produces valid AmountOfs" $
       producesValid from
@@ -94,7 +95,7 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
       from 0.0 `shouldBe` Just (AmountOf (Amount 0))
 
     it "succeeds on 1" $
-      from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor p))))
+      from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (unQuantisationFactor (quantisationFactor p)))))
 
     it "fails on -1" $
       from (-1) `shouldBe` Nothing
@@ -126,7 +127,7 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
       from 0.0 `shouldBe` Just (AmountOf (Amount 0))
 
     it "succeeds on 1" $
-      from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (quantisationFactor p))))
+      from 1 `shouldBe` Just (AmountOf (Amount (fromIntegral (unQuantisationFactor (quantisationFactor p)))))
 
     it "fails on -1" $
       from (-1) `shouldBe` Nothing

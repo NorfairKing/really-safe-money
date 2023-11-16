@@ -25,6 +25,8 @@ import Money.AmountOf (AmountOf)
 import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency as Currency
+import Money.QuantisationFactor
+import Money.QuantisationFactor.Gen ()
 import Test.QuickCheck
 import Test.QuickCheck.Gen (Gen (..))
 import Test.QuickCheck.Random (mkQCGen)
@@ -374,7 +376,7 @@ data Hypothetical
   deriving (Typeable)
 
 instance IsCurrencyType Hypothetical where
-  quantisationFactor Proxy = 47
+  quantisationFactor Proxy = QuantisationFactor 47
 
 nameOf ::
   forall a.

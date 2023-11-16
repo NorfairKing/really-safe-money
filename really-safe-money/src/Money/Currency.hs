@@ -11,8 +11,8 @@ where
 import Control.DeepSeq
 import Data.Data
 import Data.Validity
-import Data.Word
 import GHC.Generics (Generic)
+import Money.QuantisationFactor
 
 -- | Class of type-level currencies
 --
@@ -28,12 +28,12 @@ import GHC.Generics (Generic)
 -- > instance Currency BTC where
 -- >   quantisationFactor Proxy = 100_000_000
 class IsCurrencyType (currency :: k) where
-  quantisationFactor :: Proxy currency -> Word32
+  quantisationFactor :: Proxy currency -> QuantisationFactor
 
 -- | Term-level currency
 data Currency = Currency
   { currencySymbol :: !String,
-    currencyQuantisationFactor :: !Word32
+    currencyQuantisationFactor :: !QuantisationFactor
   }
   deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 

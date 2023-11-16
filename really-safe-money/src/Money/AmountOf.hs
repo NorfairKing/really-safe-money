@@ -186,7 +186,7 @@ multiply f (AmountOf a) = fromAmount <$> Amount.multiply f a
 
 -- | See 'Amount.distribute'
 distribute :: AmountOf currency -> Word32 -> AmountDistributionOf currency
-distribute (AmountOf a) w = case Amount.distribute a w of
+distribute (AmountOf a) f = case Amount.distribute a f of
   DistributedIntoZeroChunks -> DistributedIntoZeroChunks
   DistributedZero -> DistributedZero
   DistributedIntoEqualChunks w' a' -> DistributedIntoEqualChunks w' (fromAmount a')

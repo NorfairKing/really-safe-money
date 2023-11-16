@@ -24,6 +24,7 @@ library
       Money.Currency.Gen
       Money.MultiAccount.Gen
       Money.MultiAmount.Gen
+      Money.QuantisationFactor.Gen
   other-modules:
       Paths_really_safe_money_gen
   hs-source-dirs:

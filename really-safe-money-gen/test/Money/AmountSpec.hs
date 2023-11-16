@@ -12,8 +12,9 @@ import GHC.Real (Ratio ((:%)))
 import Money.Amount (Amount (..), Distribution (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
+import Money.QuantisationFactor
+import Money.QuantisationFactor.Gen ()
 import Numeric.Natural
-import Test.QuickCheck
 import Test.Syd
 import Test.Syd.Validity
 
@@ -47,10 +48,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
          in Amount.fromRatio quantisationFactor pinf `shouldBe` Nothing
 
     it "fails on 7.123 with quantisation factor 10" $
-      Amount.fromRatio 10 7.123 `shouldBe` Nothing
+      Amount.fromRatio (QuantisationFactor 10) 7.123 `shouldBe` Nothing
 
     it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromRatio 100 77.02 `shouldBe` Just (Amount 7702)
+      Amount.fromRatio (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7702)
 
     it "succeeds on 0" $
       forAllValid $ \quantisationFactor ->
@@ -59,7 +60,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "succeeds on 1" $
       forAllValid $ \quantisationFactor ->
         Amount.fromRatio quantisationFactor 1
-          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
+          `shouldBe` Just (Amount (fromIntegral (unQuantisationFactor quantisationFactor)))
 
     it "produces valid Amounts" $
       producesValid2 Amount.fromRatio
@@ -74,19 +75,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "toRatio" $ do
     it "produces valid Rationals when the quantisation factor is nonzero" $
-      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+      forAllValid $ \quantisationFactor ->
         producesValid (Amount.toRatio quantisationFactor)
 
     it "produces an invalid Rational with quantisation factor 0" $
       forAllValid $ \a@(Amount m) ->
-        Amount.toRatio 0 a `shouldBe` (fromIntegral m :% 0)
+        Amount.toRatio (QuantisationFactor 0) a `shouldBe` (fromIntegral m :% 0)
 
   describe "fromDouble" $ do
     it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromDouble 100 77.02 `shouldBe` Just (Amount 7702)
+      Amount.fromDouble (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7702)
 
     it "fails on 7.123 with quantisation factor 10" $
-      Amount.fromDouble 10 7.123 `shouldBe` Nothing
+      Amount.fromDouble (QuantisationFactor 10) 7.123 `shouldBe` Nothing
 
     it "succeeds on 0" $
       forAllValid $ \quantisationFactor ->
@@ -95,7 +96,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "succeeds on 1" $
       forAllValid $ \quantisationFactor ->
         Amount.fromDouble quantisationFactor 1
-          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
+          `shouldBe` Just (Amount (fromIntegral (unQuantisationFactor quantisationFactor)))
 
     it "fails on -1" $
       forAllValid $ \quantisationFactor ->
@@ -136,11 +137,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       producesValid2 Amount.toDouble
 
     it "succeeds on 7702 with quantisation factor 100" $
-      Amount.toDouble 100 (Amount 7702) `shouldBe` 77.02
+      Amount.toDouble (QuantisationFactor 100) (Amount 7702) `shouldBe` 77.02
 
     it "produces an infinite Double with quantisation factor 0" $
       forAllValid $ \a ->
-        Amount.toDouble 0 a `shouldSatisfy` (\d -> isInfinite d || isNaN d)
+        Amount.toDouble (QuantisationFactor 0) a `shouldSatisfy` (\d -> isInfinite d || isNaN d)
 
   describe "fromRational" $ do
     it "fails on NaN" $ do
@@ -159,10 +160,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
          in Amount.fromRational quantisationFactor minf `shouldBe` Nothing
 
     it "fails on 7.123 with quantisation factor 10" $
-      Amount.fromRational 10 7.123 `shouldBe` Nothing
+      Amount.fromRational (QuantisationFactor 10) 7.123 `shouldBe` Nothing
 
     it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromRational 100 77.02 `shouldBe` Just (Amount 7702)
+      Amount.fromRational (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7702)
 
     it "succeeds on 0" $
       forAllValid $ \quantisationFactor ->
@@ -171,7 +172,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "succeeds on 1" $
       forAllValid $ \quantisationFactor ->
         Amount.fromRational quantisationFactor 1
-          `shouldBe` Just (Amount (fromIntegral quantisationFactor))
+          `shouldBe` Just (Amount (fromIntegral (unQuantisationFactor quantisationFactor)))
 
     it "fails on -1" $
       forAllValid $ \quantisationFactor ->
@@ -191,12 +192,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "toRational" $ do
     it "produces valid Rationals when the quantisation factor is nonzero" $
-      forAll (genValid `suchThat` (/= 0)) $ \quantisationFactor ->
+      forAllValid $ \quantisationFactor ->
         producesValid (Amount.toRational quantisationFactor)
 
     it "produces an invalid Rational with quantisation factor 0" $
       forAllValid $ \a@(Amount m) ->
-        Amount.toRational 0 a `shouldBe` (fromIntegral m :% 0)
+        Amount.toRational (QuantisationFactor 0) a `shouldBe` (fromIntegral m :% 0)
 
   describe "zero" $
     it "is valid" $
@@ -429,10 +430,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "format" $ do
     it "formats 1 correctly with quantisation factor 1" $
-      Amount.format 1 (Amount 1) `shouldBe` "1"
+      Amount.format (QuantisationFactor 1) (Amount 1) `shouldBe` "1"
 
     it "formats 1 correctly with quantisation factor 10" $
-      Amount.format 10 (Amount 1) `shouldBe` "0.1"
+      Amount.format (QuantisationFactor 10) (Amount 1) `shouldBe` "0.1"
 
     it "produces valid strings" $
       producesValid2 Amount.format
