@@ -4,6 +4,8 @@
 
 module Money.MultiAmountSpec (spec) where
 
+import Data.GenValidity.Vector ()
+import Data.Vector (Vector)
 import Money.Currency
 import Money.MultiAmount (MultiAmount (..))
 import qualified Money.MultiAmount as MultiAmount
@@ -52,3 +54,7 @@ spec = do
         forAllValid $ \a1 ->
           forAllValid $ \a2 ->
             MultiAmount.add @Currency a1 a2 `shouldBe` MultiAmount.add @Currency a2 a1
+
+    describe "sum" $ do
+      it "produces valid amounts" $
+        producesValid (MultiAmount.sum @Vector @Currency)

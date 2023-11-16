@@ -4,6 +4,8 @@
 
 module Money.MultiAccountSpec (spec) where
 
+import Data.GenValidity.Vector ()
+import Data.Vector (Vector)
 import Money.Currency
 import Money.MultiAccount (MultiAccount (..))
 import qualified Money.MultiAccount as MultiAccount
@@ -52,3 +54,7 @@ spec = do
         forAllValid $ \a1 ->
           forAllValid $ \a2 ->
             MultiAccount.add @Currency a1 a2 `shouldBe` MultiAccount.add @Currency a2 a1
+
+    describe "sum" $ do
+      it "produces valid amounts" $
+        producesValid (MultiAccount.sum @Vector @Currency)
