@@ -1,7 +1,7 @@
-module Money.AmountOf.Codec where
+module Money.AmountOf.Codec (codecViaString) where
 
 import Autodocodec
-import Money.Amount.Codec
+import qualified Money.Amount.Codec as Amount
 import Money.AmountOf (AmountOf)
 import qualified Money.AmountOf as AmountOf
 
@@ -9,5 +9,9 @@ import qualified Money.AmountOf as AmountOf
 --
 -- WARNING: This codec does not protect you against deserialising an amount in
 -- a different currency than the amount that was serialised.
-amountOfCodecViaString :: JSONCodec (AmountOf currency)
-amountOfCodecViaString = dimapCodec AmountOf.fromAmount AmountOf.toAmount amountCodecViaString
+codecViaString :: JSONCodec (AmountOf currency)
+codecViaString =
+  dimapCodec
+    AmountOf.fromAmount
+    AmountOf.toAmount
+    Amount.codecViaString

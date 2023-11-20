@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Money.Amount.Codec where
+module Money.Amount.Codec (codecViaString) where
 
 import Autodocodec
 import Data.Word
@@ -12,8 +12,8 @@ import Text.Read (readMaybe)
 --
 -- WARNING: This codec does not protect you against deserialising an amount in
 -- a different currency than the amount that was serialised.
-amountCodecViaString :: JSONCodec Amount
-amountCodecViaString = bimapCodec f g stringCodec <?> "Amount"
+codecViaString :: JSONCodec Amount
+codecViaString = bimapCodec f g stringCodec <?> "Amount"
   where
     f :: String -> Either String Amount
     f s = case readMaybe s of

@@ -11,10 +11,10 @@ bug-reports:    https://github.com/NorfairKing/really-safe-money/issues
 license:        AllRightsReserved
 build-type:     Simple
 extra-source-files:
-    test_resources/account-of.txt
-    test_resources/account.txt
-    test_resources/amount-of.txt
-    test_resources/amount.txt
+    test_resources/account-of/string.txt
+    test_resources/account/string.txt
+    test_resources/amount-of/string.txt
+    test_resources/amount/string.txt
 
 source-repository head
   type: git

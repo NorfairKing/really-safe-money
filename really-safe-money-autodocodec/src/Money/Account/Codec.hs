@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Money.Account.Codec where
+module Money.Account.Codec (codecViaString) where
 
 import Autodocodec
 import Money.Account (Account)
@@ -11,8 +11,8 @@ import Text.Read (readMaybe)
 --
 -- WARNING: This codec does not protect you against deserialising an account in
 -- a different currency than the account that was serialised.
-accountCodecViaString :: JSONCodec Account
-accountCodecViaString = bimapCodec f g stringCodec <?> "Account"
+codecViaString :: JSONCodec Account
+codecViaString = bimapCodec f g stringCodec <?> "Account"
   where
     f :: String -> Either String Account
     f s = case readMaybe s >>= Account.fromMinimalQuantisations of

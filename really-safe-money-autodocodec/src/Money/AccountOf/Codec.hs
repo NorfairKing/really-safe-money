@@ -1,7 +1,7 @@
-module Money.AccountOf.Codec where
+module Money.AccountOf.Codec (codecViaString) where
 
 import Autodocodec
-import Money.Account.Codec
+import qualified Money.Account.Codec as Account
 import Money.AccountOf (AccountOf)
 import qualified Money.AccountOf as AccountOf
 
@@ -9,5 +9,9 @@ import qualified Money.AccountOf as AccountOf
 --
 -- WARNING: This codec does not protect you against deserialising an account in
 -- a different currency than the account that was serialised.
-accountOfCodecViaString :: JSONCodec (AccountOf currency)
-accountOfCodecViaString = dimapCodec AccountOf.fromAccount AccountOf.toAccount accountCodecViaString
+codecViaString :: JSONCodec (AccountOf currency)
+codecViaString =
+  dimapCodec
+    AccountOf.fromAccount
+    AccountOf.toAccount
+    Account.codecViaString

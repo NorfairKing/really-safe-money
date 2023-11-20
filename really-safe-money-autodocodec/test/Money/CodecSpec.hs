@@ -1,3 +1,7 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+
 module Money.CodecSpec (spec) where
 
 import Autodocodec
@@ -5,28 +9,47 @@ import Autodocodec.Yaml
 import Control.DeepSeq
 import Control.Exception
 import Data.Aeson.Types as JSON
-import Money.Account.Codec
+import Data.Typeable
+import Money.Account (Account)
+import Money.Account.Codec as Account
 import Money.Account.Gen ()
-import Money.AccountOf.Codec
+import Money.AccountOf (AccountOf)
+import Money.AccountOf.Codec as AccountOf
 import Money.AccountOf.Gen ()
-import Money.Amount.Codec
+import Money.Amount (Amount)
+import Money.Amount.Codec as Amount
 import Money.Amount.Gen ()
-import Money.AmountOf.Codec
+import Money.AmountOf (AmountOf)
+import Money.AmountOf.Codec as AmountOf
 import Money.AmountOf.Gen ()
+import Money.Currency (IsCurrencyType (..))
+import Money.QuantisationFactor (QuantisationFactor (..))
 import Test.Syd
 import Test.Syd.Validity
 
 spec :: Spec
 spec = do
-  codecSpec "amount" amountCodecViaString
-  codecSpec "amount-of" amountOfCodecViaString
-  codecSpec "account" accountCodecViaString
-  codecSpec "account-of" accountOfCodecViaString
+  codecSpec @Amount "amount" "string" Amount.codecViaString
+  codecSpec @(AmountOf USD) "amount-of" "string" AmountOf.codecViaString
+  codecSpec @Account "account" "string" Account.codecViaString
+  codecSpec @(AccountOf USD) "account-of" "string" AccountOf.codecViaString
 
-codecSpec :: (Show a, Eq a, GenValid a) => String -> JSONCodec a -> Spec
-codecSpec name c = describe name $ do
+data USD
+  deriving (Typeable)
+
+instance IsCurrencyType USD where
+  quantisationFactor Proxy = QuantisationFactor 100
+
+codecSpec ::
+  forall a.
+  (Show a, Eq a, GenValid a) =>
+  String ->
+  String ->
+  JSONCodec a ->
+  Spec
+codecSpec name dir c = describe name $ do
   it "has the same schema as before" $
-    pureGoldenTextFile (concat ["test_resources/", name, ".txt"]) (renderColouredSchemaVia c)
+    pureGoldenTextFile (concat ["test_resources/", name, "/", dir, ".txt"]) (renderColouredSchemaVia c)
 
   it "never fails to encode" $
     forAllValid $ \a -> do
