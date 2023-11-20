@@ -14,6 +14,7 @@ extra-source-files:
     test_resources/account-of/string.txt
     test_resources/account/string.txt
     test_resources/amount-of/string.txt
+    test_resources/amount/number.txt
     test_resources/amount/string.txt
 
 source-repository head
@@ -36,6 +37,21 @@ library
     , genvalidity
     , really-safe-money
     , text
+  default-language: Haskell2010
+
+test-suite really-safe-money-autodocodec-doctest
+  type: exitcode-stdio-1.0
+  main-is: DocTest.hs
+  other-modules:
+      Paths_really_safe_money_autodocodec
+  hs-source-dirs:
+      doctest/
+  ghc-options: -main-is DocTest -threaded -rtsopts -with-rtsopts=-N -Wall
+  build-depends:
+      autodocodec
+    , base >=4.7 && <5
+    , doctest
+    , really-safe-money
   default-language: Haskell2010
 
 test-suite really-safe-money-autodocodec-test

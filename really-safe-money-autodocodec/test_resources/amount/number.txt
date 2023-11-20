@@ -1,0 +1,2 @@
+# Amount
+[33m<number>[m # between [32m0[m and [32m18446744073709551615[m

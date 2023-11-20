@@ -30,6 +30,7 @@ import Test.Syd.Validity
 spec :: Spec
 spec = do
   codecSpec @Amount "amount" "string" Amount.codecViaString
+  codecSpec @Amount "amount" "number" Amount.codecViaNumber
   codecSpec @(AmountOf USD) "amount-of" "string" AmountOf.codecViaString
   codecSpec @Account "account" "string" Account.codecViaString
   codecSpec @(AccountOf USD) "account-of" "string" AccountOf.codecViaString

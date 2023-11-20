@@ -1,11 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Money.Account.Codec (codecViaString) where
+module Money.Account.Codec
+  ( codecViaString,
+  )
+where
 
 import Autodocodec
 import Money.Account (Account)
 import qualified Money.Account as Account
 import Text.Read (readMaybe)
+
+-- $setup
+-- >>> import Autodocodec (toJSONVia, parseJSONVia)
+-- >>> import Data.Aeson (Value(..))
+-- >>> import Data.Aeson.Types as JSON (parseMaybe)
+-- >>> import Money.Amount (Amount(..))
+-- >>> :set -XOverloadedStrings
 
 -- | A 'JSONCodec' for 'Account' which encodes amounts as a JSON String that contains a decimal number which represents the minimal quantisations of the 'Account'
 --

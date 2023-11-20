@@ -1,5 +1,5 @@
 { mkDerivation, aeson, autodocodec, autodocodec-yaml, base, deepseq
-, genvalidity, genvalidity-sydtest, lib, really-safe-money
+, doctest, genvalidity, genvalidity-sydtest, lib, really-safe-money
 , really-safe-money-gen, safe-coloured-text, sydtest
 , sydtest-discover, text
 }:
@@ -11,8 +11,9 @@ mkDerivation {
     autodocodec base genvalidity really-safe-money text
   ];
   testHaskellDepends = [
-    aeson autodocodec autodocodec-yaml base deepseq genvalidity-sydtest
-    really-safe-money really-safe-money-gen safe-coloured-text sydtest
+    aeson autodocodec autodocodec-yaml base deepseq doctest
+    genvalidity-sydtest really-safe-money really-safe-money-gen
+    safe-coloured-text sydtest
   ];
   testToolDepends = [ sydtest-discover ];
   homepage = "https://github.com/NorfairKing/really-safe-money#readme";
