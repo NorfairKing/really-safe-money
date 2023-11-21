@@ -8,6 +8,68 @@ packages:
 ghc-options:
   "$locals": -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Widentities -Wredundant-constraints -Wcpp-undef
 
+extra-deps:
+- github: NorfairKing/autodocodec
+  commit: e7f4ec8d1d47e77c0f7fe83c8032abae5b082572
+  subdirs:
+  - autodocodec
+  - autodocodec-schema
+  - autodocodec-yaml
+
+- github: NorfairKing/safe-coloured-text
+  commit: 50abcbfa2a2ed15c6186fa2381fe818bd93a730b
+  subdirs:
+  - safe-coloured-text
+  - safe-coloured-text-layout
+  - safe-coloured-text-terminfo
+
+- github: NorfairKing/sydtest
+  commit: 6313c1b211d14c1215cdf97b9933675cf9c2adb9
+  subdirs:
+  - sydtest
+  - sydtest-discover
+
+- github: NorfairKing/validity
+  commit: 11135c8090991158b5b8f3f5f9d266a4ed6df567
+  subdirs:
+  - genvalidity
+  - genvalidity-aeson
+  - genvalidity-bytestring
+  - genvalidity-case-insensitive
+  - genvalidity-containers
+  - genvalidity-criterion
+  - genvalidity-network-uri
+  - genvalidity-path
+  - genvalidity-persistent
+  - genvalidity-property
+  - genvalidity-scientific
+  - genvalidity-sydtest
+  - genvalidity-sydtest-aeson
+  - genvalidity-sydtest-hashable
+  - genvalidity-sydtest-lens
+  - genvalidity-sydtest-persistent
+  - genvalidity-text
+  - genvalidity-time
+  - genvalidity-unordered-containers
+  - genvalidity-uuid
+  - genvalidity-vector
+  - validity
+  - validity-aeson
+  - validity-bytestring
+  - validity-case-insensitive
+  - validity-containers
+  - validity-network-uri
+  - validity-path
+  - validity-persistent
+  - validity-primitive
+  - validity-scientific
+  - validity-text
+  - validity-time
+  - validity-unordered-containers
+  - validity-uuid
+  - validity-vector
+
+
 system-ghc: true
 nix:
   enable: false

@@ -32,8 +32,11 @@ spec = do
   codecSpec @Amount "amount" "string" Amount.codecViaString
   codecSpec @Amount "amount" "number" Amount.codecViaNumber
   codecSpec @(AmountOf USD) "amount-of" "string" AmountOf.codecViaString
+  codecSpec @(AmountOf USD) "amount-of" "number" AmountOf.codecViaNumber
   codecSpec @Account "account" "string" Account.codecViaString
+  codecSpec @Account "account" "number" Account.codecViaNumber
   codecSpec @(AccountOf USD) "account-of" "string" AccountOf.codecViaString
+  codecSpec @(AccountOf USD) "account-of" "number" AccountOf.codecViaNumber
 
 data USD
   deriving (Typeable)
