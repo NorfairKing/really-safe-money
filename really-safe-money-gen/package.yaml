@@ -13,7 +13,7 @@ library:
   - QuickCheck
   - genvalidity
   - genvalidity-containers
-
+  - really-safe-money
 
 benchmarks:
   smos-data-bench:
