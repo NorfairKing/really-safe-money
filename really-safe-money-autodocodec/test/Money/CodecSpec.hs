@@ -12,16 +12,16 @@ import Control.Exception
 import Data.Aeson.Types as JSON
 import Data.Typeable
 import GHC.Stack
-import Money.Account (Account)
+import Money.Account (Account (..))
 import Money.Account.Codec as Account
 import Money.Account.Gen ()
-import Money.AccountOf (AccountOf)
+import Money.AccountOf (AccountOf (..))
 import Money.AccountOf.Codec as AccountOf
 import Money.AccountOf.Gen ()
-import Money.Amount (Amount)
+import Money.Amount (Amount (..))
 import Money.Amount.Codec as Amount
 import Money.Amount.Gen ()
-import Money.AmountOf (AmountOf)
+import Money.AmountOf (AmountOf (..))
 import Money.AmountOf.Codec as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
@@ -37,44 +37,68 @@ spec = do
     parseFailSpec Amount.codecViaString (String "0.1")
     parseFailSpec Amount.codecViaString (String "-1")
     parseFailSpec Amount.codecViaString (String "18446744073709551617")
+    parseSuccessSpec Amount.codecViaString (String "1") (Amount 1)
+    parseSuccessSpec Amount.codecViaString (String "18446744073709551615") (Amount 18446744073709551615)
 
     codecSpec @Amount "amount" "number" Amount.codecViaNumber
     parseFailSpec Amount.codecViaNumber (Number 0.1)
     parseFailSpec Amount.codecViaNumber (Number (-1))
     parseFailSpec Amount.codecViaNumber (Number 18446744073709551617)
+    parseSuccessSpec Amount.codecViaNumber (Number 1) (Amount 1)
+    parseSuccessSpec Amount.codecViaNumber (Number 18446744073709551615) (Amount 18446744073709551615)
 
   describe "AmountOf" $ do
     codecSpec @(AmountOf USD) "amount-of" "string" AmountOf.codecViaString
     parseFailSpec AmountOf.codecViaString (String "0.1")
     parseFailSpec AmountOf.codecViaString (String "-1")
     parseFailSpec AmountOf.codecViaString (String "18446744073709551617")
+    parseSuccessSpec AmountOf.codecViaString (String "1") (AmountOf (Amount 1))
+    parseSuccessSpec AmountOf.codecViaString (String "18446744073709551615") (AmountOf (Amount 18446744073709551615))
 
     codecSpec @(AmountOf USD) "amount-of" "number" AmountOf.codecViaNumber
-    parseFailSpec AmountOf.codecViaString (Number 0.1)
-    parseFailSpec AmountOf.codecViaString (Number (-1))
-    parseFailSpec AmountOf.codecViaString (Number 18446744073709551617)
+    parseFailSpec AmountOf.codecViaNumber (Number 0.1)
+    parseFailSpec AmountOf.codecViaNumber (Number (-1))
+    parseFailSpec AmountOf.codecViaNumber (Number 18446744073709551617)
+    parseSuccessSpec AmountOf.codecViaNumber (Number 1) (AmountOf (Amount 1))
+    parseSuccessSpec AmountOf.codecViaNumber (Number 18446744073709551615) (AmountOf (Amount 18446744073709551615))
 
   describe "Account" $ do
     codecSpec @Account "account" "string" Account.codecViaString
     parseFailSpec Account.codecViaString (String "0.1")
     parseFailSpec Account.codecViaString (String "18446744073709551617")
     parseFailSpec Account.codecViaString (String "-18446744073709551617")
+    parseSuccessSpec Account.codecViaString (String "-18446744073709551615") (Negative (Amount 18446744073709551615))
+    parseSuccessSpec Account.codecViaString (String "-1") (Negative (Amount 1))
+    parseSuccessSpec Account.codecViaString (String "1") (Positive (Amount 1))
+    parseSuccessSpec Account.codecViaString (String "18446744073709551615") (Positive (Amount 18446744073709551615))
 
     codecSpec @Account "account" "number" Account.codecViaNumber
-    parseFailSpec Account.codecViaString (Number 0.1)
-    parseFailSpec Account.codecViaString (Number 18446744073709551617)
-    parseFailSpec Account.codecViaString (Number (-18446744073709551617))
+    parseFailSpec Account.codecViaNumber (Number 0.1)
+    parseFailSpec Account.codecViaNumber (Number 18446744073709551617)
+    parseFailSpec Account.codecViaNumber (Number (-18446744073709551617))
+    parseSuccessSpec Account.codecViaNumber (Number (-18446744073709551615)) (Negative (Amount 18446744073709551615))
+    parseSuccessSpec Account.codecViaNumber (Number (-1)) (Negative (Amount 1))
+    parseSuccessSpec Account.codecViaNumber (Number 1) (Positive (Amount 1))
+    parseSuccessSpec Account.codecViaNumber (Number 18446744073709551615) (Positive (Amount 18446744073709551615))
 
   describe "AccountOf" $ do
     codecSpec @(AccountOf USD) "account-of" "string" AccountOf.codecViaString
     parseFailSpec AccountOf.codecViaString (String "0.1")
     parseFailSpec AccountOf.codecViaString (String "18446744073709551617")
     parseFailSpec AccountOf.codecViaString (String "-18446744073709551617")
+    parseSuccessSpec AccountOf.codecViaString (String "-18446744073709551615") (AccountOf (Negative (Amount 18446744073709551615)))
+    parseSuccessSpec AccountOf.codecViaString (String "-1") (AccountOf (Negative (Amount 1)))
+    parseSuccessSpec AccountOf.codecViaString (String "1") (AccountOf (Positive (Amount 1)))
+    parseSuccessSpec AccountOf.codecViaString (String "18446744073709551615") (AccountOf (Positive (Amount 18446744073709551615)))
 
     codecSpec @(AccountOf USD) "account-of" "number" AccountOf.codecViaNumber
-    parseFailSpec AccountOf.codecViaString (Number 0.1)
-    parseFailSpec AccountOf.codecViaString (Number 18446744073709551617)
-    parseFailSpec AccountOf.codecViaString (Number (-18446744073709551617))
+    parseFailSpec AccountOf.codecViaNumber (Number 0.1)
+    parseFailSpec AccountOf.codecViaNumber (Number 18446744073709551617)
+    parseFailSpec AccountOf.codecViaNumber (Number (-18446744073709551617))
+    parseSuccessSpec AccountOf.codecViaNumber (Number (-18446744073709551615)) (AccountOf (Negative (Amount 18446744073709551615)))
+    parseSuccessSpec AccountOf.codecViaNumber (Number (-1)) (AccountOf (Negative (Amount 1)))
+    parseSuccessSpec AccountOf.codecViaNumber (Number 1) (AccountOf (Positive (Amount 1)))
+    parseSuccessSpec AccountOf.codecViaNumber (Number 18446744073709551615) (AccountOf (Positive (Amount 18446744073709551615)))
 
 data USD
   deriving (Typeable)
@@ -124,6 +148,13 @@ codecSpec name dir c = describe name $ do
                         show encoded
                       ]
                in context ctx $ decoded `shouldBe` a
+
+parseSuccessSpec :: HasCallStack => (Show a, Eq a) => JSONCodec a -> JSON.Value -> a -> Spec
+parseSuccessSpec c v expected = withFrozenCallStack $
+  it (unwords ["fails to parse", show v]) $
+    case JSON.parseEither (parseJSONVia c) v of
+      Left err -> expectationFailure $ unlines ["Failed to parse:", err]
+      Right actual -> actual `shouldBe` expected
 
 parseFailSpec :: HasCallStack => Show a => JSONCodec a -> JSON.Value -> Spec
 parseFailSpec c v = withFrozenCallStack $
