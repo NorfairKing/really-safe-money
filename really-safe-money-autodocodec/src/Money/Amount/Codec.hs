@@ -39,7 +39,13 @@ codecViaString = bimapCodec f g stringCodec <?> "Amount"
     f :: String -> Either String Amount
     f s = case readMaybe s of
       Nothing -> Left $ unwords ["Could not read string as an Amount:", s]
-      Just i -> Right $ Amount.fromMinimalQuantisations (i :: Word64)
+      Just i ->
+        if (i :: Integer) <= toInteger (minBound :: Word64)
+          then Left $ unwords ["Negative number of minimal quantisations:", show i]
+          else
+            if (i :: Integer) >= toInteger (maxBound :: Word64)
+              then Left $ unwords ["Number of minimal quantisations is too big:", show i]
+              else Right $ Amount.fromMinimalQuantisations (fromIntegral i :: Word64)
     g :: Amount -> String
     g = show . Amount.toMinimalQuantisations
 
