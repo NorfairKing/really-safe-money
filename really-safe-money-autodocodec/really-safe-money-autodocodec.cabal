@@ -30,6 +30,7 @@ library
       Money.AccountOf.Codec
       Money.Amount.Codec
       Money.AmountOf.Codec
+      Money.QuantisationFactor.Codec
   other-modules:
       Paths_really_safe_money_autodocodec
   hs-source-dirs:
