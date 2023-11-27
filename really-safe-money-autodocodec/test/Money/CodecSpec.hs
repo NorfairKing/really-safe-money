@@ -26,11 +26,18 @@ import Money.AmountOf.Codec as AmountOf
 import Money.AmountOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
 import Money.QuantisationFactor (QuantisationFactor (..))
+import Money.QuantisationFactor.Codec as QuantisationFactor
+import Money.QuantisationFactor.Gen ()
 import Test.Syd
 import Test.Syd.Validity
 
 spec :: Spec
 spec = do
+  describe "QuantisationFactor" $ do
+    codecSpec @QuantisationFactor "quantisation-factor" "number" QuantisationFactor.codecViaNumber
+    parseFailSpec QuantisationFactor.codecViaNumber (Number 0)
+    parseSuccessSpec QuantisationFactor.codecViaNumber (Number 1) (QuantisationFactor 1)
+
   -- 2^64 is 18446744073709551616
   describe "Amount" $ do
     codecSpec @Amount "amount" "string" Amount.codecViaString
