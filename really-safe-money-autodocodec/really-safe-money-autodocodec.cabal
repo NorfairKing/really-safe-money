@@ -19,6 +19,7 @@ extra-source-files:
     test_resources/amount-of/string.txt
     test_resources/amount/number.txt
     test_resources/amount/string.txt
+    test_resources/quantisation-factor/number.txt
 
 source-repository head
   type: git

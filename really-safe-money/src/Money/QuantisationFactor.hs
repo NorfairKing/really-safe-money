@@ -1,7 +1,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-module Money.QuantisationFactor where
+module Money.QuantisationFactor
+  ( QuantisationFactor (..),
+    parseQuantisationFactor,
+  )
+where
 
 import Control.DeepSeq
 import Data.Data
@@ -23,3 +27,6 @@ instance Validity QuantisationFactor where
       ]
 
 instance NFData QuantisationFactor
+
+parseQuantisationFactor :: Word32 -> Maybe QuantisationFactor
+parseQuantisationFactor = constructValid . QuantisationFactor
