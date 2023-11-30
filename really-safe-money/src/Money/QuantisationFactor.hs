@@ -1,9 +1,17 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 
+-- === Importing this module
+--
+-- This module is designed to be imported as follows:
+--
+-- @
+-- import Money.QuantisationFactor (QuantisationFactor)
+-- import qualified Money.QuantisationFactor as QuantisationFactor
+-- @
 module Money.QuantisationFactor
   ( QuantisationFactor (..),
-    parseQuantisationFactor,
+    fromWord32,
   )
 where
 
@@ -28,5 +36,5 @@ instance Validity QuantisationFactor where
 
 instance NFData QuantisationFactor
 
-parseQuantisationFactor :: Word32 -> Maybe QuantisationFactor
-parseQuantisationFactor = constructValid . QuantisationFactor
+fromWord32 :: Word32 -> Maybe QuantisationFactor
+fromWord32 = constructValid . QuantisationFactor

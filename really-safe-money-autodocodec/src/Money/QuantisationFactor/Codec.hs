@@ -6,7 +6,8 @@ module Money.QuantisationFactor.Codec
 where
 
 import Autodocodec
-import Money.QuantisationFactor (QuantisationFactor (..), parseQuantisationFactor)
+import Money.QuantisationFactor (QuantisationFactor (..))
+import qualified Money.QuantisationFactor as QuantisationFactor
 
 -- $setup
 -- >>> import Autodocodec (toJSONVia, parseJSONVia)
@@ -37,6 +38,6 @@ codecViaNumber =
     codec
     <?> "QuantisationFactor"
   where
-    f w = case parseQuantisationFactor w of
+    f w = case QuantisationFactor.fromWord32 w of
       Nothing -> Left $ "Unable to parse as a quantisation factor: " <> show w
       Just qf -> Right qf
