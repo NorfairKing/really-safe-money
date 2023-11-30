@@ -1,5 +1,5 @@
 { mkDerivation, aeson, autodocodec, autodocodec-yaml, base, deepseq
-, doctest, genvalidity, genvalidity-sydtest, lib, really-safe-money
+, doctest, genvalidity-sydtest, lib, really-safe-money
 , really-safe-money-gen, safe-coloured-text, sydtest
 , sydtest-discover, text
 }:
@@ -8,7 +8,7 @@ mkDerivation {
   version = "0.0.0.0";
   src = ./.;
   libraryHaskellDepends = [
-    autodocodec base genvalidity really-safe-money text
+    autodocodec base really-safe-money text
   ];
   testHaskellDepends = [
     aeson autodocodec autodocodec-yaml base deepseq doctest
