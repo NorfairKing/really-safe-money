@@ -156,7 +156,7 @@ fromRational r =
       | num < 0 = toLiteral (Just False) <$> longDiv (-num)
       | otherwise = toLiteral Nothing <$> longDiv num
       where
-        toLiteral mSign (m, e) = DecimalLiteralFractional mSign m (fromIntegral (pred (abs e)))
+        toLiteral mSign (m, e) = DecimalLiteralFractional mSign m (fromIntegral (pred e))
         d = denominator rational
         num = numerator rational
 
@@ -176,10 +176,11 @@ fromRational r =
         longDivWithLimit !c !e ns !n
           -- If there's a repetend, we can't turn it into a decimal literal
           | Just _ <- M.lookup n ns = Nothing
-          | e <= (-l) = Nothing
+          -- Over the limit, stop trying
+          | e >= l = Nothing
           | n < d =
               let !ns' = M.insert n e ns
-               in longDivWithLimit (c * 10) (e - 1) ns' (n * 10)
+               in longDivWithLimit (c * 10) (succ e) ns' (n * 10)
           | otherwise = case n `quotRemInteger` d of
               (# q, r' #) -> longDivWithLimit (c + q) e ns r'
 
