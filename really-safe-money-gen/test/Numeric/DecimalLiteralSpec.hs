@@ -36,6 +36,11 @@ spec = do
     it "can render any decimal literal" $
       producesValid renderDecimalLiteral
 
+  describe "parseDecimalLiteralM" $ do
+    it "does the same as parseDecimalLiteral" $
+      forAllValid $ \s ->
+        parseDecimalLiteralM s `shouldBe` parseDecimalLiteral s
+
   describe "parseDecimalLiteral" $ do
     it "fails to parse scientific notation" $
       parseDecimalLiteral "1E1" `shouldBe` Nothing

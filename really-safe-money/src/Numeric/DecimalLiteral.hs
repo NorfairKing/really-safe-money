@@ -16,17 +16,18 @@ module Numeric.DecimalLiteral
     toAccount,
     fromAccount,
     quantisationFactorDigits,
+    setSignRequired,
+    setSignOptional,
   )
 where
 
 import Control.DeepSeq
 import qualified Data.Char as Char
 import Data.List (find)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import Data.Ratio
 import Data.Set (Set)
 import qualified Data.Set as S
+import Data.String
 import Data.Validity
 import Data.Validity.Scientific ()
 import Data.Word
@@ -72,6 +73,11 @@ data DecimalLiteral
 instance Validity DecimalLiteral
 
 instance NFData DecimalLiteral
+
+instance IsString DecimalLiteral where
+  fromString s = case parseDecimalLiteral s of
+    Nothing -> error $ "Invalid decimal literal string: " <> show s
+    Just dl -> dl
 
 parseDecimalLiteralM :: MonadFail m => String -> m DecimalLiteral
 parseDecimalLiteralM s = case parseDecimalLiteral s of
@@ -147,7 +153,6 @@ fromRational r =
         then Just (DecimalLiteralInteger (rationalSign r) (fromIntegral (abs (numerator r))))
         else fromRationalRepetendLimited 256 r
   where
-    -- Like 'fromRationalRepetend' but always accepts a limit.
     fromRationalRepetendLimited ::
       -- limit
       Int ->
@@ -169,10 +174,8 @@ fromRational r =
           Integer ->
           Int ->
           Set Integer ->
-          ( Integer ->
-            Maybe
-              (Natural, Int)
-          )
+          Integer ->
+          Maybe (Natural, Int)
         longDivWithLimit !c !e _ns 0 =
           Just (fromIntegral (abs c), e)
         longDivWithLimit !c !e ns !n
