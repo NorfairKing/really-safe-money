@@ -25,6 +25,8 @@ import Data.List (find)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Ratio
+import Data.Set (Set)
+import qualified Data.Set as S
 import Data.Validity
 import Data.Validity.Scientific ()
 import Data.Word
@@ -161,12 +163,12 @@ fromRational r =
         num = numerator rational
 
         longDiv :: Integer -> Maybe (Natural, Int)
-        longDiv = longDivWithLimit 0 0 M.empty
+        longDiv = longDivWithLimit 0 0 S.empty
 
         longDivWithLimit ::
           Integer ->
           Int ->
-          Map Integer Int ->
+          Set Integer ->
           ( Integer ->
             Maybe
               (Natural, Int)
@@ -175,11 +177,11 @@ fromRational r =
           Just (fromIntegral (abs c), e)
         longDivWithLimit !c !e ns !n
           -- If there's a repetend, we can't turn it into a decimal literal
-          | Just _ <- M.lookup n ns = Nothing
+          | S.member n ns = Nothing
           -- Over the limit, stop trying
           | e >= l = Nothing
           | n < d =
-              let !ns' = M.insert n e ns
+              let !ns' = S.insert n ns
                in longDivWithLimit (c * 10) (succ e) ns' (n * 10)
           | otherwise = case n `quotRemInteger` d of
               (# q, r' #) -> longDivWithLimit (c + q) e ns r'
