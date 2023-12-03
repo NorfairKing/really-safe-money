@@ -231,9 +231,8 @@ toQuantisationFactor dl = do
 
 -- TODO explain that it's the inverse.
 fromQuantisationFactor :: QuantisationFactor -> Maybe DecimalLiteral
-fromQuantisationFactor qf@(QuantisationFactor qfw) =
-  let r = 1 % fromIntegral qfw
-   in setMinimumDigits (quantisationFactorDigits qf) <$> fromRational r
+fromQuantisationFactor (QuantisationFactor qfw) =
+  setSignOptional <$> fromRational (1 % fromIntegral qfw)
 
 toAccount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Account
 toAccount qf = Account.fromRational qf . toRational
@@ -241,10 +240,43 @@ toAccount qf = Account.fromRational qf . toRational
 fromAccount :: QuantisationFactor -> Money.Account -> Maybe DecimalLiteral
 fromAccount qf acc =
   let r = Account.toRational qf acc
-   in setMinimumDigits (quantisationFactorDigits qf) <$> fromRational r
+   in setSignRequired . setMinimumDigits (quantisationFactorDigits qf) <$> fromRational r
 
 quantisationFactorDigits :: QuantisationFactor -> Word8
 quantisationFactorDigits qf = ceiling (logBase 10 $ fromIntegral $ unQuantisationFactor qf :: Float)
 
 setMinimumDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
-setMinimumDigits _ = id -- TODO
+setMinimumDigits wantedDigits dl =
+  let currentDigits = decimalLiteralDigits dl
+   in if wantedDigits <= currentDigits
+        then dl
+        else increaseDigits (wantedDigits - currentDigits) dl
+  where
+    increaseDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
+    increaseDigits 0 = id
+    increaseDigits w = \case
+      DecimalLiteralInteger mS a -> increaseDigits (pred w) (DecimalLiteralFractional mS (a * 10) 0)
+      DecimalLiteralFractional mS m e -> increaseDigits (pred w) (DecimalLiteralFractional mS (m * 10) (succ e))
+
+decimalLiteralDigits :: DecimalLiteral -> Word8
+decimalLiteralDigits = \case
+  DecimalLiteralInteger _ _ -> 0
+  DecimalLiteralFractional _ _ w -> succ w
+
+setSignOptional :: DecimalLiteral -> DecimalLiteral
+setSignOptional = \case
+  DecimalLiteralInteger mS a -> DecimalLiteralInteger (go mS) a
+  DecimalLiteralFractional mS m e -> DecimalLiteralFractional (go mS) m e
+  where
+    go = \case
+      Just True -> Nothing
+      s -> s
+
+setSignRequired :: DecimalLiteral -> DecimalLiteral
+setSignRequired = \case
+  DecimalLiteralInteger mS a -> DecimalLiteralInteger (go mS) a
+  DecimalLiteralFractional mS m e -> DecimalLiteralFractional (go mS) m e
+  where
+    go = \case
+      Nothing -> Just True
+      s -> s

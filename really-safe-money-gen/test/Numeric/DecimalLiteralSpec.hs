@@ -129,48 +129,43 @@ spec = do
                   Nothing -> expectationFailure "Should have been able to parse as an account"
                   Just q -> q `shouldBe` qf
 
---   describe "toAccount" $ do
---     it "produces valid factors" $
---       producesValid2 toAccount
---
---     it "succeeds on this unit example" $
---       toAccount (QuantisationFactor 100) (DecimalLiteral False 2 (scientific 1 0)) `shouldBe` Just (Positive (Amount 100))
---
---     it "succeeds on this cent example" $
---       toAccount (QuantisationFactor 100) (DecimalLiteral True 2 (scientific 1 (-2))) `shouldBe` Just (Positive (Amount 1))
---
---     it "succeeds on this rappen example" $
---       toAccount (QuantisationFactor 20) (DecimalLiteral False 2 (scientific 5 (-2))) `shouldBe` Just (Positive (Amount 1))
---
---     it "succeeds on this BTC example" $
---       toAccount (QuantisationFactor 100_000_000) (DecimalLiteral True 8 (scientific 5 (-6))) `shouldBe` Just (Positive (Amount 500))
---
---     it "fails on an amount that is too precise" $
---       toAccount (QuantisationFactor 100) (DecimalLiteral False 2 (scientific 1 (-3))) `shouldBe` Nothing
---
---   describe "fromAccount" $ do
---     it "succeeds on this unit example" $
---       fromAccount (QuantisationFactor 1) (Positive (Amount 1)) `shouldBe` Just (DecimalLiteral True 0 (scientific 1 0))
---
---     it "succeeds on this cent example" $
---       fromAccount (QuantisationFactor 100) (Positive (Amount 1)) `shouldBe` Just (DecimalLiteral True 2 (scientific 1 (-2)))
---
---     it "succeeds on this rappen example" $
---       fromAccount (QuantisationFactor 20) (Positive (Amount 1)) `shouldBe` Just (DecimalLiteral True 2 (scientific 5 (-2)))
---
---     it "produces valid literals" $
---       producesValid2 fromAccount
---
---     it "roundtrips with toAccount" $
---       forAllValid $ \acc ->
---         forAllValid $ \qf -> do
---           case fromAccount qf acc of
---             Nothing -> pure () -- Fine
---             Just dl ->
---               context (show dl) $
---                 case toAccount qf dl of
---                   Nothing -> expectationFailure "Should have been able to parse as an account"
---                   Just a -> a `shouldBe` acc
+  describe "Account" $ do
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 100 1) (Positive (Amount 100))
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just False) 200 1) (Negative (Amount 200))
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 3 1) (Positive (Amount 3))
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just False) 4 1) (Negative (Amount 4))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 500 1) (Positive (Amount 100))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just False) 600 1) (Negative (Amount 120))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 10 1) (Positive (Amount 2))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just False) 20 1) (Negative (Amount 4))
+    accountExampleSpec (QuantisationFactor 1) (DecimalLiteralInteger (Just True) 1) (Positive (Amount 1))
+    accountExampleSpec (QuantisationFactor 1) (DecimalLiteralInteger (Just False) 2) (Negative (Amount 2))
+    accountExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteralFractional (Just True) 500 7) (Positive (Amount 500))
+
+    describe "toAccount" $ do
+      it "produces valid factors" $
+        producesValid2 toAccount
+
+      it "fails on this amount that is too precise" $
+        toAccount (QuantisationFactor 100) (DecimalLiteralFractional (Just False) 1 3) `shouldBe` Nothing
+      it "fails on this amount that is too precise" $
+        toAccount (QuantisationFactor 20) (DecimalLiteralFractional (Just False) 1 2) `shouldBe` Nothing
+
+    describe "fromAccount" $ do
+      it "produces valid decimal literals" $
+        producesValid2 fromAccount
+
+      it "roundtrips with toAccount" $
+        forAllValid $ \acc ->
+          forAllValid $ \qf -> do
+            case fromAccount qf acc of
+              Nothing -> pure () -- Fine
+              Just dl ->
+                context (show dl) $
+                  case toAccount qf dl of
+                    Nothing -> expectationFailure "Should have been able to parse as an account"
+                    Just a -> a `shouldBe` acc
+
 exampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
 exampleSpec s dl = do
   parseExampleSpec s dl
@@ -215,11 +210,29 @@ quantisationFactorExampleSpec dl qf =
 quantisationFactorParseExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
 quantisationFactorParseExampleSpec dl qf =
   withFrozenCallStack $
-    it (unwords ["can turn", show dl, "into quantisation factor", show (unQuantisationFactor qf)]) $
-      toQuantisationFactor dl `shouldBe` Just qf
+    it (unwords ["can turn quantisation factor", show (unQuantisationFactor qf), "into", show dl]) $
+      fromQuantisationFactor qf `shouldBe` Just dl
 
 quantisationFactorRenderExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
 quantisationFactorRenderExampleSpec dl qf =
   withFrozenCallStack $
-    it (unwords ["can turn quantisation factor", show (unQuantisationFactor qf), "into", show dl]) $
-      fromQuantisationFactor qf `shouldBe` Just dl
+    it (unwords ["can turn", show dl, "into quantisation factor", show (unQuantisationFactor qf)]) $
+      toQuantisationFactor dl `shouldBe` Just qf
+
+accountExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+accountExampleSpec qf dl a =
+  withFrozenCallStack $ do
+    accountParseExampleSpec qf dl a
+    accountRenderExampleSpec qf dl a
+
+accountParseExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+accountParseExampleSpec qf dl a =
+  withFrozenCallStack $
+    it (unwords ["can turn account", show qf, "into", show dl]) $
+      fromAccount qf a `shouldBe` Just dl
+
+accountRenderExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+accountRenderExampleSpec qf dl a =
+  withFrozenCallStack $
+    it (unwords ["can turn", show dl, "into account", show qf]) $
+      toAccount qf dl `shouldBe` Just a
