@@ -7,6 +7,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports -Wno-unused-imports #-}
 
+-- | Amount
+--
 -- === Importing this module
 --
 -- This module is designed to be imported as follows:

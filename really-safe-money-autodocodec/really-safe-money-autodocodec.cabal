@@ -40,7 +40,6 @@ library
       autodocodec
     , base >=4.7 && <5
     , really-safe-money
-    , text
   default-language: Haskell2010
 
 test-suite really-safe-money-autodocodec-doctest
@@ -77,6 +76,5 @@ test-suite really-safe-money-autodocodec-test
     , really-safe-money
     , really-safe-money-autodocodec
     , really-safe-money-gen
-    , safe-coloured-text
     , sydtest
   default-language: Haskell2010

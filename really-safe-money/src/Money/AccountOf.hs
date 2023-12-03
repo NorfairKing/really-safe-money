@@ -3,6 +3,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- | Account of a given type-level currency
+--
+-- === Importing this module
+--
+-- This module is designed to be imported as follows:
+--
+-- @
+-- import Money.AccountOf (AccountOf)
+-- import qualified Money.AccountOf as AccountOf
+-- @
 module Money.AccountOf
   ( AccountOf (..),
     IsCurrencyType (..),

@@ -8,6 +8,16 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports -Wno-redundant-constraints #-}
 
+-- | Amount of a given type-level currency
+--
+-- === Importing this module
+--
+-- This module is designed to be imported as follows:
+--
+-- @
+-- import Money.AmountOf (AmountOf)
+-- import qualified Money.AmountOf as AmountOf
+-- @
 module Money.AmountOf
   ( AmountOf (..),
     IsCurrencyType (..),

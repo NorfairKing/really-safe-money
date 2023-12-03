@@ -4,6 +4,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UnboxedTuples #-}
 
+-- | Decimal Literal
+--
+-- === Importing this module
+--
+-- This module is designed to be imported as follows:
+--
+-- @
+-- import Numeric.DecimalLiteral (DecimalLiteral)
+-- import qualified Numeric.DecimalLiteral as DecimalLiteral
+-- @
 module Numeric.DecimalLiteral
   ( DecimalLiteral (..),
     parseDecimalLiteralM,
