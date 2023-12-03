@@ -171,16 +171,16 @@ fromRational r =
               ((Natural, Int), Maybe Int)
           )
         longDivWithLimit !c !e _ns 0 =
-          Just ((fromIntegral (abs c), fromIntegral e), Nothing)
+          Just ((fromIntegral (abs c), e), Nothing)
         longDivWithLimit !c !e ns !n
           | Just e' <- M.lookup n ns =
-              Just ((fromIntegral (abs c), fromIntegral e), Just (-e'))
+              Just ((fromIntegral (abs c), e), Just (-e'))
           | e <= (-l) = Nothing
           | n < d =
               let !ns' = M.insert n e ns
                in longDivWithLimit (c * 10) (e - 1) ns' (n * 10)
           | otherwise = case n `quotRemInteger` d of
-              (# q, r #) -> longDivWithLimit (c + q) e ns r
+              (# q, r' #) -> longDivWithLimit (c + q) e ns r'
 
         d = denominator rational
 
