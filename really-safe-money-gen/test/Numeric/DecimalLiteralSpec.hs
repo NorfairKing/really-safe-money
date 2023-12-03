@@ -9,27 +9,10 @@ import Money.Account.Gen ()
 import Money.Amount (Amount (..))
 import Money.QuantisationFactor
 import Money.QuantisationFactor.Gen ()
-import Numeric.DecimalLiteral
+import Numeric.DecimalLiteral as DecimalLiteral
 import Numeric.DecimalLiteral.Gen ()
 import Test.Syd
 import Test.Syd.Validity
-
-exampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
-exampleSpec s dl = do
-  parseExampleSpec s dl
-  renderExampleSpec s dl
-
-parseExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
-parseExampleSpec s dl =
-  withFrozenCallStack $
-    it ("can parse " <> show s) $
-      parseDecimalLiteral s `shouldBe` Just dl
-
-renderExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
-renderExampleSpec s dl =
-  withFrozenCallStack $
-    it ("can render " <> show dl) $
-      renderDecimalLiteral dl `shouldBe` s
 
 spec :: Spec
 spec = do
@@ -54,6 +37,9 @@ spec = do
       producesValid renderDecimalLiteral
 
   describe "parseDecimalLiteral" $ do
+    it "fails to parse scientific notation" $
+      parseDecimalLiteral "1E1" `shouldBe` Nothing
+
     it "can parse any rendered decimal literal" $
       forAllValid $ \decimalLiteral -> do
         let rendered = renderDecimalLiteral decimalLiteral
@@ -61,52 +47,88 @@ spec = do
           Nothing -> expectationFailure "could not parse."
           Just dl -> dl `shouldBe` decimalLiteral
 
---
---   describe "toQuantisationFactor" $ do
---     it "produces valid factors" $
---       producesValid toQuantisationFactor
---
---     it "succeeds on the units example" $
---       toQuantisationFactor (DecimalLiteral False 0 (scientific 1 0)) `shouldBe` Just (QuantisationFactor 1)
---
---     it "succeeds on this tens example" $
---       toQuantisationFactor (DecimalLiteral True 1 (scientific 1 (-1))) `shouldBe` Just (QuantisationFactor 10)
---
---     it "succeeds on the cents example" $
---       toQuantisationFactor (DecimalLiteral False 2 (scientific 1 (-2))) `shouldBe` Just (QuantisationFactor 100)
---
---     it "succeeds on the rappen example" $
---       toQuantisationFactor (DecimalLiteral True 3 (scientific 5 (-2))) `shouldBe` Just (QuantisationFactor 20)
---
---     it "fails on a non-integer factor 0.01" $
---       toQuantisationFactor (DecimalLiteral False 4 (scientific 1 2)) `shouldBe` Nothing
---
---     it "fails on a negative factor" $
---       toQuantisationFactor (DecimalLiteral True 5 (scientific (-1) 0)) `shouldBe` Nothing
---
---   describe "fromQuantisationFactor" $ do
---     it "succeeds on this unit example" $
---       fromQuantisationFactor (QuantisationFactor 1) `shouldBe` Just (DecimalLiteral False 0 (scientific 1 0))
---
---     it "succeeds on this cent example" $
---       fromQuantisationFactor (QuantisationFactor 100) `shouldBe` Just (DecimalLiteral False 2 (scientific 1 (-2)))
---
---     it "succeeds on this rappen example" $
---       fromQuantisationFactor (QuantisationFactor 20) `shouldBe` Just (DecimalLiteral False 2 (scientific 5 (-2)))
---
---     it "produces valid literals" $
---       producesValid fromQuantisationFactor
---
---     it "roundtrips with toQuantisationFactor" $
---       forAllValid $ \qf -> do
---         case fromQuantisationFactor qf of
---           Nothing -> pure () -- Fine
---           Just dl ->
---             context (show dl) $
---               case toQuantisationFactor dl of
---                 Nothing -> expectationFailure "Should have been able to parse as an account"
---                 Just q -> q `shouldBe` qf
---
+  describe "Rational" $ do
+    rationalExampleSpec (DecimalLiteralInteger Nothing 1) 1
+    rationalExampleSpec (DecimalLiteralInteger Nothing 10) 10
+    rationalExampleSpec (DecimalLiteralInteger Nothing 2) 2
+    rationalExampleSpec (DecimalLiteralInteger (Just False) 3) (-3)
+    rationalExampleSpec (DecimalLiteralInteger Nothing 400) 400
+    rationalParseExampleSpec (DecimalLiteralInteger Nothing 5) 5
+    rationalRenderExampleSpec (DecimalLiteralFractional Nothing 50 0) 5
+    rationalParseExampleSpec (DecimalLiteralInteger (Just False) 6) (-6)
+    rationalRenderExampleSpec (DecimalLiteralFractional (Just False) 600 1) (-6)
+    rationalParseExampleSpec (DecimalLiteralInteger Nothing 7) 7
+    rationalRenderExampleSpec (DecimalLiteralFractional Nothing 7_000 2) 7
+    rationalExampleSpec (DecimalLiteralFractional (Just False) 8 0) (-0.8)
+    rationalExampleSpec (DecimalLiteralFractional Nothing 9 1) 0.09
+    rationalExampleSpec (DecimalLiteralFractional (Just False) 1 2) (-0.001)
+    rationalParseExampleSpec (DecimalLiteralFractional Nothing 2 2) 0.002
+    rationalRenderExampleSpec (DecimalLiteralFractional Nothing 20 3) 0.002
+    rationalParseExampleSpec (DecimalLiteralFractional (Just False) 3 2) (-0.003)
+    rationalRenderExampleSpec (DecimalLiteralFractional (Just False) 300 4) (-0.003)
+    rationalExampleSpec (DecimalLiteralFractional Nothing 1_200_045 4) 12.000_45
+
+    describe "toRational" $ do
+      it "renders to valid rationals" $
+        producesValid DecimalLiteral.toRational
+
+    describe "fromRational" $ do
+      it "renders to valid decimal literals" $
+        producesValid DecimalLiteral.fromRational
+
+      it "can parse any rendered rational" $
+        forAllValid $ \decimalLiteral -> do
+          let r = DecimalLiteral.toRational decimalLiteral
+          context (show r) $ case DecimalLiteral.fromRational r of
+            Nothing -> expectationFailure "could not parse rational."
+            Just actual ->
+              context (show actual) $
+                DecimalLiteral.toRational actual `shouldBe` DecimalLiteral.toRational decimalLiteral
+
+  describe "QuantisationFactor" $ do
+    quantisationFactorExampleSpec (DecimalLiteralInteger Nothing 1) (QuantisationFactor 1)
+    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 1 0) (QuantisationFactor 10)
+    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 1 1) (QuantisationFactor 100)
+    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 1 2) (QuantisationFactor 1_000)
+    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 5 1) (QuantisationFactor 20)
+    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 2 1) (QuantisationFactor 50)
+
+    describe "toQuantisationFactor" $ do
+      it "produces valid factors" $
+        producesValid toQuantisationFactor
+
+      it "fails to render negative integers" $
+        forAllValid $ \a ->
+          toQuantisationFactor (DecimalLiteralInteger (Just False) a) `shouldBe` Nothing
+
+      it "fails to render negative fractionals" $
+        forAllValid $ \m ->
+          forAllValid $ \e ->
+            toQuantisationFactor (DecimalLiteralFractional (Just False) m e) `shouldBe` Nothing
+
+      it "fails to render a 0 integer" $
+        forAllValid $ \mSign ->
+          toQuantisationFactor (DecimalLiteralInteger mSign 0) `shouldBe` Nothing
+
+      it "fails to render a non-1 integer" $
+        forAllValid $ \mSign ->
+          forAllValid $ \a ->
+            toQuantisationFactor (DecimalLiteralInteger mSign (succ a)) `shouldBe` Nothing
+
+    describe "fromQuantisationFactor" $ do
+      it "produces valid literals" $
+        producesValid fromQuantisationFactor
+
+      it "roundtrips with toQuantisationFactor" $
+        forAllValid $ \qf -> do
+          case fromQuantisationFactor qf of
+            Nothing -> pure () -- Fine
+            Just dl ->
+              context (show dl) $
+                case toQuantisationFactor dl of
+                  Nothing -> expectationFailure "Should have been able to parse as an account"
+                  Just q -> q `shouldBe` qf
+
 --   describe "toAccount" $ do
 --     it "produces valid factors" $
 --       producesValid2 toAccount
@@ -149,3 +171,55 @@ spec = do
 --                 case toAccount qf dl of
 --                   Nothing -> expectationFailure "Should have been able to parse as an account"
 --                   Just a -> a `shouldBe` acc
+exampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
+exampleSpec s dl = do
+  parseExampleSpec s dl
+  renderExampleSpec s dl
+
+parseExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
+parseExampleSpec s dl =
+  withFrozenCallStack $
+    it ("can parse " <> show s) $
+      parseDecimalLiteral s `shouldBe` Just dl
+
+renderExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
+renderExampleSpec s dl =
+  withFrozenCallStack $
+    it ("can render " <> show dl) $
+      renderDecimalLiteral dl `shouldBe` s
+
+rationalExampleSpec :: HasCallStack => DecimalLiteral -> Rational -> Spec
+rationalExampleSpec dl qf =
+  withFrozenCallStack $ do
+    rationalParseExampleSpec dl qf
+    rationalRenderExampleSpec dl qf
+
+rationalParseExampleSpec :: HasCallStack => DecimalLiteral -> Rational -> Spec
+rationalParseExampleSpec dl r =
+  withFrozenCallStack $
+    it (unwords ["can turn rational", show r, "into", show dl]) $
+      DecimalLiteral.fromRational r `shouldBe` Just dl
+
+rationalRenderExampleSpec :: HasCallStack => DecimalLiteral -> Rational -> Spec
+rationalRenderExampleSpec dl r =
+  withFrozenCallStack $
+    it (unwords ["can turn", show dl, "into rational", show r]) $
+      DecimalLiteral.toRational dl `shouldBe` r
+
+quantisationFactorExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
+quantisationFactorExampleSpec dl qf =
+  withFrozenCallStack $ do
+    quantisationFactorParseExampleSpec dl qf
+    quantisationFactorRenderExampleSpec dl qf
+
+quantisationFactorParseExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
+quantisationFactorParseExampleSpec dl qf =
+  withFrozenCallStack $
+    it (unwords ["can turn", show dl, "into quantisation factor", show (unQuantisationFactor qf)]) $
+      toQuantisationFactor dl `shouldBe` Just qf
+
+quantisationFactorRenderExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
+quantisationFactorRenderExampleSpec dl qf =
+  withFrozenCallStack $
+    it (unwords ["can turn quantisation factor", show (unQuantisationFactor qf), "into", show dl]) $
+      fromQuantisationFactor qf `shouldBe` Just dl

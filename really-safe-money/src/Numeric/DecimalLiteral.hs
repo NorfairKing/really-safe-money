@@ -22,11 +22,14 @@ where
 import Control.DeepSeq
 import qualified Data.Char as Char
 import Data.List (find)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Ratio
 import Data.Validity
 import Data.Validity.Scientific ()
 import Data.Word
 import GHC.Generics (Generic)
+import GHC.Integer (quotRemInteger)
 import qualified Money.Account as Account
 import qualified Money.Account as Money (Account)
 import Money.QuantisationFactor
@@ -134,12 +137,73 @@ renderDecimalLiteral = \case
     go e [] = '0' : go (pred e) []
     go e (c : cs) = c : go (pred e) cs
 
+-- Uses "no sign" for positive numbers
 fromRational :: Rational -> Maybe DecimalLiteral
-fromRational = undefined
+fromRational r =
+  let d = denominator r
+   in if d == 1
+        then Just (DecimalLiteralInteger (rationalSign r) (fromIntegral (abs (numerator r))))
+        else fromRationalRepetendLimited 128 r
+  where
+    -- Like 'fromRationalRepetend' but always accepts a limit.
+    fromRationalRepetendLimited ::
+      -- limit
+      Int ->
+      Rational ->
+      Maybe DecimalLiteral
+    fromRationalRepetendLimited l rational
+      | d == 0 = Nothing
+      | num < 0 = toLiteral (Just False) <$> longDiv (-num)
+      | otherwise = toLiteral Nothing <$> longDiv num
+      where
+        toLiteral mSign ((m, e), _) = DecimalLiteralFractional mSign m (fromIntegral (pred (abs e)))
+        num = numerator rational
+
+        longDiv :: Integer -> Maybe ((Natural, Int), Maybe Int)
+        longDiv = longDivWithLimit 0 0 M.empty
+
+        longDivWithLimit ::
+          Integer ->
+          Int ->
+          Map Integer Int ->
+          ( Integer ->
+            Maybe
+              ((Natural, Int), Maybe Int)
+          )
+        longDivWithLimit !c !e _ns 0 =
+          Just ((fromIntegral (abs c), fromIntegral e), Nothing)
+        longDivWithLimit !c !e ns !n
+          | Just e' <- M.lookup n ns =
+              Just ((fromIntegral (abs c), fromIntegral e), Just (-e'))
+          | e <= (-l) = Nothing
+          | n < d =
+              let !ns' = M.insert n e ns
+               in longDivWithLimit (c * 10) (e - 1) ns' (n * 10)
+          | otherwise = case n `quotRemInteger` d of
+              (# q, r #) -> longDivWithLimit (c + q) e ns r
+
+        d = denominator rational
 
 toRational :: DecimalLiteral -> Rational
-toRational = undefined
+toRational = \case
+  DecimalLiteralInteger mSign i ->
+    signRational mSign * fromIntegral i
+  DecimalLiteralFractional mSign m e ->
+    (signRational mSign * fromIntegral m) / (10 ^ (e + 1))
 
+rationalSign :: Rational -> Maybe Bool
+rationalSign r =
+  if r >= 0
+    then Nothing
+    else Just False
+
+signRational :: Maybe Bool -> Rational
+signRational = \case
+  Nothing -> 1
+  Just True -> 1
+  Just False -> -1
+
+-- TODO explain that it's the inverse.
 toQuantisationFactor :: DecimalLiteral -> Maybe QuantisationFactor
 toQuantisationFactor dl = do
   irat <-
@@ -163,14 +227,11 @@ toQuantisationFactor dl = do
     then Just (QuantisationFactor (fromIntegral fac))
     else Nothing
 
+-- TODO explain that it's the inverse.
 fromQuantisationFactor :: QuantisationFactor -> Maybe DecimalLiteral
-fromQuantisationFactor (QuantisationFactor qfw) =
+fromQuantisationFactor qf@(QuantisationFactor qfw) =
   let r = 1 % fromIntegral qfw
-   in do
-        _ <- fromRational r
-        -- TODO set quantisationFactorDigits
-        -- DecimalLiteral False (quantisationFactorDigits qf) s
-        undefined
+   in setMinimumDigits (quantisationFactorDigits qf) <$> fromRational r
 
 toAccount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Account
 toAccount qf = Account.fromRational qf . toRational
@@ -178,11 +239,10 @@ toAccount qf = Account.fromRational qf . toRational
 fromAccount :: QuantisationFactor -> Money.Account -> Maybe DecimalLiteral
 fromAccount qf acc =
   let r = Account.toRational qf acc
-   in do
-        _ <- fromRational r
-        -- TODO set quantisationFactorDigits
-        -- DecimalLiteral False (quantisationFactorDigits qf) s
-        undefined
+   in setMinimumDigits (quantisationFactorDigits qf) <$> fromRational r
 
 quantisationFactorDigits :: QuantisationFactor -> Word8
 quantisationFactorDigits qf = ceiling (logBase 10 $ fromIntegral $ unQuantisationFactor qf :: Float)
+
+setMinimumDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
+setMinimumDigits _ = id -- TODO
