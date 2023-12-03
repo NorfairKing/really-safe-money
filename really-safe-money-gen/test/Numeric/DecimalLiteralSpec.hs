@@ -113,7 +113,7 @@ spec = do
       it "fails to render a non-1 integer" $
         forAllValid $ \mSign ->
           forAllValid $ \a ->
-            toQuantisationFactor (DecimalLiteralInteger mSign (succ a)) `shouldBe` Nothing
+            toQuantisationFactor (DecimalLiteralInteger mSign (succ (succ a))) `shouldBe` Nothing
 
     describe "fromQuantisationFactor" $ do
       it "produces valid literals" $
