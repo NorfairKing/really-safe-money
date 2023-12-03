@@ -1,7 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UnboxedTuples #-}
 
@@ -121,13 +120,19 @@ parseDigits f z = do
 renderDecimalLiteral :: DecimalLiteral -> String
 renderDecimalLiteral = \case
   DecimalLiteralInteger s a -> sign s ++ show a
-  DecimalLiteralFractional s m e -> sign s ++ go m e
+  DecimalLiteralFractional s m e -> sign s ++ goFrac m e
   where
     sign = \case
       Nothing -> ""
       Just True -> "+"
       Just False -> "-"
-    go m _ = show m -- TODO
+
+    goFrac m e = reverse (go (succ e) (reverse (show m)))
+    go :: Word8 -> String -> String
+    go 0 [] = ['.', '0']
+    go 0 s = '.' : s
+    go e [] = '0' : go (pred e) []
+    go e (c : cs) = c : go (pred e) cs
 
 fromRational :: Rational -> Maybe DecimalLiteral
 fromRational = undefined

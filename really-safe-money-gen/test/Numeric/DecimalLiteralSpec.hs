@@ -41,11 +41,13 @@ spec = do
     exampleSpec "400" (DecimalLiteralInteger Nothing 400)
     exampleSpec "5.0" (DecimalLiteralFractional Nothing 50 0)
     exampleSpec "6.00" (DecimalLiteralFractional Nothing 600 1)
-    exampleSpec "7.000" (DecimalLiteralFractional Nothing 7000 2)
+    exampleSpec "7.000" (DecimalLiteralFractional Nothing 7_000 2)
     exampleSpec "0.8" (DecimalLiteralFractional Nothing 8 0)
     exampleSpec "0.09" (DecimalLiteralFractional Nothing 9 1)
     exampleSpec "0.001" (DecimalLiteralFractional Nothing 1 2)
-    exampleSpec "12.00045" (DecimalLiteralFractional Nothing 1200045 4)
+    exampleSpec "0.0020" (DecimalLiteralFractional Nothing 20 3)
+    exampleSpec "0.00300" (DecimalLiteralFractional Nothing 300 4)
+    exampleSpec "12.00045" (DecimalLiteralFractional Nothing 1_200_045 4)
 
   describe "renderDecimalLiteral" $ do
     it "can render any decimal literal" $
