@@ -143,7 +143,7 @@ fromRational r =
   let d = denominator r
    in if d == 1
         then Just (DecimalLiteralInteger (rationalSign r) (fromIntegral (abs (numerator r))))
-        else fromRationalRepetendLimited 128 r
+        else fromRationalRepetendLimited 256 r
   where
     -- Like 'fromRationalRepetend' but always accepts a limit.
     fromRationalRepetendLimited ::
@@ -156,10 +156,11 @@ fromRational r =
       | num < 0 = toLiteral (Just False) <$> longDiv (-num)
       | otherwise = toLiteral Nothing <$> longDiv num
       where
-        toLiteral mSign ((m, e), _) = DecimalLiteralFractional mSign m (fromIntegral (pred (abs e)))
+        toLiteral mSign (m, e) = DecimalLiteralFractional mSign m (fromIntegral (pred (abs e)))
+        d = denominator rational
         num = numerator rational
 
-        longDiv :: Integer -> Maybe ((Natural, Int), Maybe Int)
+        longDiv :: Integer -> Maybe (Natural, Int)
         longDiv = longDivWithLimit 0 0 M.empty
 
         longDivWithLimit ::
@@ -168,21 +169,19 @@ fromRational r =
           Map Integer Int ->
           ( Integer ->
             Maybe
-              ((Natural, Int), Maybe Int)
+              (Natural, Int)
           )
         longDivWithLimit !c !e _ns 0 =
-          Just ((fromIntegral (abs c), e), Nothing)
+          Just (fromIntegral (abs c), e)
         longDivWithLimit !c !e ns !n
-          | Just e' <- M.lookup n ns =
-              Just ((fromIntegral (abs c), e), Just (-e'))
+          -- If there's a repetend, we can't turn it into a decimal literal
+          | Just _ <- M.lookup n ns = Nothing
           | e <= (-l) = Nothing
           | n < d =
               let !ns' = M.insert n e ns
                in longDivWithLimit (c * 10) (e - 1) ns' (n * 10)
           | otherwise = case n `quotRemInteger` d of
               (# q, r' #) -> longDivWithLimit (c + q) e ns r'
-
-        d = denominator rational
 
 toRational :: DecimalLiteral -> Rational
 toRational = \case
