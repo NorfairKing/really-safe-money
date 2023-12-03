@@ -3,7 +3,6 @@
 
 module Numeric.DecimalLiteralSpec (spec) where
 
-import Data.Scientific
 import Money.Account (Account (..))
 import Money.Account.Gen ()
 import Money.Amount (Amount (..))

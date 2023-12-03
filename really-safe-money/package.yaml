@@ -13,7 +13,6 @@ library:
   dependencies:
   - containers
   - deepseq
-  - scientific
   - validity
   - validity-containers
   - validity-scientific

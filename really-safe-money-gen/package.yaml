@@ -12,9 +12,7 @@ library:
   - QuickCheck
   - genvalidity
   - genvalidity-containers
-  - genvalidity-scientific
   - really-safe-money
-  - scientific
 
 benchmarks:
   really-safe-money-bench:
@@ -52,4 +50,3 @@ tests:
     - really-safe-money-gen
     - sydtest
     - vector
-    - scientific

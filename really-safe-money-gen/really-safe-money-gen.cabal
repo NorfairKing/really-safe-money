@@ -36,9 +36,7 @@ library
     , base >=4.7 && <5
     , genvalidity
     , genvalidity-containers
-    , genvalidity-scientific
     , really-safe-money
-    , scientific
   default-language: Haskell2010
 
 test-suite really-safe-money-test
@@ -66,7 +64,6 @@ test-suite really-safe-money-test
     , genvalidity-vector
     , really-safe-money
     , really-safe-money-gen
-    , scientific
     , sydtest
     , vector
   default-language: Haskell2010

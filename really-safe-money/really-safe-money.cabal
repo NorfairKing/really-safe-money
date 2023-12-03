@@ -35,7 +35,6 @@ library
       base >=4.7 && <5
     , containers
     , deepseq
-    , scientific
     , validity
     , validity-containers
     , validity-scientific

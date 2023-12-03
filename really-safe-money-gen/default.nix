@@ -1,20 +1,19 @@
 { mkDerivation, base, criterion, deepseq, genvalidity
 , genvalidity-containers, genvalidity-criterion
-, genvalidity-scientific, genvalidity-sydtest, genvalidity-vector
-, lib, QuickCheck, really-safe-money, scientific, sydtest
-, sydtest-discover, vector
+, genvalidity-sydtest, genvalidity-vector, lib, QuickCheck
+, really-safe-money, sydtest, sydtest-discover, vector
 }:
 mkDerivation {
   pname = "really-safe-money-gen";
   version = "0.0.0.0";
   src = ./.;
   libraryHaskellDepends = [
-    base genvalidity genvalidity-containers genvalidity-scientific
-    QuickCheck really-safe-money scientific
+    base genvalidity genvalidity-containers QuickCheck
+    really-safe-money
   ];
   testHaskellDepends = [
     base genvalidity-sydtest genvalidity-vector really-safe-money
-    scientific sydtest vector
+    sydtest vector
   ];
   testToolDepends = [ sydtest-discover ];
   benchmarkHaskellDepends = [
