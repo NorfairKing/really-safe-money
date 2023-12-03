@@ -16,15 +16,15 @@
 -- @
 module Numeric.DecimalLiteral
   ( DecimalLiteral (..),
-    parseDecimalLiteralM,
     parseDecimalLiteral,
+    parseDecimalLiteralM,
     renderDecimalLiteral,
-    toRational,
     fromRational,
-    toQuantisationFactor,
+    toRational,
     fromQuantisationFactor,
-    toAccount,
+    toQuantisationFactor,
     fromAccount,
+    toAccount,
     quantisationFactorDigits,
     setSignRequired,
     setSignOptional,
@@ -89,13 +89,26 @@ instance IsString DecimalLiteral where
     Nothing -> error $ "Invalid decimal literal string: " <> show s
     Just dl -> dl
 
+-- | Parse a decimal literal from a string
+--
+-- This only accepts non-scientific notation
+--
+-- >>> parseDecimalLiteral "1"
+-- Just (DecimalLiteralInteger Nothing 1)
+-- >>> parseDecimalLiteral "0.02"
+-- Just (DecimalLiteralFractional Nothing 2 1)
+-- >>> parseDecimalLiteral "+0.00003"
+-- Just (DecimalLiteralFractional (Just True) 3 4)
+-- >>> parseDecimalLiteral "-0.00000004"
+-- Just (DecimalLiteralFractional (Just False) 4 7)
+parseDecimalLiteral :: String -> Maybe DecimalLiteral
+parseDecimalLiteral = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
+
+-- | Like 'parseDecimalLiteral' but in a 'MonadFail'
 parseDecimalLiteralM :: MonadFail m => String -> m DecimalLiteral
 parseDecimalLiteralM s = case parseDecimalLiteral s of
   Nothing -> fail $ "Failed to parse decimal literal from:" <> show s
   Just dl -> pure dl
-
-parseDecimalLiteral :: String -> Maybe DecimalLiteral
-parseDecimalLiteral = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
 
 decimalLiteralP :: ReadP DecimalLiteral
 decimalLiteralP = do
@@ -138,6 +151,20 @@ parseDigits f z = do
           go (f a digit) cs
       | otherwise = return a
 
+-- | Render a decimal literal to a string
+--
+-- >>> renderDecimalLiteral (DecimalLiteralInteger Nothing 5)
+-- "5"
+-- >>> renderDecimalLiteral (DecimalLiteralInteger (Just True) 60)
+-- "+60"
+-- >>> renderDecimalLiteral (DecimalLiteralInteger (Just False) 700)
+-- "-700"
+-- >>> renderDecimalLiteral (DecimalLiteralFractional Nothing 8 2)
+-- "0.008"
+-- >>> renderDecimalLiteral (DecimalLiteralFractional (Just True) 90 4)
+-- "+0.00090"
+-- >>> renderDecimalLiteral (DecimalLiteralFractional (Just False) 100 6)
+-- "-0.0000100"
 renderDecimalLiteral :: DecimalLiteral -> String
 renderDecimalLiteral = \case
   DecimalLiteralInteger s a -> sign s ++ show a
@@ -155,12 +182,26 @@ renderDecimalLiteral = \case
     go e [] = '0' : go (pred e) []
     go e (c : cs) = c : go (pred e) cs
 
--- Uses "no sign" for positive numbers
+-- | Parse a 'DecimalLiteral' from a 'Rational'
+--
+-- Because a 'Rational' contains no rendering information, we fill in these details:
+--
+-- * Use "No sign" for positive numbers
+-- * Use the minimum number of required digits.
+--
+-- This fails when the rational cannot be represented finitely.
+--
+-- >>> fromRational (1 % 1)
+-- Just (DecimalLiteralInteger Nothing 1)
+-- >>> fromRational ((-1) % 2)
+-- Just (DecimalLiteralFractional (Just False) 5 0)
+-- >>> fromRational (1 % 3)
+-- Nothing
 fromRational :: Rational -> Maybe DecimalLiteral
 fromRational r =
   let d = denominator r
    in if d == 1
-        then Just (DecimalLiteralInteger (rationalSign r) (fromIntegral (abs (numerator r))))
+        then Just (DecimalLiteralInteger (if r >= 0 then Nothing else Just False) (fromIntegral (abs (numerator r))))
         else fromRationalRepetendLimited 256 r
   where
     fromRationalRepetendLimited ::
@@ -199,26 +240,61 @@ fromRational r =
           | otherwise = case n `quotRemInteger` d of
               (# q, r' #) -> longDivWithLimit (c + q) e ns r'
 
+-- | Turn a 'DecimalLiteral' into a 'Rational'
+--
+-- This throws away all rendering information
+--
+-- >>> toRational (DecimalLiteralInteger Nothing 1)
+-- 1 % 1
+-- >>> toRational (DecimalLiteralFractional (Just True) 2 0)
+-- 1 % 5
+-- >>> toRational (DecimalLiteralFractional (Just False) 3 0)
+-- (-3) % 10
 toRational :: DecimalLiteral -> Rational
 toRational = \case
   DecimalLiteralInteger mSign i ->
     signRational mSign * fromIntegral i
   DecimalLiteralFractional mSign m e ->
     (signRational mSign * fromIntegral m) / (10 ^ (e + 1))
+  where
+    signRational :: Maybe Bool -> Rational
+    signRational = \case
+      Nothing -> 1
+      Just True -> 1
+      Just False -> -1
 
-rationalSign :: Rational -> Maybe Bool
-rationalSign r =
-  if r >= 0
-    then Nothing
-    else Just False
+-- | Render a 'DecimalLiteral' that represents the smallest unit from a 'QuantisationFactor'
+--
+-- Note that this fails on quantisation factors that cannot be represented
+-- using a literal, for example because they would correspond to a number with
+-- an infinite decimal representation.
+--
+-- this will always have a 'Nothing' sign.
+--
+-- >>> fromQuantisationFactor (QuantisationFactor 100)
+-- Just (DecimalLiteralFractional Nothing 1 1)
+-- >>> fromQuantisationFactor (QuantisationFactor 20)
+-- Just (DecimalLiteralFractional Nothing 5 1)
+-- >>> fromQuantisationFactor (QuantisationFactor 1)
+-- Just (DecimalLiteralInteger Nothing 1)
+fromQuantisationFactor :: QuantisationFactor -> Maybe DecimalLiteral
+fromQuantisationFactor (QuantisationFactor qfw) =
+  setSignOptional <$> fromRational (1 % fromIntegral qfw)
 
-signRational :: Maybe Bool -> Rational
-signRational = \case
-  Nothing -> 1
-  Just True -> 1
-  Just False -> -1
-
+-- | Parse a 'QuantisationFactor' from a 'DecimalLiteral' that represents the smallest unit
 -- TODO explain that it's the inverse.
+--
+-- Note that this fails on:
+--
+-- * Negative literals
+-- * Integrals greater than 1
+--
+-- >>> toQuantisationFactor (DecimalLiteralInteger Nothing 2)
+-- Nothing
+-- >>> toQuantisationFactor (DecimalLiteralFractional (Just False) 2 1)
+-- Nothing
+-- >>> toQuantisationFactor (DecimalLiteralFractional (Just True) 2 1)
+-- Just (QuantisationFactor {unQuantisationFactor = 50})
 toQuantisationFactor :: DecimalLiteral -> Maybe QuantisationFactor
 toQuantisationFactor dl = do
   irat <-
@@ -241,11 +317,6 @@ toQuantisationFactor dl = do
   if fac <= fromIntegral (maxBound :: Word32)
     then Just (QuantisationFactor (fromIntegral fac))
     else Nothing
-
--- TODO explain that it's the inverse.
-fromQuantisationFactor :: QuantisationFactor -> Maybe DecimalLiteral
-fromQuantisationFactor (QuantisationFactor qfw) =
-  setSignOptional <$> fromRational (1 % fromIntegral qfw)
 
 toAccount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Account
 toAccount qf = Account.fromRational qf . toRational
