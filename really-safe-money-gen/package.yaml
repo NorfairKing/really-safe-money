@@ -12,10 +12,12 @@ library:
   - QuickCheck
   - genvalidity
   - genvalidity-containers
+  - genvalidity-scientific
   - really-safe-money
+  - scientific
 
 benchmarks:
-  smos-data-bench:
+  really-safe-money-bench:
     main: Main.hs
     source-dirs: bench/
     ghc-options:
@@ -44,10 +46,10 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - QuickCheck
     - genvalidity-sydtest
     - genvalidity-vector
     - really-safe-money
     - really-safe-money-gen
     - sydtest
     - vector
+    - scientific

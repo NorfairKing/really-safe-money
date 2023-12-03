@@ -13,8 +13,10 @@ library:
   dependencies:
   - containers
   - deepseq
+  - scientific
   - validity
   - validity-containers
+  - validity-scientific
 
 tests:
   really-safe-money-doctest:
