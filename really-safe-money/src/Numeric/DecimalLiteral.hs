@@ -25,9 +25,10 @@ module Numeric.DecimalLiteral
     toQuantisationFactor,
     fromAccount,
     toAccount,
-    quantisationFactorDigits,
     setSignRequired,
     setSignOptional,
+    digits,
+    setMinimumDigits,
   )
 where
 
@@ -43,13 +44,17 @@ import Data.Validity.Scientific ()
 import Data.Word
 import GHC.Generics (Generic)
 import GHC.Integer (quotRemInteger)
+import Money.Account as Money (Account (..))
 import qualified Money.Account as Account
-import qualified Money.Account as Money (Account)
-import Money.QuantisationFactor
+import Money.QuantisationFactor (QuantisationFactor (..))
+import qualified Money.QuantisationFactor as QuantisationFactor
 import Numeric.Natural
 import Text.ParserCombinators.ReadP (ReadP, readP_to_S)
 import qualified Text.ParserCombinators.ReadP as ReadP
 import Prelude hiding (fromRational, toRational)
+
+-- $setup
+-- >>> import Money.Amount (Amount(..))
 
 -- | Decimal literal
 --
@@ -318,20 +323,72 @@ toQuantisationFactor dl = do
     then Just (QuantisationFactor (fromIntegral fac))
     else Nothing
 
-toAccount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Account
-toAccount qf = Account.fromRational qf . toRational
-
+-- | Parse a 'DecimalLiteral' from an 'Account' of a currency with a given quantisation factor.
+--
+-- This fails when the 'QuantisationFactor' would prevent the account to be
+-- represented as a finite decimal literal.
+--
+-- Note that:
+--
+-- * The resulting literals always have a sign.
+-- * The resulting literals always have digits corresponding to the precision
+--   that the quantisation factor prescribes.
+--
+-- >>> fromAccount (QuantisationFactor 100) (Positive (Amount 1))
+-- Just (DecimalLiteralFractional (Just True) 1 1)
+-- >>> fromAccount (QuantisationFactor 100) (Negative (Amount 100))
+-- Just (DecimalLiteralFractional (Just False) 100 1)
+-- >>> fromAccount (QuantisationFactor 20) (Negative (Amount 100))
+-- Just (DecimalLiteralFractional (Just False) 500 1)
+-- >>> fromAccount (QuantisationFactor 1) (Positive (Amount 100))
+-- Just (DecimalLiteralInteger (Just True) 100)
+-- >>> fromAccount (QuantisationFactor 17) (Positive (Amount 100))
+-- Nothing
 fromAccount :: QuantisationFactor -> Money.Account -> Maybe DecimalLiteral
 fromAccount qf acc =
   let r = Account.toRational qf acc
-   in setSignRequired . setMinimumDigits (quantisationFactorDigits qf) <$> fromRational r
+   in setSignRequired . setMinimumDigits (QuantisationFactor.digits qf) <$> fromRational r
 
-quantisationFactorDigits :: QuantisationFactor -> Word8
-quantisationFactorDigits qf = ceiling (logBase 10 $ fromIntegral $ unQuantisationFactor qf :: Float)
+-- | Convert a 'DecimalLiteral' to an 'Account' of a currency with a given quantisation factor.
+--
+-- This fails when:
+--
+-- * the result would be too big to fit into an 'Account'.
+-- * the decimal literal is too precise.
+--
+-- >>> toAccount (QuantisationFactor 100) (DecimalLiteralInteger Nothing 100)
+-- Just (Positive (Amount 10000))
+-- >>> toAccount (QuantisationFactor 100) (DecimalLiteralFractional Nothing 1 3)
+-- Nothing
+-- >>> toAccount (QuantisationFactor 1000000000) (DecimalLiteralInteger Nothing 1000000000000)
+-- Nothing
+toAccount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Account
+toAccount qf = Account.fromRational qf . toRational
 
+-- | Count how many digits the literal has after the decimal point
+--
+-- >>> digits (DecimalLiteralInteger Nothing 1)
+-- 0
+-- >>> digits (DecimalLiteralFractional Nothing 100 1)
+-- 2
+-- >>> digits (DecimalLiteralFractional Nothing 1 1)
+-- 2
+digits :: DecimalLiteral -> Word8
+digits = \case
+  DecimalLiteralInteger _ _ -> 0
+  DecimalLiteralFractional _ _ w -> succ w
+
+-- | Set the minimum number of digits the literal has after the decimal point
+--
+-- Note that this function never decreases the number of digits after the decimal point.
+--
+-- >>> setMinimumDigits 2 (DecimalLiteralInteger Nothing 1)
+-- DecimalLiteralFractional Nothing 100 1
+-- >>> setMinimumDigits 0 (DecimalLiteralFractional Nothing 100 1)
+-- DecimalLiteralFractional Nothing 100 1
 setMinimumDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
 setMinimumDigits wantedDigits dl =
-  let currentDigits = decimalLiteralDigits dl
+  let currentDigits = digits dl
    in if wantedDigits <= currentDigits
         then dl
         else increaseDigits (wantedDigits - currentDigits) dl
@@ -342,11 +399,9 @@ setMinimumDigits wantedDigits dl =
       DecimalLiteralInteger mS a -> increaseDigits (pred w) (DecimalLiteralFractional mS (a * 10) 0)
       DecimalLiteralFractional mS m e -> increaseDigits (pred w) (DecimalLiteralFractional mS (m * 10) (succ e))
 
-decimalLiteralDigits :: DecimalLiteral -> Word8
-decimalLiteralDigits = \case
-  DecimalLiteralInteger _ _ -> 0
-  DecimalLiteralFractional _ _ w -> succ w
-
+-- | Ensures that a positive literal has no sign
+--
+-- Turns a @Just True@ sign into a @Nothing@ sign.
 setSignOptional :: DecimalLiteral -> DecimalLiteral
 setSignOptional = \case
   DecimalLiteralInteger mS a -> DecimalLiteralInteger (go mS) a
@@ -356,6 +411,9 @@ setSignOptional = \case
       Just True -> Nothing
       s -> s
 
+-- | Ensures that a positive literal has a sign
+--
+-- Turns a @Nothing@ sign into a @Just True@ sign.
 setSignRequired :: DecimalLiteral -> DecimalLiteral
 setSignRequired = \case
   DecimalLiteralInteger mS a -> DecimalLiteralInteger (go mS) a

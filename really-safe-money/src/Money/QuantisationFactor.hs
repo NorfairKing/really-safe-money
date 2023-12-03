@@ -12,6 +12,7 @@
 module Money.QuantisationFactor
   ( QuantisationFactor (..),
     fromWord32,
+    digits,
   )
 where
 
@@ -38,3 +39,6 @@ instance NFData QuantisationFactor
 
 fromWord32 :: Word32 -> Maybe QuantisationFactor
 fromWord32 = constructValid . QuantisationFactor
+
+digits :: QuantisationFactor -> Word8
+digits qf = ceiling (logBase 10 $ fromIntegral $ unQuantisationFactor qf :: Float)
