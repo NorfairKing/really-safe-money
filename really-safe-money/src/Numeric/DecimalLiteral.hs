@@ -1,14 +1,15 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UnboxedTuples #-}
 
 module Numeric.DecimalLiteral
   ( DecimalLiteral (..),
-    renderDecimalLiteral,
     parseDecimalLiteralM,
     parseDecimalLiteral,
+    renderDecimalLiteral,
     toRational,
     fromRational,
     toQuantisationFactor,
@@ -35,30 +36,38 @@ import Text.ParserCombinators.ReadP (ReadP, readP_to_S)
 import qualified Text.ParserCombinators.ReadP as ReadP
 import Prelude hiding (fromRational, toRational)
 
-data DecimalLiteral = DecimalLiteral
-  { -- Whether a sign should be present when rendering a positive number.
-    decimalLiteralSign :: !(Maybe Bool),
-    decimalLiteralUnits :: !Natural,
-    decimalLiteralLeadingZeroes :: !Word8,
-    decimalLiteralDecimals :: !(Maybe Natural)
-  }
+-- | Decimal literal
+--
+--
+-- Note on representation
+--
+-- * Why not some combination of @Scientific@ and representation fields?
+--   Because then there are multiple representations of negative numbers.
+-- * Why not only a @DecimalLiteralFractional (Maybe Bool) Natural Int8@?
+--   Because then there are multiple representations of "10": (Nothing, 10, 0) and (Nothing, 1, 1)
+data DecimalLiteral
+  = -- | Integral decimal literal
+    DecimalLiteralInteger
+      !(Maybe Bool)
+      -- ^ Sign
+      !Natural
+      -- ^ Absolute value
+  | -- | Fractional decimal literal
+    --
+    -- Using a and e to represent
+    -- m * 10 ^(-(e + 1))
+    DecimalLiteralFractional
+      !(Maybe Bool)
+      -- ^ Sign
+      !Natural
+      -- ^ m
+      !Word8
+      -- ^ e
   deriving (Show, Eq, Generic)
 
 instance Validity DecimalLiteral
 
 instance NFData DecimalLiteral
-
-renderDecimalLiteral :: DecimalLiteral -> String
-renderDecimalLiteral DecimalLiteral {..} =
-  concat
-    [ case decimalLiteralSign of
-        Nothing -> ""
-        Just True -> "+"
-        Just False -> "-",
-      show decimalLiteralUnits,
-      replicate (fromIntegral decimalLiteralLeadingZeroes) '0',
-      maybe "" show decimalLiteralDecimals
-    ]
 
 parseDecimalLiteralM :: MonadFail m => String -> m DecimalLiteral
 parseDecimalLiteralM s = case parseDecimalLiteral s of
@@ -73,26 +82,28 @@ decimalLiteralP = do
   let isSignChar :: Char -> Bool
       isSignChar c = c == '-' || c == '+'
 
-  decimalLiteralSign <- ReadP.option Nothing $ do
+  mSign <- ReadP.option Nothing $ do
     signChar <- ReadP.satisfy isSignChar
     pure $ Just $ signChar == '+'
 
-  let step :: Natural -> Int -> Natural
-      step a digit = a * 10 + fromIntegral digit
-      {-# INLINE step #-}
+  units <- parseDigits step 0
 
-  decimalLiteralUnits <- foldDigits step 0
-
-  (decimalLiteralLeadingZeroes, decimalLiteralDecimals) <- ReadP.option (0, Nothing) $ do
+  ReadP.option (DecimalLiteralInteger mSign units) $ do
     _ <- ReadP.satisfy (== '.')
-    leadingZeroes <- fromIntegral . length <$> ReadP.many (ReadP.satisfy (== '0'))
-    decimals <- foldDigits step 0
-    pure (leadingZeroes, Just decimals)
 
-  pure DecimalLiteral {..}
+    (m, e) <- parseDigits stepFraction (units, 0)
 
-foldDigits :: (a -> Int -> a) -> a -> ReadP a
-foldDigits f z = do
+    pure $ DecimalLiteralFractional mSign m (pred e)
+
+stepFraction :: (Natural, Word8) -> Int -> (Natural, Word8)
+stepFraction (m, e) digit = (m * 10 + fromIntegral digit, succ e)
+
+step :: Natural -> Int -> Natural
+step a digit = a * 10 + fromIntegral digit
+{-# INLINE step #-}
+
+parseDigits :: (a -> Int -> a) -> a -> ReadP a
+parseDigits f z = do
   c <- ReadP.satisfy Char.isDigit
   let digit = Char.ord c - 48
       a = f z digit
@@ -106,6 +117,17 @@ foldDigits f z = do
           let digit = Char.ord c - 48
           go (f a digit) cs
       | otherwise = return a
+
+renderDecimalLiteral :: DecimalLiteral -> String
+renderDecimalLiteral = \case
+  DecimalLiteralInteger s a -> sign s ++ show a
+  DecimalLiteralFractional s m e -> sign s ++ go m e
+  where
+    sign = \case
+      Nothing -> ""
+      Just True -> "+"
+      Just False -> "-"
+    go m _ = show m -- TODO
 
 fromRational :: Rational -> Maybe DecimalLiteral
 fromRational = undefined
