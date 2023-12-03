@@ -26,6 +26,7 @@ library
       Money.MultiAccount.Gen
       Money.MultiAmount.Gen
       Money.QuantisationFactor.Gen
+      Numeric.DecimalLiteral.Gen
   other-modules:
       Paths_really_safe_money_gen
   hs-source-dirs:
@@ -50,6 +51,7 @@ test-suite really-safe-money-test
       Money.CurrencySpec
       Money.MultiAccountSpec
       Money.MultiAmountSpec
+      Numeric.DecimalLiteralSpec
       Paths_really_safe_money_gen
   hs-source-dirs:
       test
@@ -57,8 +59,7 @@ test-suite really-safe-money-test
   build-tool-depends:
       sydtest-discover:sydtest-discover
   build-depends:
-      QuickCheck
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , genvalidity-sydtest
     , genvalidity-vector
     , really-safe-money
@@ -67,7 +68,7 @@ test-suite really-safe-money-test
     , vector
   default-language: Haskell2010
 
-benchmark smos-data-bench
+benchmark really-safe-money-bench
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:

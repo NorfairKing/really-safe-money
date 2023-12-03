@@ -15,6 +15,7 @@ library:
   - deepseq
   - validity
   - validity-containers
+  - validity-scientific
 
 tests:
   really-safe-money-doctest:

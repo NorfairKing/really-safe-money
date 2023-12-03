@@ -15,7 +15,7 @@ library:
   - really-safe-money
 
 benchmarks:
-  smos-data-bench:
+  really-safe-money-bench:
     main: Main.hs
     source-dirs: bench/
     ghc-options:
@@ -44,7 +44,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - QuickCheck
     - genvalidity-sydtest
     - genvalidity-vector
     - really-safe-money

@@ -14,7 +14,6 @@ library:
   dependencies:
   - autodocodec
   - really-safe-money
-  - text
 
 tests:
   really-safe-money-autodocodec-test:
@@ -34,7 +33,6 @@ tests:
     - really-safe-money
     - really-safe-money-autodocodec
     - really-safe-money-gen
-    - safe-coloured-text
     - sydtest
 
   really-safe-money-autodocodec-doctest:

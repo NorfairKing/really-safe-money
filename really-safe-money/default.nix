@@ -1,5 +1,5 @@
 { mkDerivation, base, containers, deepseq, doctest, lib, validity
-, validity-containers
+, validity-containers, validity-scientific
 }:
 mkDerivation {
   pname = "really-safe-money";
@@ -7,6 +7,7 @@ mkDerivation {
   src = ./.;
   libraryHaskellDepends = [
     base containers deepseq validity validity-containers
+    validity-scientific
   ];
   testHaskellDepends = [ base doctest ];
   homepage = "https://github.com/NorfairKing/really-safe-money#readme";

@@ -26,6 +26,7 @@ library
       Money.MultiAccount
       Money.MultiAmount
       Money.QuantisationFactor
+      Numeric.DecimalLiteral
   other-modules:
       Paths_really_safe_money
   hs-source-dirs:
@@ -36,6 +37,7 @@ library
     , deepseq
     , validity
     , validity-containers
+    , validity-scientific
   default-language: Haskell2010
 
 test-suite really-safe-money-doctest

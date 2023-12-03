@@ -14,6 +14,7 @@ let
           overrideCabal (self.callPackage ../${name} { })
             (old: {
               doBenchmark = true;
+              doCheck = false; # Only in coverage report
               configureFlags = (old.configureFlags or [ ]) ++ [
                 # Optimisations
                 "--ghc-options=-O2"

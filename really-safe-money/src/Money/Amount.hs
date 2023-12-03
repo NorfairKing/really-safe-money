@@ -7,6 +7,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports -Wno-unused-imports #-}
 
+-- | Amount
+--
 -- === Importing this module
 --
 -- This module is designed to be imported as follows:
@@ -69,7 +71,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
-import Money.QuantisationFactor
+import Money.QuantisationFactor (QuantisationFactor (..))
 import Numeric.Natural
 import Text.Printf
 import Prelude hiding (fromRational, subtract, sum, toRational)
@@ -337,6 +339,7 @@ toDouble (QuantisationFactor qf) a =
 -- * Is non-normalised (5 :% 5)
 -- * Is negative
 -- * Does represent an integer number of minimal quantisations.
+-- * Is too big
 --
 -- >>> fromRational (QuantisationFactor 100) (1 % 100)
 -- Just (Amount 1)
@@ -346,6 +349,9 @@ toDouble (QuantisationFactor qf) a =
 --
 -- >>> fromRational (QuantisationFactor 100) (-1 % 100)
 -- Nothing
+--
+-- >>> fromRational (QuantisationFactor 100) (200000000000000000 % 1)
+-- Nothing
 fromRational :: QuantisationFactor -> Rational -> Maybe Amount
 fromRational (QuantisationFactor qf) r
   | isInvalid r = Nothing
@@ -353,12 +359,15 @@ fromRational (QuantisationFactor qf) r
   | otherwise =
       let resultRational :: Rational
           resultRational = r * (fromIntegral :: Word32 -> Rational) qf
-          ceiled :: Word64
-          ceiled = (ceiling :: Rational -> Word64) resultRational
-          floored :: Word64
-          floored = (floor :: Rational -> Word64) resultRational
+          ceiled :: Natural
+          ceiled = (ceiling :: Rational -> Natural) resultRational
+          floored :: Natural
+          floored = (floor :: Rational -> Natural) resultRational
        in if ceiled == floored
-            then Just $ Amount ceiled
+            then
+              if ceiled > (fromIntegral :: Word64 -> Natural) (maxBound :: Word64)
+                then Nothing
+                else Just $ Amount (fromIntegral ceiled)
             else Nothing
 
 -- | Turn an amount of money into a 'Rational'.

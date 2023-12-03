@@ -12,8 +12,8 @@ mkDerivation {
     really-safe-money
   ];
   testHaskellDepends = [
-    base genvalidity-sydtest genvalidity-vector QuickCheck
-    really-safe-money sydtest vector
+    base genvalidity-sydtest genvalidity-vector really-safe-money
+    sydtest vector
   ];
   testToolDepends = [ sydtest-discover ];
   benchmarkHaskellDepends = [

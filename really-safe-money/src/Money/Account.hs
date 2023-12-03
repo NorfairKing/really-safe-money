@@ -3,19 +3,14 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- | Account
+--
 -- === Importing this module
 --
 -- This module is designed to be imported as follows:
 --
 -- @
 -- import Money.Account (Account)
--- import qualified Money.Account as Account
--- @
---
--- Or, if you have an @Account@ type already, maybe in a
---
--- @
--- import qualified Money.Account as Money (Account)
 -- import qualified Money.Account as Account
 -- @
 module Money.Account
@@ -75,7 +70,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import Money.Amount (Amount (..), Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Amount as Amount
-import Money.QuantisationFactor
+import Money.QuantisationFactor (QuantisationFactor (..))
 import Numeric.Natural
 import Text.Printf
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
