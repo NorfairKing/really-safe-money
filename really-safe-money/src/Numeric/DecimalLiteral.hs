@@ -439,10 +439,12 @@ toAccountOf = fmap AccountOf . toAccount (quantisationFactor (Proxy :: Proxy cur
 -- 2
 -- >>> digits (DecimalLiteralFractional Nothing 1 1)
 -- 2
-digits :: DecimalLiteral -> Word8
+--
+-- API Note: We have to return Word16 because there might be 256 digits.
+digits :: DecimalLiteral -> Word16
 digits = \case
   DecimalLiteralInteger _ _ -> 0
-  DecimalLiteralFractional _ _ w -> succ w
+  DecimalLiteralFractional _ _ w -> succ (fromIntegral w)
 
 -- | Set the minimum number of digits the literal has after the decimal point
 --
@@ -454,12 +456,15 @@ digits = \case
 -- DecimalLiteralFractional Nothing 100 1
 setMinimumDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
 setMinimumDigits wantedDigits dl =
-  let currentDigits = digits dl
-   in if wantedDigits <= currentDigits
+  let currentDigits :: Word16
+      currentDigits = digits dl
+      wanted16 :: Word16
+      wanted16 = fromIntegral wantedDigits
+   in if wanted16 <= currentDigits
         then dl
-        else increaseDigits (wantedDigits - currentDigits) dl
+        else increaseDigits (wanted16 - currentDigits) dl
   where
-    increaseDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
+    increaseDigits :: Word16 -> DecimalLiteral -> DecimalLiteral
     increaseDigits 0 = id
     increaseDigits w = \case
       DecimalLiteralInteger mS a -> increaseDigits (pred w) (DecimalLiteralFractional mS (a * 10) 0)

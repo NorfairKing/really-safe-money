@@ -208,6 +208,34 @@ spec = do
                     Nothing -> expectationFailure "Should have been able to parse as an account"
                     Just a -> a `shouldBe` acc
 
+    describe "setSignRequired" $
+      it "produces valid values" $
+        producesValid setSignRequired
+
+    describe "setSignOptional" $
+      it "produces valid values" $
+        producesValid setSignOptional
+
+    describe "digits" $
+      it "produces valid numbers of digits" $
+        producesValid DecimalLiteral.digits
+
+    describe "setMinimumDigits" $ do
+      it "produces valid literals" $
+        producesValid2 DecimalLiteral.setMinimumDigits
+
+      it "does not change the value of the literal" $
+        forAllValid $ \d ->
+          forAllValid $ \dl ->
+            let dl' = DecimalLiteral.setMinimumDigits d dl
+             in DecimalLiteral.toRational dl' `shouldBe` DecimalLiteral.toRational dl
+
+      it "produces values with more than the given number of digits" $
+        forAllValid $ \d ->
+          forAllValid $ \dl ->
+            let dl' = DecimalLiteral.setMinimumDigits d dl
+             in DecimalLiteral.digits dl' `shouldSatisfy` (>= fromIntegral d)
+
 exampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
 exampleSpec s dl = do
   parseExampleSpec s dl
