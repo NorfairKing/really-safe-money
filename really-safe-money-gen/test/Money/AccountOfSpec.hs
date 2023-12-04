@@ -73,12 +73,11 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
     it "produces valid rational" $
       producesValid fromDouble
 
-    xdescribe "does not hold" $
-      it "roundtrips with toDouble" $
-        forAllValid $ \account ->
-          case fromDouble (toDouble account) of
-            Nothing -> pure () -- Fine
-            Just account' -> account' `shouldBe` account
+    it "roundtrips with toDouble" $
+      forAllValid $ \account ->
+        case fromDouble (toDouble account) of
+          Nothing -> pure () -- Fine
+          Just account' -> toDouble account' `shouldBe` toDouble account
 
   let zero = AccountOf.zero @currency
   let add = AccountOf.add @currency

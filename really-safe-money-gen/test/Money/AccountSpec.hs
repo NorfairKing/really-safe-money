@@ -85,13 +85,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "produces valid rational" $
       producesValid2 Account.fromDouble
 
-    xdescribe "does not hold" $
-      it "roundtrips with toDouble" $
-        forAllValid $ \quantisationFactor ->
-          forAllValid $ \account ->
-            case Account.fromDouble quantisationFactor (Account.toDouble quantisationFactor account) of
-              Nothing -> pure () -- Fine
-              Just account' -> account' `shouldBe` account
+    it "roundtrips with toDouble back to double" $
+      forAllValid $ \quantisationFactor ->
+        forAllValid $ \account ->
+          case Account.fromDouble quantisationFactor (Account.toDouble quantisationFactor account) of
+            Nothing -> pure () -- Fine
+            Just account' -> Account.toDouble quantisationFactor account' `shouldBe` Account.toDouble quantisationFactor account
 
   describe "add" $ do
     it "fails for maxBound + 1" $

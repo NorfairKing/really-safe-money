@@ -128,16 +128,15 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "produces valid amounts" $
       producesValid2 Amount.fromDouble
 
-    xdescribe "just does not hold because multiplying by the quantisation factor introduces floating point errors" $
-      it "roundtrips with toDouble" $
-        forAllValid $ \quantisationFactor ->
-          forAllValid $ \amount ->
-            let double = Amount.toDouble quantisationFactor amount
-                result = Amount.fromDouble quantisationFactor double
-                ctx = show double
-             in context ctx $ case result of
-                  Nothing -> pure () -- Fine
-                  Just amount' -> amount' `shouldBe` amount
+    it "roundtrips with toDouble, back to double" $
+      forAllValid $ \quantisationFactor ->
+        forAllValid $ \amount ->
+          let double = Amount.toDouble quantisationFactor amount
+              result = Amount.fromDouble quantisationFactor double
+              ctx = show double
+           in context ctx $ case result of
+                Nothing -> pure () -- Fine
+                Just amount' -> Amount.toDouble quantisationFactor amount' `shouldBe` Amount.toDouble quantisationFactor amount
 
   describe "toDouble" $ do
     it "produces valid Doubles" $
