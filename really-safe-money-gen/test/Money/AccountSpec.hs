@@ -20,6 +20,8 @@ import Test.Syd.Validity
 
 spec :: Spec
 spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
+  genValidSpec @Account
+
   describe "Eq" $ do
     it "says negative 0 equals positive 0" $
       Positive Amount.zero == Negative Amount.zero

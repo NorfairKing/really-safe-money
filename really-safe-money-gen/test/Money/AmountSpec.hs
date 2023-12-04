@@ -21,6 +21,7 @@ import Test.Syd.Validity
 
 spec :: Spec
 spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
+  genValidSpec @Amount
   eqSpec @Amount
   ordSpec @Amount
   showReadSpec @Amount

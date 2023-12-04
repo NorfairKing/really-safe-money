@@ -17,6 +17,7 @@ spec :: Spec
 spec = do
   showReadSpec @(MultiAccount Currency)
   modifyMaxSuccess (* 10) $ do
+    genValidSpec @(MultiAccount Currency)
     eqSpec @(MultiAccount Currency)
     ordSpec @(MultiAccount Currency)
 

@@ -21,6 +21,7 @@ import qualified Prelude
 
 spec :: Spec
 spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
+  genValidSpec @(AccountOf currency)
   eqSpec @(AccountOf currency)
   ordSpec @(AccountOf currency)
   showReadSpec @(AccountOf currency)

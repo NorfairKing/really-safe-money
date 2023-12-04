@@ -51,6 +51,7 @@ test-suite really-safe-money-test
       Money.CurrencySpec
       Money.MultiAccountSpec
       Money.MultiAmountSpec
+      Money.QuantisationFactorSpec
       Numeric.DecimalLiteralSpec
       Paths_really_safe_money_gen
   hs-source-dirs:
