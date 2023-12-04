@@ -284,6 +284,7 @@ toRatio (QuantisationFactor quantisationFactor) a =
 -- * is @NaN@
 -- * is infinite
 -- * Is negative
+-- * Is really large
 -- * does not represent an integral amount of minimal quantisations
 --
 --
@@ -292,25 +293,40 @@ toRatio (QuantisationFactor quantisationFactor) a =
 --
 -- >>> fromDouble (QuantisationFactor 100) 0.001
 -- Nothing
+--
+-- >>> fromDouble (QuantisationFactor 100) 20E62
+-- Nothing
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   QuantisationFactor ->
   Double ->
   Maybe Amount
 fromDouble (QuantisationFactor qf) d
-  | isNaN d = Nothing
-  | isInfinite d = Nothing
   | d < 0 = Nothing
   | otherwise =
       let resultDouble :: Double
           resultDouble = d * (fromIntegral :: Word32 -> Double) qf
-          ceiled :: Word64
-          ceiled = (ceiling :: Double -> Word64) resultDouble
-          floored :: Word64
-          floored = (floor :: Double -> Word64) resultDouble
-       in if ceiled == floored
-            then Just $ Amount ceiled
-            else Nothing
+       in go resultDouble
+  where
+    go resultDouble
+      | isNaN d = Nothing
+      | isInfinite d = Nothing
+      | otherwise =
+          -- Shortcut for numbers that are way too big anyway
+          -- so that we don't have to compute the according 'Natural' values.
+          if exponent resultDouble > 65
+            then Nothing
+            else
+              let ceiled :: Natural
+                  ceiled = (ceiling :: Double -> Natural) resultDouble
+                  floored :: Natural
+                  floored = (floor :: Double -> Natural) resultDouble
+               in if ceiled == floored
+                    then
+                      if ceiled > (fromIntegral :: Word64 -> Natural) (maxBound :: Word64)
+                        then Nothing
+                        else Just $ Amount (fromIntegral ceiled)
+                    else Nothing
 
 -- | Turn an amount of money into a 'Double'.
 --

@@ -1,3 +1,4 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -51,7 +52,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       Amount.fromRatio (QuantisationFactor 10) 7.123 `shouldBe` Nothing
 
     it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromRatio (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7702)
+      Amount.fromRatio (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7_702)
 
     it "succeeds on 0" $
       forAllValid $ \quantisationFactor ->
@@ -84,7 +85,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   describe "fromDouble" $ do
     it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromDouble (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7702)
+      Amount.fromDouble (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7_702)
 
     it "fails on 7.123 with quantisation factor 10" $
       Amount.fromDouble (QuantisationFactor 10) 7.123 `shouldBe` Nothing
@@ -118,6 +119,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         let minf = read "-Infinity"
          in Amount.fromDouble quantisationFactor minf `shouldBe` Nothing
 
+    it "fails on really large numbers" $
+      Amount.fromDouble (QuantisationFactor 100_000_000) 2E60 `shouldBe` Nothing
+
+    it "fails on really large numbers" $
+      Amount.fromDouble (QuantisationFactor 100_000_000) 2E1_024 `shouldBe` Nothing
+
     it "produces valid amounts" $
       producesValid2 Amount.fromDouble
 
@@ -137,7 +144,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       producesValid2 Amount.toDouble
 
     it "succeeds on 7702 with quantisation factor 100" $
-      Amount.toDouble (QuantisationFactor 100) (Amount 7702) `shouldBe` 77.02
+      Amount.toDouble (QuantisationFactor 100) (Amount 7_702) `shouldBe` 77.02
 
     it "produces an infinite Double with quantisation factor 0" $
       forAllValid $ \a ->
@@ -163,7 +170,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       Amount.fromRational (QuantisationFactor 10) 7.123 `shouldBe` Nothing
 
     it "succeeds on 77.02 with quantisation factor 100" $
-      Amount.fromRational (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7702)
+      Amount.fromRational (QuantisationFactor 100) 77.02 `shouldBe` Just (Amount 7_702)
 
     it "succeeds on 0" $
       forAllValid $ \quantisationFactor ->
@@ -178,6 +185,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       forAllValid $ \quantisationFactor ->
         Amount.fromRational quantisationFactor (-1)
           `shouldBe` Nothing
+
+    it "fails on really large numbers" $
+      Amount.fromRational (QuantisationFactor 100_000_000) 2E60 `shouldBe` Nothing
 
     it "produces valid Amounts" $
       producesValid2 Amount.fromRational
