@@ -104,7 +104,8 @@ instance IsString DecimalLiteral where
 
 -- | Parse a decimal literal from a string
 --
--- This only accepts non-scientific notation
+-- This only accepts non-scientific notation.
+-- It also fails if the exponent would get too big.
 --
 -- >>> parseDecimalLiteral "1"
 -- Just (DecimalLiteralInteger Nothing 1)
@@ -114,6 +115,10 @@ instance IsString DecimalLiteral where
 -- Just (DecimalLiteralFractional (Just True) 3 4)
 -- >>> parseDecimalLiteral "-0.00000004"
 -- Just (DecimalLiteralFractional (Just False) 4 7)
+-- >>> parseDecimalLiteral ("0." ++ replicate 100 '0')
+-- Just (DecimalLiteralFractional Nothing 0 99)
+-- >>> parseDecimalLiteral ("0." ++ replicate 300 '0')
+-- Nothing
 parseDecimalLiteral :: String -> Maybe DecimalLiteral
 parseDecimalLiteral = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
 
@@ -141,27 +146,30 @@ decimalLiteralP = do
 
     pure $ DecimalLiteralFractional mSign m (pred e)
 
-stepFraction :: (Natural, Word8) -> Int -> (Natural, Word8)
-stepFraction (m, e) digit = (m * 10 + fromIntegral digit, succ e)
+stepFraction :: (Natural, Word8) -> Int -> Maybe (Natural, Word8)
+stepFraction (_, 255) _ = Nothing
+stepFraction (m, e) digit = Just (m * 10 + fromIntegral digit, succ e)
 
-step :: Natural -> Int -> Natural
-step a digit = a * 10 + fromIntegral digit
+step :: Natural -> Int -> Maybe Natural
+step a digit = Just $ a * 10 + fromIntegral digit
 {-# INLINE step #-}
 
-parseDigits :: (a -> Int -> a) -> a -> ReadP a
+parseDigits :: (a -> Int -> Maybe a) -> a -> ReadP a
 parseDigits f z = do
   c <- ReadP.satisfy Char.isDigit
   let digit = Char.ord c - 48
-      a = f z digit
-
-  ReadP.look >>= go a
+  case f z digit of
+    Nothing -> fail "Failed to step the first digit"
+    Just a -> ReadP.look >>= go a
   where
     go !a [] = return a
     go !a (c : cs)
       | Char.isDigit c = do
           _ <- ReadP.get
           let digit = Char.ord c - 48
-          go (f a digit) cs
+          case f a digit of
+            Nothing -> fail "Failed to step the digit"
+            Just a' -> go a' cs
       | otherwise = return a
 
 -- | Render a decimal literal to a string
