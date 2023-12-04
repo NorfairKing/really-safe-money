@@ -71,20 +71,14 @@ import Prelude hiding (fromRational, toRational)
 --
 -- * Why not some combination of @Scientific@ and representation fields?
 --   Because then there are multiple representations of negative numbers.
--- * Why not only a @DecimalLiteralFractional (Maybe Bool) Natural Int8@?
+-- * Why not only a @DecimalLiteral (Maybe Bool) Natural Int8@?
 --   Because then there are multiple representations of "10": (Nothing, 10, 0) and (Nothing, 1, 1)
 data DecimalLiteral
-  = -- | Integral decimal literal
-    DecimalLiteralInteger
-      !(Maybe Bool)
-      -- ^ Sign
-      !Natural
-      -- ^ Absolute value
-  | -- | Fractional decimal literal
+  = -- | Fractional decimal literal
     --
     -- Using a and e to represent
-    -- m * 10 ^(-(e + 1))
-    DecimalLiteralFractional
+    -- m * 10 ^(-e)
+    DecimalLiteral
       !(Maybe Bool)
       -- ^ Sign
       !Natural
@@ -108,15 +102,15 @@ instance IsString DecimalLiteral where
 -- It also fails if the exponent would get too big.
 --
 -- >>> parseDecimalLiteral "1"
--- Just (DecimalLiteralInteger Nothing 1)
+-- Just (DecimalLiteral Nothing 1 0)
 -- >>> parseDecimalLiteral "0.02"
--- Just (DecimalLiteralFractional Nothing 2 1)
+-- Just (DecimalLiteral Nothing 2 2)
 -- >>> parseDecimalLiteral "+0.00003"
--- Just (DecimalLiteralFractional (Just True) 3 4)
+-- Just (DecimalLiteral (Just True) 3 5)
 -- >>> parseDecimalLiteral "-0.00000004"
--- Just (DecimalLiteralFractional (Just False) 4 7)
+-- Just (DecimalLiteral (Just False) 4 8)
 -- >>> parseDecimalLiteral ("0." ++ replicate 100 '0')
--- Just (DecimalLiteralFractional Nothing 0 99)
+-- Just (DecimalLiteral Nothing 0 100)
 -- >>> parseDecimalLiteral ("0." ++ replicate 300 '0')
 -- Nothing
 parseDecimalLiteral :: String -> Maybe DecimalLiteral
@@ -139,12 +133,12 @@ decimalLiteralP = do
 
   units <- parseDigits step 0
 
-  ReadP.option (DecimalLiteralInteger mSign units) $ do
+  ReadP.option (DecimalLiteral mSign units 0) $ do
     _ <- ReadP.satisfy (== '.')
 
     (m, e) <- parseDigits stepFraction (units, 0)
 
-    pure $ DecimalLiteralFractional mSign m (pred e)
+    pure $ DecimalLiteral mSign m e
 
 stepFraction :: (Natural, Word8) -> Int -> Maybe (Natural, Word8)
 stepFraction (_, 255) _ = Nothing
@@ -174,29 +168,29 @@ parseDigits f z = do
 
 -- | Render a decimal literal to a string
 --
--- >>> renderDecimalLiteral (DecimalLiteralInteger Nothing 5)
+-- >>> renderDecimalLiteral (DecimalLiteral Nothing 5 0)
 -- "5"
--- >>> renderDecimalLiteral (DecimalLiteralInteger (Just True) 60)
+-- >>> renderDecimalLiteral (DecimalLiteral (Just True) 60 0)
 -- "+60"
--- >>> renderDecimalLiteral (DecimalLiteralInteger (Just False) 700)
+-- >>> renderDecimalLiteral (DecimalLiteral (Just False) 700 0)
 -- "-700"
--- >>> renderDecimalLiteral (DecimalLiteralFractional Nothing 8 2)
+-- >>> renderDecimalLiteral (DecimalLiteral Nothing 8 3)
 -- "0.008"
--- >>> renderDecimalLiteral (DecimalLiteralFractional (Just True) 90 4)
+-- >>> renderDecimalLiteral (DecimalLiteral (Just True) 90 5)
 -- "+0.00090"
--- >>> renderDecimalLiteral (DecimalLiteralFractional (Just False) 100 6)
+-- >>> renderDecimalLiteral (DecimalLiteral (Just False) 100 7)
 -- "-0.0000100"
 renderDecimalLiteral :: DecimalLiteral -> String
 renderDecimalLiteral = \case
-  DecimalLiteralInteger s a -> sign s ++ show a
-  DecimalLiteralFractional s m e -> sign s ++ goFrac m e
+  DecimalLiteral s m 0 -> sign s ++ show m
+  DecimalLiteral s m e -> sign s ++ goFrac m e
   where
     sign = \case
       Nothing -> ""
       Just True -> "+"
       Just False -> "-"
 
-    goFrac m e = reverse (go (succ e) (reverse (show m)))
+    goFrac m e = reverse (go e (reverse (show m)))
     go :: Word8 -> String -> String
     go 0 [] = ['.', '0']
     go 0 s = '.' : s
@@ -213,17 +207,13 @@ renderDecimalLiteral = \case
 -- This fails when the rational cannot be represented finitely.
 --
 -- >>> fromRational (1 % 1)
--- Just (DecimalLiteralInteger Nothing 1)
+-- Just (DecimalLiteral Nothing 1 0)
 -- >>> fromRational ((-1) % 2)
--- Just (DecimalLiteralFractional (Just False) 5 0)
+-- Just (DecimalLiteral (Just False) 5 1)
 -- >>> fromRational (1 % 3)
 -- Nothing
 fromRational :: Rational -> Maybe DecimalLiteral
-fromRational r =
-  let d = denominator r
-   in if d == 1
-        then Just (DecimalLiteralInteger (if r >= 0 then Nothing else Just False) (fromIntegral (abs (numerator r))))
-        else fromRationalRepetendLimited 256 r
+fromRational = fromRationalRepetendLimited 256
   where
     fromRationalRepetendLimited ::
       -- limit
@@ -235,7 +225,7 @@ fromRational r =
       | num < 0 = toLiteral (Just False) <$> longDiv (-num)
       | otherwise = toLiteral Nothing <$> longDiv num
       where
-        toLiteral mSign (m, e) = DecimalLiteralFractional mSign m (fromIntegral (pred e))
+        toLiteral mSign (m, e) = DecimalLiteral mSign m (fromIntegral e)
         d = denominator rational
         num = numerator rational
 
@@ -258,25 +248,23 @@ fromRational r =
           | n < d =
               let !ns' = S.insert n ns
                in longDivWithLimit (c * 10) (succ e) ns' (n * 10)
-          | otherwise = case n `quotRem` d of
-              (q, r') -> longDivWithLimit (c + q) e ns r'
+          | otherwise =
+              let (q, r') = n `quotRem` d
+               in longDivWithLimit (c + q) e ns r'
 
 -- | Turn a 'DecimalLiteral' into a 'Rational'
 --
 -- This throws away all rendering information
 --
--- >>> toRational (DecimalLiteralInteger Nothing 1)
+-- >>> toRational (DecimalLiteral Nothing 1 0)
 -- 1 % 1
--- >>> toRational (DecimalLiteralFractional (Just True) 2 0)
+-- >>> toRational (DecimalLiteral (Just True) 2 1)
 -- 1 % 5
--- >>> toRational (DecimalLiteralFractional (Just False) 3 0)
+-- >>> toRational (DecimalLiteral (Just False) 3 1)
 -- (-3) % 10
 toRational :: DecimalLiteral -> Rational
-toRational = \case
-  DecimalLiteralInteger mSign i ->
-    signRational mSign * fromIntegral i
-  DecimalLiteralFractional mSign m e ->
-    (signRational mSign * fromIntegral m) / (10 ^ (e + 1))
+toRational (DecimalLiteral mSign m e) =
+  (signRational mSign * fromIntegral m) / (10 ^ e)
   where
     signRational :: Maybe Bool -> Rational
     signRational = \case
@@ -293,11 +281,11 @@ toRational = \case
 -- this will always have a 'Nothing' sign.
 --
 -- >>> fromQuantisationFactor (QuantisationFactor 100)
--- Just (DecimalLiteralFractional Nothing 1 1)
+-- Just (DecimalLiteral Nothing 1 2)
 -- >>> fromQuantisationFactor (QuantisationFactor 20)
--- Just (DecimalLiteralFractional Nothing 5 1)
+-- Just (DecimalLiteral Nothing 5 2)
 -- >>> fromQuantisationFactor (QuantisationFactor 1)
--- Just (DecimalLiteralInteger Nothing 1)
+-- Just (DecimalLiteral Nothing 1 0)
 fromQuantisationFactor :: QuantisationFactor -> Maybe DecimalLiteral
 fromQuantisationFactor (QuantisationFactor qfw) =
   setSignOptional <$> fromRational (1 % fromIntegral qfw)
@@ -310,11 +298,11 @@ fromQuantisationFactor (QuantisationFactor qfw) =
 -- * Negative literals
 -- * Integrals greater than 1
 --
--- >>> toQuantisationFactor (DecimalLiteralInteger Nothing 2)
+-- >>> toQuantisationFactor (DecimalLiteral Nothing 2 0)
 -- Nothing
--- >>> toQuantisationFactor (DecimalLiteralFractional (Just False) 2 1)
+-- >>> toQuantisationFactor (DecimalLiteral (Just False) 2 2)
 -- Nothing
--- >>> toQuantisationFactor (DecimalLiteralFractional (Just True) 2 1)
+-- >>> toQuantisationFactor (DecimalLiteral (Just True) 2 2)
 -- Just (QuantisationFactor {unQuantisationFactor = 50})
 toQuantisationFactor :: DecimalLiteral -> Maybe QuantisationFactor
 toQuantisationFactor dl = do
@@ -351,13 +339,13 @@ toQuantisationFactor dl = do
 --   that the quantisation factor prescribes.
 --
 -- >>> fromAmount (QuantisationFactor 100) (Amount 1)
--- Just (DecimalLiteralFractional (Just True) 1 1)
+-- Just (DecimalLiteral (Just True) 1 2)
 -- >>> fromAmount (QuantisationFactor 100) (Amount 100)
--- Just (DecimalLiteralFractional (Just True) 100 1)
+-- Just (DecimalLiteral (Just True) 100 2)
 -- >>> fromAmount (QuantisationFactor 20) (Amount 100)
--- Just (DecimalLiteralFractional (Just True) 500 1)
+-- Just (DecimalLiteral (Just True) 500 2)
 -- >>> fromAmount (QuantisationFactor 1) (Amount 100)
--- Just (DecimalLiteralInteger (Just True) 100)
+-- Just (DecimalLiteral (Just True) 100 0)
 -- >>> fromAmount (QuantisationFactor 17) (Amount 100)
 -- Nothing
 fromAmount :: QuantisationFactor -> Money.Amount -> Maybe DecimalLiteral
@@ -372,11 +360,11 @@ fromAmount qf acc =
 -- * the result would be too big to fit into an 'Amount'.
 -- * the decimal literal is too precise.
 --
--- >>> toAmount (QuantisationFactor 100) (DecimalLiteralInteger Nothing 100)
+-- >>> toAmount (QuantisationFactor 100) (DecimalLiteral Nothing 100 0)
 -- Just (Amount 10000)
--- >>> toAmount (QuantisationFactor 100) (DecimalLiteralFractional Nothing 1 3)
+-- >>> toAmount (QuantisationFactor 100) (DecimalLiteral Nothing 1 3)
 -- Nothing
--- >>> toAmount (QuantisationFactor 1000000000) (DecimalLiteralInteger Nothing 1000000000000)
+-- >>> toAmount (QuantisationFactor 1000000000) (DecimalLiteral Nothing 1000000000000 0)
 -- Nothing
 toAmount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Amount
 toAmount qf = Amount.fromRational qf . toRational
@@ -401,13 +389,13 @@ toAmountOf = fmap AmountOf . Amount.fromRational (quantisationFactor (Proxy :: P
 --   that the quantisation factor prescribes.
 --
 -- >>> fromAccount (QuantisationFactor 100) (Positive (Amount 1))
--- Just (DecimalLiteralFractional (Just True) 1 1)
+-- Just (DecimalLiteral (Just True) 1 2)
 -- >>> fromAccount (QuantisationFactor 100) (Negative (Amount 100))
--- Just (DecimalLiteralFractional (Just False) 100 1)
+-- Just (DecimalLiteral (Just False) 100 2)
 -- >>> fromAccount (QuantisationFactor 20) (Negative (Amount 100))
--- Just (DecimalLiteralFractional (Just False) 500 1)
+-- Just (DecimalLiteral (Just False) 500 2)
 -- >>> fromAccount (QuantisationFactor 1) (Positive (Amount 100))
--- Just (DecimalLiteralInteger (Just True) 100)
+-- Just (DecimalLiteral (Just True) 100 0)
 -- >>> fromAccount (QuantisationFactor 17) (Positive (Amount 100))
 -- Nothing
 fromAccount :: QuantisationFactor -> Money.Account -> Maybe DecimalLiteral
@@ -422,11 +410,11 @@ fromAccount qf acc =
 -- * the result would be too big to fit into an 'Account'.
 -- * the decimal literal is too precise.
 --
--- >>> toAccount (QuantisationFactor 100) (DecimalLiteralInteger Nothing 100)
+-- >>> toAccount (QuantisationFactor 100) (DecimalLiteral Nothing 100 0)
 -- Just (Positive (Amount 10000))
--- >>> toAccount (QuantisationFactor 100) (DecimalLiteralFractional Nothing 1 3)
+-- >>> toAccount (QuantisationFactor 100) (DecimalLiteral Nothing 1 3)
 -- Nothing
--- >>> toAccount (QuantisationFactor 1000000000) (DecimalLiteralInteger Nothing 1000000000000)
+-- >>> toAccount (QuantisationFactor 1000000000) (DecimalLiteral Nothing 1000000000000 0)
 -- Nothing
 toAccount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Account
 toAccount qf = Account.fromRational qf . toRational
@@ -441,50 +429,44 @@ toAccountOf = fmap AccountOf . toAccount (quantisationFactor (Proxy :: Proxy cur
 
 -- | Count how many digits the literal has after the decimal point
 --
--- >>> digits (DecimalLiteralInteger Nothing 1)
+-- >>> digits (DecimalLiteral Nothing 1 0)
 -- 0
--- >>> digits (DecimalLiteralFractional Nothing 100 1)
+-- >>> digits (DecimalLiteral Nothing 100 2)
 -- 2
--- >>> digits (DecimalLiteralFractional Nothing 1 1)
+-- >>> digits (DecimalLiteral Nothing 1 2)
 -- 2
 --
 -- API Note: We have to return Word16 because there might be 256 digits.
-digits :: DecimalLiteral -> Word16
-digits = \case
-  DecimalLiteralInteger _ _ -> 0
-  DecimalLiteralFractional _ _ w -> succ (fromIntegral w)
+digits :: DecimalLiteral -> Word8
+digits (DecimalLiteral _ _ w) = w
 
 -- | Set the minimum number of digits the literal has after the decimal point
 --
 -- Note that this function never decreases the number of digits after the decimal point.
 --
--- >>> setMinimumDigits 2 (DecimalLiteralInteger Nothing 1)
--- DecimalLiteralFractional Nothing 100 1
--- >>> setMinimumDigits 0 (DecimalLiteralFractional Nothing 100 1)
--- DecimalLiteralFractional Nothing 100 1
+-- >>> setMinimumDigits 2 (DecimalLiteral Nothing 1 0)
+-- DecimalLiteral Nothing 100 2
+-- >>> setMinimumDigits 0 (DecimalLiteral Nothing 100 1)
+-- DecimalLiteral Nothing 100 1
 setMinimumDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
 setMinimumDigits wantedDigits dl =
-  let currentDigits :: Word16
+  let currentDigits :: Word8
       currentDigits = digits dl
-      wanted16 :: Word16
-      wanted16 = fromIntegral wantedDigits
-   in if wanted16 <= currentDigits
+   in if wantedDigits <= currentDigits
         then dl
-        else increaseDigits (wanted16 - currentDigits) dl
+        else increaseDigits (wantedDigits - currentDigits) dl
   where
-    increaseDigits :: Word16 -> DecimalLiteral -> DecimalLiteral
+    increaseDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
     increaseDigits 0 = id
     increaseDigits w = \case
-      DecimalLiteralInteger mS a -> increaseDigits (pred w) (DecimalLiteralFractional mS (a * 10) 0)
-      DecimalLiteralFractional mS m e -> increaseDigits (pred w) (DecimalLiteralFractional mS (m * 10) (succ e))
+      DecimalLiteral mS m e -> increaseDigits (pred w) (DecimalLiteral mS (m * 10) (succ e))
 
 -- | Ensures that a positive literal has no sign
 --
 -- Turns a @Just True@ sign into a @Nothing@ sign.
 setSignOptional :: DecimalLiteral -> DecimalLiteral
 setSignOptional = \case
-  DecimalLiteralInteger mS a -> DecimalLiteralInteger (go mS) a
-  DecimalLiteralFractional mS m e -> DecimalLiteralFractional (go mS) m e
+  DecimalLiteral mS m e -> DecimalLiteral (go mS) m e
   where
     go = \case
       Just True -> Nothing
@@ -495,8 +477,7 @@ setSignOptional = \case
 -- Turns a @Nothing@ sign into a @Just True@ sign.
 setSignRequired :: DecimalLiteral -> DecimalLiteral
 setSignRequired = \case
-  DecimalLiteralInteger mS a -> DecimalLiteralInteger (go mS) a
-  DecimalLiteralFractional mS m e -> DecimalLiteralFractional (go mS) m e
+  DecimalLiteral mS m e -> DecimalLiteral (go mS) m e
   where
     go = \case
       Nothing -> Just True

@@ -18,19 +18,19 @@ spec :: Spec
 spec = do
   genValidSpec @DecimalLiteral
   describe "examples" $ do
-    exampleSpec "1" (DecimalLiteralInteger Nothing 1)
-    exampleSpec "+2" (DecimalLiteralInteger (Just True) 2)
-    exampleSpec "-3" (DecimalLiteralInteger (Just False) 3)
-    exampleSpec "400" (DecimalLiteralInteger Nothing 400)
-    exampleSpec "5.0" (DecimalLiteralFractional Nothing 50 0)
-    exampleSpec "6.00" (DecimalLiteralFractional Nothing 600 1)
-    exampleSpec "7.000" (DecimalLiteralFractional Nothing 7_000 2)
-    exampleSpec "0.8" (DecimalLiteralFractional Nothing 8 0)
-    exampleSpec "0.09" (DecimalLiteralFractional Nothing 9 1)
-    exampleSpec "0.001" (DecimalLiteralFractional Nothing 1 2)
-    exampleSpec "0.0020" (DecimalLiteralFractional Nothing 20 3)
-    exampleSpec "0.00300" (DecimalLiteralFractional Nothing 300 4)
-    exampleSpec "12.00045" (DecimalLiteralFractional Nothing 1_200_045 4)
+    exampleSpec "1" (DecimalLiteral Nothing 1 0)
+    exampleSpec "+2" (DecimalLiteral (Just True) 2 0)
+    exampleSpec "-3" (DecimalLiteral (Just False) 3 0)
+    exampleSpec "400" (DecimalLiteral Nothing 400 0)
+    exampleSpec "5.0" (DecimalLiteral Nothing 50 1)
+    exampleSpec "6.00" (DecimalLiteral Nothing 600 2)
+    exampleSpec "7.000" (DecimalLiteral Nothing 7_000 3)
+    exampleSpec "0.8" (DecimalLiteral Nothing 8 1)
+    exampleSpec "0.09" (DecimalLiteral Nothing 9 2)
+    exampleSpec "0.001" (DecimalLiteral Nothing 1 3)
+    exampleSpec "0.0020" (DecimalLiteral Nothing 20 4)
+    exampleSpec "0.00300" (DecimalLiteral Nothing 300 5)
+    exampleSpec "12.00045" (DecimalLiteral Nothing 1_200_045 5)
 
   describe "renderDecimalLiteral" $ do
     it "can render any decimal literal" $
@@ -53,25 +53,25 @@ spec = do
           Just dl -> dl `shouldBe` decimalLiteral
 
   describe "Rational" $ do
-    rationalExampleSpec (DecimalLiteralInteger Nothing 1) 1
-    rationalExampleSpec (DecimalLiteralInteger Nothing 10) 10
-    rationalExampleSpec (DecimalLiteralInteger Nothing 2) 2
-    rationalExampleSpec (DecimalLiteralInteger (Just False) 3) (-3)
-    rationalExampleSpec (DecimalLiteralInteger Nothing 400) 400
-    rationalParseExampleSpec (DecimalLiteralInteger Nothing 5) 5
-    rationalRenderExampleSpec (DecimalLiteralFractional Nothing 50 0) 5
-    rationalParseExampleSpec (DecimalLiteralInteger (Just False) 6) (-6)
-    rationalRenderExampleSpec (DecimalLiteralFractional (Just False) 600 1) (-6)
-    rationalParseExampleSpec (DecimalLiteralInteger Nothing 7) 7
-    rationalRenderExampleSpec (DecimalLiteralFractional Nothing 7_000 2) 7
-    rationalExampleSpec (DecimalLiteralFractional (Just False) 8 0) (-0.8)
-    rationalExampleSpec (DecimalLiteralFractional Nothing 9 1) 0.09
-    rationalExampleSpec (DecimalLiteralFractional (Just False) 1 2) (-0.001)
-    rationalParseExampleSpec (DecimalLiteralFractional Nothing 2 2) 0.002
-    rationalRenderExampleSpec (DecimalLiteralFractional Nothing 20 3) 0.002
-    rationalParseExampleSpec (DecimalLiteralFractional (Just False) 3 2) (-0.003)
-    rationalRenderExampleSpec (DecimalLiteralFractional (Just False) 300 4) (-0.003)
-    rationalExampleSpec (DecimalLiteralFractional Nothing 1_200_045 4) 12.000_45
+    rationalExampleSpec (DecimalLiteral Nothing 1 0) 1
+    rationalExampleSpec (DecimalLiteral Nothing 10 0) 10
+    rationalExampleSpec (DecimalLiteral Nothing 2 0) 2
+    rationalExampleSpec (DecimalLiteral (Just False) 3 0) (-3)
+    rationalExampleSpec (DecimalLiteral Nothing 400 0) 400
+    rationalParseExampleSpec (DecimalLiteral Nothing 5 0) 5
+    rationalRenderExampleSpec (DecimalLiteral Nothing 50 1) 5
+    rationalParseExampleSpec (DecimalLiteral (Just False) 6 0) (-6)
+    rationalRenderExampleSpec (DecimalLiteral (Just False) 600 2) (-6)
+    rationalParseExampleSpec (DecimalLiteral Nothing 7 0) 7
+    rationalRenderExampleSpec (DecimalLiteral Nothing 7_000 3) 7
+    rationalExampleSpec (DecimalLiteral (Just False) 8 1) (-0.8)
+    rationalExampleSpec (DecimalLiteral Nothing 9 2) 0.09
+    rationalExampleSpec (DecimalLiteral (Just False) 1 3) (-0.001)
+    rationalParseExampleSpec (DecimalLiteral Nothing 2 3) 0.002
+    rationalRenderExampleSpec (DecimalLiteral Nothing 20 4) 0.002
+    rationalParseExampleSpec (DecimalLiteral (Just False) 3 3) (-0.003)
+    rationalRenderExampleSpec (DecimalLiteral (Just False) 300 5) (-0.003)
+    rationalExampleSpec (DecimalLiteral Nothing 1_200_045 5) 12.000_45
 
     describe "toRational" $ do
       it "renders to valid rationals" $
@@ -91,34 +91,31 @@ spec = do
                 DecimalLiteral.toRational actual `shouldBe` DecimalLiteral.toRational decimalLiteral
 
   describe "QuantisationFactor" $ do
-    quantisationFactorExampleSpec (DecimalLiteralInteger Nothing 1) (QuantisationFactor 1)
-    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 1 0) (QuantisationFactor 10)
-    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 1 1) (QuantisationFactor 100)
-    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 1 2) (QuantisationFactor 1_000)
-    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 5 1) (QuantisationFactor 20)
-    quantisationFactorExampleSpec (DecimalLiteralFractional Nothing 2 1) (QuantisationFactor 50)
+    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 0) (QuantisationFactor 1)
+    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 1) (QuantisationFactor 10)
+    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 2) (QuantisationFactor 100)
+    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 3) (QuantisationFactor 1_000)
+    quantisationFactorExampleSpec (DecimalLiteral Nothing 5 2) (QuantisationFactor 20)
+    quantisationFactorExampleSpec (DecimalLiteral Nothing 2 2) (QuantisationFactor 50)
 
     describe "toQuantisationFactor" $ do
       it "produces valid factors" $
         producesValid toQuantisationFactor
 
-      it "fails to render negative integers" $
-        forAllValid $ \a ->
-          toQuantisationFactor (DecimalLiteralInteger (Just False) a) `shouldBe` Nothing
-
       it "fails to render negative fractionals" $
         forAllValid $ \m ->
           forAllValid $ \e ->
-            toQuantisationFactor (DecimalLiteralFractional (Just False) m e) `shouldBe` Nothing
+            toQuantisationFactor (DecimalLiteral (Just False) m e) `shouldBe` Nothing
 
-      it "fails to render a 0 integer" $
+      it "fails to render a 0" $
         forAllValid $ \mSign ->
-          toQuantisationFactor (DecimalLiteralInteger mSign 0) `shouldBe` Nothing
+          forAllValid $ \e ->
+            toQuantisationFactor (DecimalLiteral mSign 0 e) `shouldBe` Nothing
 
       it "fails to render a non-1 integer" $
         forAllValid $ \mSign ->
           forAllValid $ \a ->
-            toQuantisationFactor (DecimalLiteralInteger mSign (succ (succ a))) `shouldBe` Nothing
+            toQuantisationFactor (DecimalLiteral mSign (succ (succ a)) 0) `shouldBe` Nothing
 
     describe "fromQuantisationFactor" $ do
       it "produces valid literals" $
@@ -135,26 +132,26 @@ spec = do
                   Just q -> q `shouldBe` qf
 
   describe "Amount" $ do
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 100 1) (Amount 100)
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 200 1) (Amount 200)
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 3 1) (Amount 3)
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 4 1) (Amount 4)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 500 1) (Amount 100)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 600 1) (Amount 120)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 10 1) (Amount 2)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 20 1) (Amount 4)
-    amountExampleSpec (QuantisationFactor 1) (DecimalLiteralInteger (Just True) 1) (Amount 1)
-    amountExampleSpec (QuantisationFactor 1) (DecimalLiteralInteger (Just True) 2) (Amount 2)
-    amountExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteralFractional (Just True) 500 7) (Amount 500)
+    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 100 2) (Amount 100)
+    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 200 2) (Amount 200)
+    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 3 2) (Amount 3)
+    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 4 2) (Amount 4)
+    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 500 2) (Amount 100)
+    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 600 2) (Amount 120)
+    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 10 2) (Amount 2)
+    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 20 2) (Amount 4)
+    amountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 1 0) (Amount 1)
+    amountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 2 0) (Amount 2)
+    amountExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteral (Just True) 500 8) (Amount 500)
 
     describe "toAmount" $ do
       it "produces valid factors" $
         producesValid2 toAmount
 
       it "fails on this amount that is too precise" $
-        toAmount (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 1 3) `shouldBe` Nothing
+        toAmount (QuantisationFactor 100) (DecimalLiteral (Just True) 1 4) `shouldBe` Nothing
       it "fails on this amount that is too precise" $
-        toAmount (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 1 2) `shouldBe` Nothing
+        toAmount (QuantisationFactor 20) (DecimalLiteral (Just True) 1 3) `shouldBe` Nothing
 
     describe "fromAmount" $ do
       it "produces valid decimal literals" $
@@ -172,26 +169,26 @@ spec = do
                     Just a -> a `shouldBe` acc
 
   describe "Account" $ do
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 100 1) (Positive (Amount 100))
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just False) 200 1) (Negative (Amount 200))
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just True) 3 1) (Positive (Amount 3))
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteralFractional (Just False) 4 1) (Negative (Amount 4))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 500 1) (Positive (Amount 100))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just False) 600 1) (Negative (Amount 120))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just True) 10 1) (Positive (Amount 2))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteralFractional (Just False) 20 1) (Negative (Amount 4))
-    accountExampleSpec (QuantisationFactor 1) (DecimalLiteralInteger (Just True) 1) (Positive (Amount 1))
-    accountExampleSpec (QuantisationFactor 1) (DecimalLiteralInteger (Just False) 2) (Negative (Amount 2))
-    accountExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteralFractional (Just True) 500 7) (Positive (Amount 500))
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 100 2) (Positive (Amount 100))
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just False) 200 2) (Negative (Amount 200))
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 3 2) (Positive (Amount 3))
+    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just False) 4 2) (Negative (Amount 4))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 500 2) (Positive (Amount 100))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just False) 600 2) (Negative (Amount 120))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 10 2) (Positive (Amount 2))
+    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just False) 20 2) (Negative (Amount 4))
+    accountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 1 0) (Positive (Amount 1))
+    accountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just False) 2 0) (Negative (Amount 2))
+    accountExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteral (Just True) 500 8) (Positive (Amount 500))
 
     describe "toAccount" $ do
       it "produces valid factors" $
         producesValid2 toAccount
 
       it "fails on this amount that is too precise" $
-        toAccount (QuantisationFactor 100) (DecimalLiteralFractional (Just False) 1 3) `shouldBe` Nothing
+        toAccount (QuantisationFactor 100) (DecimalLiteral (Just False) 1 4) `shouldBe` Nothing
       it "fails on this amount that is too precise" $
-        toAccount (QuantisationFactor 20) (DecimalLiteralFractional (Just False) 1 2) `shouldBe` Nothing
+        toAccount (QuantisationFactor 20) (DecimalLiteral (Just False) 1 3) `shouldBe` Nothing
 
     describe "fromAccount" $ do
       it "produces valid decimal literals" $
@@ -234,12 +231,13 @@ spec = do
         forAllValid $ \d ->
           forAllValid $ \dl ->
             let dl' = DecimalLiteral.setMinimumDigits d dl
-             in DecimalLiteral.digits dl' `shouldSatisfy` (>= fromIntegral d)
+             in DecimalLiteral.digits dl' `shouldSatisfy` (>= d)
 
 exampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
-exampleSpec s dl = do
-  parseExampleSpec s dl
-  renderExampleSpec s dl
+exampleSpec s dl =
+  withFrozenCallStack $ do
+    parseExampleSpec s dl
+    renderExampleSpec s dl
 
 parseExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
 parseExampleSpec s dl =
