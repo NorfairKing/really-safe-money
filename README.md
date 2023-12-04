@@ -30,9 +30,10 @@ This is not used in production anywhere yet, and the docs are incomplete, so try
 | A type for positive or negative amounts           | ✔️  | ✔️  | C     | ✔️ | ✔️ | ✔️ | ✖️    | ✔️ |
 | No 'Num' instance for amounts                     | ✔️  | ✖️  | ✖️     | ✔️ | ✖️ | ✖️ | ✖️    | ✔️ |
 | Type-errors for instances that must not exist     | ✔️  | ✔️  | ✖️     | ✖️ | ✖️ | ✖️ | ✖️    | ✖️ |
-| Multi-amounts                                     | 🚧 | ✖️  | ✖️     | ✔️ | ✖️ | ✖️ | ✖️    | ✖️ |
+| Multi-amounts                                     | ✔️  | ✖️  | ✖️     | ✔️ | ✖️ | ✖️ | ✖️    | ✖️ |
 | Addition                                          | ✔️  | ✔️  | ✔️     | ✖️ | ✔️ | ✔️ | ✔️    | ✔️ |
 | Subtraction                                       | ✔️  | ✔️  | ✔️     | ✖️ | ✔️ | ✔️ | ✔️    | ✔️ |
+| Negation                                          | ✔️  | ✔️  | ✔️     | ✖️ | ✔️ | ✔️ | ✔️    | ✖️ |
 | Integer scalar multiplication                     | ✔️  | ✔️  | ✔️     | ✖️ | ✖️ | ✖️ | ✔️    | ✔️ |
 | Distribution                                      | ✔️  | ✖️  | ✖️     | ✖️ | ✔️ | ✖️ | ✖️    | ✖️ |
 | Fractional multiplication                         | ✔️  | ✔️  | ✔️     | ✖️ | ✔️ | ✔️ | ✔️    | ✔️ |
