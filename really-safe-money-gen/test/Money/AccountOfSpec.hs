@@ -157,6 +157,11 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
     it "produces valid amounts" $
       producesValid abs
 
+  let negate' = AccountOf.negate @currency
+  describe "negate" $ do
+    it "produces valid amounts" $
+      producesValid negate'
+
   let multiply = AccountOf.multiply @currency
   describe "multiply" $ do
     it "produces valid amounts" $

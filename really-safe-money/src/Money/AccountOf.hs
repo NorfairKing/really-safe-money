@@ -44,6 +44,9 @@ module Money.AccountOf
     -- ** Absolute value
     abs,
 
+    -- ** Negation
+    negate,
+
     -- ** Integral multiplication
     multiply,
 
@@ -77,7 +80,7 @@ import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
 import Money.Currency
-import Prelude hiding (abs, fromRational, subtract, sum, toRational)
+import Prelude hiding (abs, fromRational, negate, subtract, sum, toRational)
 
 newtype AccountOf (currency :: k) = AccountOf {unAccountOf :: Account}
   deriving (Show, Read, Eq, Ord, Generic)
@@ -147,6 +150,10 @@ subtract (AccountOf a1) (AccountOf a2) = fromAccount <$> Account.subtract a1 a2
 -- | See 'Account.abs'
 abs :: AccountOf currency -> AmountOf currency
 abs = AmountOf.fromAmount . Account.abs . toAccount
+
+-- | See 'Account.negate'
+negate :: AccountOf currency -> AccountOf currency
+negate = AccountOf . Account.negate . toAccount
 
 -- | See 'Account.multiply'
 multiply :: Int32 -> AccountOf currency -> Maybe (AccountOf currency)

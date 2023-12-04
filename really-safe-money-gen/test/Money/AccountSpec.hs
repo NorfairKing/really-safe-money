@@ -203,6 +203,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "produces valid amounts" $
       producesValid Account.abs
 
+  describe "negate" $ do
+    it "produces valid amounts" $
+      producesValid Account.negate
+
   describe "multiply" $ do
     it "succeeds for 3 * 6" $
       Account.multiply 3 (Positive (Amount 6)) `shouldBe` Just (Positive (Amount 18))

@@ -40,6 +40,9 @@ module Money.Account
     -- ** Absolute value
     abs,
 
+    -- ** Negation
+    Money.Account.negate,
+
     -- ** Integral multiplication
     multiply,
 
@@ -73,7 +76,7 @@ import qualified Money.Amount as Amount
 import Money.QuantisationFactor (QuantisationFactor (..))
 import Numeric.Natural
 import Text.Printf
-import Prelude hiding (abs, fromRational, subtract, sum, toRational)
+import Prelude hiding (abs, fromRational, negate, subtract, sum, toRational)
 import qualified Prelude
 
 -- | An account of money. Like 'Amount' but can also be negative.
@@ -138,7 +141,7 @@ toMinimalQuantisations :: Account -> Integer
 toMinimalQuantisations account =
   let f = case account of
         Positive _ -> id
-        Negative _ -> negate
+        Negative _ -> Prelude.negate
    in f $ (fromIntegral :: Word64 -> Integer) $ Amount.toMinimalQuantisations (abs account)
 
 -- | Turn an amount of money into a 'Double'.
@@ -154,7 +157,7 @@ toDouble :: QuantisationFactor -> Account -> Double
 toDouble quantisationFactor account =
   let f = case account of
         Positive _ -> id
-        Negative _ -> negate
+        Negative _ -> Prelude.negate
    in f $ Amount.toDouble quantisationFactor (abs account)
 
 -- | Turn a 'Double' into an amount of money.
@@ -194,7 +197,7 @@ toRational :: QuantisationFactor -> Account -> Rational
 toRational quantisationFactor account =
   let f = case account of
         Positive _ -> id
-        Negative _ -> negate
+        Negative _ -> Prelude.negate
    in f $ Amount.toRational quantisationFactor (abs account)
 
 -- | Turn a 'Rational' into an amount of money.
@@ -305,6 +308,18 @@ abs :: Account -> Amount
 abs = \case
   Negative a -> a
   Positive a -> a
+
+-- | Negate the value of the account
+--
+-- >>> negate (Positive (Amount 1))
+-- Negative (Amount 1)
+--
+-- >>> negate (Negative (Amount 2))
+-- Positive (Amount 2)
+negate :: Account -> Account
+negate = \case
+  Positive a -> Negative a
+  Negative a -> Positive a
 
 -- | Multiply an account by an integer scalar
 --
