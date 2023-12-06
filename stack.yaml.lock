@@ -578,7 +578,7 @@ packages:
     url: https://github.com/NorfairKing/validity/archive/11135c8090991158b5b8f3f5f9d266a4ed6df567.tar.gz
 snapshots:
 - completed:
-    sha256: e63b43d506918278d05cd1448bd19352ab2faa9b8e9d64ce527b56f1a7fba149
-    size: 650255
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/25.yaml
-  original: lts-20.25
+    sha256: afd5ba64ab602cabc2d3942d3d7e7dd6311bc626dcb415b901eaf576cb62f0ea
+    size: 640060
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/22.yaml
+  original: lts-21.22
