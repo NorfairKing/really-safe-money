@@ -16,9 +16,9 @@
 -- @
 module Numeric.DecimalLiteral
   ( DecimalLiteral (..),
-    parseDecimalLiteral,
-    parseDecimalLiteralM,
-    renderDecimalLiteral,
+    Numeric.DecimalLiteral.fromString,
+    fromStringM,
+    format,
     fromRational,
     toRational,
     fromQuantisationFactor,
@@ -45,7 +45,7 @@ import Data.Proxy
 import Data.Ratio
 import Data.Set (Set)
 import qualified Data.Set as S
-import Data.String
+import Data.String (IsString (..))
 import Data.Validity
 import Data.Validity.Scientific ()
 import Data.Word
@@ -92,8 +92,8 @@ instance Validity DecimalLiteral
 instance NFData DecimalLiteral
 
 instance IsString DecimalLiteral where
-  fromString s = case parseDecimalLiteral s of
-    Nothing -> error $ "Invalid decimal literal string: " <> show s
+  fromString s = case Numeric.DecimalLiteral.fromString s of
+    Nothing -> error $ "Invalid DecimalLiteral: " <> show s
     Just dl -> dl
 
 -- | Parse a decimal literal from a string
@@ -101,24 +101,24 @@ instance IsString DecimalLiteral where
 -- This only accepts non-scientific notation.
 -- It also fails if the exponent would get too big.
 --
--- >>> parseDecimalLiteral "1"
+-- >>> Numeric.DecimalLiteral.fromString "1"
 -- Just (DecimalLiteral Nothing 1 0)
--- >>> parseDecimalLiteral "0.02"
+-- >>> Numeric.DecimalLiteral.fromString "0.02"
 -- Just (DecimalLiteral Nothing 2 2)
--- >>> parseDecimalLiteral "+0.00003"
+-- >>> Numeric.DecimalLiteral.fromString "+0.00003"
 -- Just (DecimalLiteral (Just True) 3 5)
--- >>> parseDecimalLiteral "-0.00000004"
+-- >>> Numeric.DecimalLiteral.fromString "-0.00000004"
 -- Just (DecimalLiteral (Just False) 4 8)
--- >>> parseDecimalLiteral ("0." ++ replicate 100 '0')
+-- >>> Numeric.DecimalLiteral.fromString ("0." ++ replicate 100 '0')
 -- Just (DecimalLiteral Nothing 0 100)
--- >>> parseDecimalLiteral ("0." ++ replicate 300 '0')
+-- >>> Numeric.DecimalLiteral.fromString ("0." ++ replicate 300 '0')
 -- Nothing
-parseDecimalLiteral :: String -> Maybe DecimalLiteral
-parseDecimalLiteral = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
+fromString :: String -> Maybe DecimalLiteral
+fromString = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
 
--- | Like 'parseDecimalLiteral' but in a 'MonadFail'
-parseDecimalLiteralM :: MonadFail m => String -> m DecimalLiteral
-parseDecimalLiteralM s = case parseDecimalLiteral s of
+-- | Like 'fromString' but in a 'MonadFail'
+fromStringM :: MonadFail m => String -> m DecimalLiteral
+fromStringM s = case Numeric.DecimalLiteral.fromString s of
   Nothing -> fail $ "Failed to parse decimal literal from:" <> show s
   Just dl -> pure dl
 
@@ -168,20 +168,20 @@ parseDigits f z = do
 
 -- | Render a decimal literal to a string
 --
--- >>> renderDecimalLiteral (DecimalLiteral Nothing 5 0)
+-- >>> format (DecimalLiteral Nothing 5 0)
 -- "5"
--- >>> renderDecimalLiteral (DecimalLiteral (Just True) 60 0)
+-- >>> format (DecimalLiteral (Just True) 60 0)
 -- "+60"
--- >>> renderDecimalLiteral (DecimalLiteral (Just False) 700 0)
+-- >>> format (DecimalLiteral (Just False) 700 0)
 -- "-700"
--- >>> renderDecimalLiteral (DecimalLiteral Nothing 8 3)
+-- >>> format (DecimalLiteral Nothing 8 3)
 -- "0.008"
--- >>> renderDecimalLiteral (DecimalLiteral (Just True) 90 5)
+-- >>> format (DecimalLiteral (Just True) 90 5)
 -- "+0.00090"
--- >>> renderDecimalLiteral (DecimalLiteral (Just False) 100 7)
+-- >>> format (DecimalLiteral (Just False) 100 7)
 -- "-0.0000100"
-renderDecimalLiteral :: DecimalLiteral -> String
-renderDecimalLiteral = \case
+format :: DecimalLiteral -> String
+format = \case
   DecimalLiteral s m 0 -> sign s ++ show m
   DecimalLiteral s m e -> sign s ++ goFrac m e
   where

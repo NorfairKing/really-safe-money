@@ -32,23 +32,23 @@ spec = do
     exampleSpec "0.00300" (DecimalLiteral Nothing 300 5)
     exampleSpec "12.00045" (DecimalLiteral Nothing 1_200_045 5)
 
-  describe "renderDecimalLiteral" $ do
+  describe "format" $ do
     it "can render any decimal literal" $
-      producesValid renderDecimalLiteral
+      producesValid DecimalLiteral.format
 
-  describe "parseDecimalLiteralM" $ do
-    it "does the same as parseDecimalLiteral" $
+  describe "DecimalLiteral.fromStringM" $ do
+    it "does the same as DecimalLiteral.fromString" $
       forAllValid $ \s ->
-        parseDecimalLiteralM s `shouldBe` parseDecimalLiteral s
+        DecimalLiteral.fromStringM s `shouldBe` DecimalLiteral.fromString s
 
-  describe "parseDecimalLiteral" $ do
+  describe "DecimalLiteral.fromString" $ do
     it "fails to parse scientific notation" $
-      parseDecimalLiteral "1E1" `shouldBe` Nothing
+      DecimalLiteral.fromString "1E1" `shouldBe` Nothing
 
     it "can parse any rendered decimal literal" $
       forAllValid $ \decimalLiteral -> do
-        let rendered = renderDecimalLiteral decimalLiteral
-        context (show rendered) $ case parseDecimalLiteral rendered of
+        let rendered = DecimalLiteral.format decimalLiteral
+        context (show rendered) $ case DecimalLiteral.fromString rendered of
           Nothing -> expectationFailure "could not parse."
           Just dl -> dl `shouldBe` decimalLiteral
 
@@ -243,13 +243,13 @@ parseExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
 parseExampleSpec s dl =
   withFrozenCallStack $
     it ("can parse " <> show s) $
-      parseDecimalLiteral s `shouldBe` Just dl
+      DecimalLiteral.fromString s `shouldBe` Just dl
 
 renderExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
 renderExampleSpec s dl =
   withFrozenCallStack $
     it ("can render " <> show dl) $
-      renderDecimalLiteral dl `shouldBe` s
+      DecimalLiteral.format dl `shouldBe` s
 
 rationalExampleSpec :: HasCallStack => DecimalLiteral -> Rational -> Spec
 rationalExampleSpec dl qf =
