@@ -62,3 +62,7 @@ spec =
               case to cr of
                 Nothing -> pure () -- Fine
                 Just dl -> from dl `shouldBe` Just cr
+
+      describe "invert" $
+        it "produces valid rates" $
+          producesValid (ConversionRateOf.invert @from @to)

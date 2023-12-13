@@ -8,6 +8,7 @@ module Money.ConversionRateOf
     Money.ConversionRateOf.toRational,
     toDecimalLiteral,
     fromDecimalLiteral,
+    invert,
   )
 where
 
@@ -56,3 +57,7 @@ fromDecimalLiteral = fmap ConversionRateOf . ConversionRate.fromDecimalLiteral
 -- | See 'ConversionRate.toDecimalLiteral'
 toDecimalLiteral :: ConversionRateOf from to -> Maybe DecimalLiteral
 toDecimalLiteral = ConversionRate.toDecimalLiteral . unConversionRateOf
+
+-- | See 'ConversionRate.invert'
+invert :: ConversionRateOf from to -> ConversionRateOf from to
+invert (ConversionRateOf cr) = ConversionRateOf $ ConversionRate.invert cr

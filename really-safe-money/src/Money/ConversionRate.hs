@@ -8,6 +8,7 @@ module Money.ConversionRate
     Money.ConversionRate.toRational,
     toDecimalLiteral,
     fromDecimalLiteral,
+    invert,
   )
 where
 
@@ -98,3 +99,10 @@ toDecimalLiteral =
   fmap DecimalLiteral.setSignOptional
     . DecimalLiteral.fromRational
     . toRational
+
+-- | Invert a 'ConversionRate', to convert in the other direction.
+--
+-- >>> invert (ConversionRate (1 % 2))
+-- ConversionRate {unConversionRate = 2 % 1}
+invert :: ConversionRate -> ConversionRate
+invert (ConversionRate r) = ConversionRate (1 / r)
