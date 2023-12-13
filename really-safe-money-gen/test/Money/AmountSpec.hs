@@ -10,11 +10,14 @@ import Data.Ratio
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import GHC.Real (Ratio ((:%)))
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Money.Amount (Amount (..), Distribution (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
 import Money.QuantisationFactor
 import Money.QuantisationFactor.Gen ()
+import Numeric.DecimalLiteral (DecimalLiteral (..))
+import Numeric.DecimalLiteral.Gen ()
 import Numeric.Natural
 import Test.Syd
 import Test.Syd.Validity
@@ -208,6 +211,43 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "produces an invalid Rational with quantisation factor 0" $
       forAllValid $ \a@(Amount m) ->
         Amount.toRational (QuantisationFactor 0) a `shouldBe` (fromIntegral m :% 0)
+
+  describe "DecimalLiteral" $ do
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 100 2) (Amount 100)
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 200 2) (Amount 200)
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 3 2) (Amount 3)
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 4 2) (Amount 4)
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 500 2) (Amount 100)
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 600 2) (Amount 120)
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 10 2) (Amount 2)
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 20 2) (Amount 4)
+    decimalLiteralExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 1 0) (Amount 1)
+    decimalLiteralExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 2 0) (Amount 2)
+    decimalLiteralExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteral (Just True) 500 8) (Amount 500)
+
+    describe "Amount.fromDecimalLiteral" $ do
+      it "produces valid factors" $
+        producesValid2 Amount.fromDecimalLiteral
+
+      it "fails on this amount that is too precise" $
+        Amount.fromDecimalLiteral (QuantisationFactor 100) (DecimalLiteral (Just True) 1 4) `shouldBe` Nothing
+      it "fails on this amount that is too precise" $
+        Amount.fromDecimalLiteral (QuantisationFactor 20) (DecimalLiteral (Just True) 1 3) `shouldBe` Nothing
+
+    describe "Amount.toDecimalLiteral" $ do
+      it "produces valid decimal literals" $
+        producesValid2 Amount.toDecimalLiteral
+
+      it "roundtrips with Amount.fromDecimalLiteral" $
+        forAllValid $ \acc ->
+          forAllValid $ \qf -> do
+            case Amount.toDecimalLiteral qf acc of
+              Nothing -> pure () -- Fine
+              Just dl ->
+                context (show dl) $
+                  case Amount.fromDecimalLiteral qf dl of
+                    Nothing -> expectationFailure "Should have been able to parse as an account"
+                    Just a -> a `shouldBe` acc
 
   describe "zero" $
     it "is valid" $
@@ -447,3 +487,21 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
     it "produces valid strings" $
       producesValid2 Amount.format
+
+decimalLiteralExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
+decimalLiteralExampleSpec qf dl a =
+  withFrozenCallStack $ do
+    decimalLiteralParseExampleSpec qf dl a
+    decimalLiteralRenderExampleSpec qf dl a
+
+decimalLiteralRenderExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
+decimalLiteralRenderExampleSpec qf dl a =
+  withFrozenCallStack $
+    it (unwords ["can turn decimalLiteral", show qf, "into", show dl]) $
+      Amount.toDecimalLiteral qf a `shouldBe` Just dl
+
+decimalLiteralParseExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
+decimalLiteralParseExampleSpec qf dl a =
+  withFrozenCallStack $
+    it (unwords ["can turn", show dl, "into decimalLiteral", show qf]) $
+      Amount.fromDecimalLiteral qf dl `shouldBe` Just a

@@ -4,9 +4,7 @@
 module Numeric.DecimalLiteralSpec (spec) where
 
 import GHC.Stack
-import Money.Account (Account (..))
 import Money.Account.Gen ()
-import Money.Amount (Amount (..))
 import Money.QuantisationFactor
 import Money.QuantisationFactor.Gen ()
 import Numeric.DecimalLiteral as DecimalLiteral
@@ -131,107 +129,33 @@ spec = do
                   Nothing -> expectationFailure "Should have been able to parse as an account"
                   Just q -> q `shouldBe` qf
 
-  describe "Amount" $ do
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 100 2) (Amount 100)
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 200 2) (Amount 200)
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 3 2) (Amount 3)
-    amountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 4 2) (Amount 4)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 500 2) (Amount 100)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 600 2) (Amount 120)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 10 2) (Amount 2)
-    amountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 20 2) (Amount 4)
-    amountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 1 0) (Amount 1)
-    amountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 2 0) (Amount 2)
-    amountExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteral (Just True) 500 8) (Amount 500)
+  describe "setSignRequired" $
+    it "produces valid values" $
+      producesValid setSignRequired
 
-    describe "toAmount" $ do
-      it "produces valid factors" $
-        producesValid2 toAmount
+  describe "setSignOptional" $
+    it "produces valid values" $
+      producesValid setSignOptional
 
-      it "fails on this amount that is too precise" $
-        toAmount (QuantisationFactor 100) (DecimalLiteral (Just True) 1 4) `shouldBe` Nothing
-      it "fails on this amount that is too precise" $
-        toAmount (QuantisationFactor 20) (DecimalLiteral (Just True) 1 3) `shouldBe` Nothing
+  describe "digits" $
+    it "produces valid numbers of digits" $
+      producesValid DecimalLiteral.digits
 
-    describe "fromAmount" $ do
-      it "produces valid decimal literals" $
-        producesValid2 fromAmount
+  describe "setMinimumDigits" $ do
+    it "produces valid literals" $
+      producesValid2 DecimalLiteral.setMinimumDigits
 
-      it "roundtrips with toAmount" $
-        forAllValid $ \acc ->
-          forAllValid $ \qf -> do
-            case fromAmount qf acc of
-              Nothing -> pure () -- Fine
-              Just dl ->
-                context (show dl) $
-                  case toAmount qf dl of
-                    Nothing -> expectationFailure "Should have been able to parse as an account"
-                    Just a -> a `shouldBe` acc
+    it "does not change the value of the literal" $
+      forAllValid $ \d ->
+        forAllValid $ \dl ->
+          let dl' = DecimalLiteral.setMinimumDigits d dl
+           in DecimalLiteral.toRational dl' `shouldBe` DecimalLiteral.toRational dl
 
-  describe "Account" $ do
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 100 2) (Positive (Amount 100))
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just False) 200 2) (Negative (Amount 200))
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 3 2) (Positive (Amount 3))
-    accountExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just False) 4 2) (Negative (Amount 4))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 500 2) (Positive (Amount 100))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just False) 600 2) (Negative (Amount 120))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 10 2) (Positive (Amount 2))
-    accountExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just False) 20 2) (Negative (Amount 4))
-    accountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 1 0) (Positive (Amount 1))
-    accountExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just False) 2 0) (Negative (Amount 2))
-    accountExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteral (Just True) 500 8) (Positive (Amount 500))
-
-    describe "toAccount" $ do
-      it "produces valid factors" $
-        producesValid2 toAccount
-
-      it "fails on this amount that is too precise" $
-        toAccount (QuantisationFactor 100) (DecimalLiteral (Just False) 1 4) `shouldBe` Nothing
-      it "fails on this amount that is too precise" $
-        toAccount (QuantisationFactor 20) (DecimalLiteral (Just False) 1 3) `shouldBe` Nothing
-
-    describe "fromAccount" $ do
-      it "produces valid decimal literals" $
-        producesValid2 fromAccount
-
-      it "roundtrips with toAccount" $
-        forAllValid $ \acc ->
-          forAllValid $ \qf -> do
-            case fromAccount qf acc of
-              Nothing -> pure () -- Fine
-              Just dl ->
-                context (show dl) $
-                  case toAccount qf dl of
-                    Nothing -> expectationFailure "Should have been able to parse as an account"
-                    Just a -> a `shouldBe` acc
-
-    describe "setSignRequired" $
-      it "produces valid values" $
-        producesValid setSignRequired
-
-    describe "setSignOptional" $
-      it "produces valid values" $
-        producesValid setSignOptional
-
-    describe "digits" $
-      it "produces valid numbers of digits" $
-        producesValid DecimalLiteral.digits
-
-    describe "setMinimumDigits" $ do
-      it "produces valid literals" $
-        producesValid2 DecimalLiteral.setMinimumDigits
-
-      it "does not change the value of the literal" $
-        forAllValid $ \d ->
-          forAllValid $ \dl ->
-            let dl' = DecimalLiteral.setMinimumDigits d dl
-             in DecimalLiteral.toRational dl' `shouldBe` DecimalLiteral.toRational dl
-
-      it "produces values with more than the given number of digits" $
-        forAllValid $ \d ->
-          forAllValid $ \dl ->
-            let dl' = DecimalLiteral.setMinimumDigits d dl
-             in DecimalLiteral.digits dl' `shouldSatisfy` (>= d)
+    it "produces values with more than the given number of digits" $
+      forAllValid $ \d ->
+        forAllValid $ \dl ->
+          let dl' = DecimalLiteral.setMinimumDigits d dl
+           in DecimalLiteral.digits dl' `shouldSatisfy` (>= d)
 
 exampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
 exampleSpec s dl =
@@ -286,39 +210,3 @@ quantisationFactorRenderExampleSpec dl qf =
   withFrozenCallStack $
     it (unwords ["can turn", show dl, "into quantisation factor", show (unQuantisationFactor qf)]) $
       toQuantisationFactor dl `shouldBe` Just qf
-
-amountExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
-amountExampleSpec qf dl a =
-  withFrozenCallStack $ do
-    amountParseExampleSpec qf dl a
-    amountRenderExampleSpec qf dl a
-
-amountParseExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
-amountParseExampleSpec qf dl a =
-  withFrozenCallStack $
-    it (unwords ["can turn amount", show qf, "into", show dl]) $
-      fromAmount qf a `shouldBe` Just dl
-
-amountRenderExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
-amountRenderExampleSpec qf dl a =
-  withFrozenCallStack $
-    it (unwords ["can turn", show dl, "into amount", show qf]) $
-      toAmount qf dl `shouldBe` Just a
-
-accountExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
-accountExampleSpec qf dl a =
-  withFrozenCallStack $ do
-    accountParseExampleSpec qf dl a
-    accountRenderExampleSpec qf dl a
-
-accountParseExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
-accountParseExampleSpec qf dl a =
-  withFrozenCallStack $
-    it (unwords ["can turn account", show qf, "into", show dl]) $
-      fromAccount qf a `shouldBe` Just dl
-
-accountRenderExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
-accountRenderExampleSpec qf dl a =
-  withFrozenCallStack $
-    it (unwords ["can turn", show dl, "into account", show qf]) $
-      toAccount qf dl `shouldBe` Just a

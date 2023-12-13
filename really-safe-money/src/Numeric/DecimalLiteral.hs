@@ -23,14 +23,6 @@ module Numeric.DecimalLiteral
     toRational,
     fromQuantisationFactor,
     toQuantisationFactor,
-    fromAmount,
-    toAmount,
-    fromAmountOf,
-    toAmountOf,
-    fromAccount,
-    toAccount,
-    fromAccountOf,
-    toAccountOf,
     setSignRequired,
     setSignOptional,
     digits,
@@ -41,7 +33,6 @@ where
 import Control.DeepSeq
 import qualified Data.Char as Char
 import Data.List (find)
-import Data.Proxy
 import Data.Ratio
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -50,15 +41,7 @@ import Data.Validity
 import Data.Validity.Scientific ()
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Account as Money (Account (..))
-import qualified Money.Account as Account
-import Money.AccountOf as Money (AccountOf (..))
-import Money.Amount as Money (Amount (..))
-import qualified Money.Amount as Amount
-import Money.AmountOf as Money (AmountOf (..))
-import Money.Currency
 import Money.QuantisationFactor (QuantisationFactor (..))
-import qualified Money.QuantisationFactor as QuantisationFactor
 import Numeric.Natural
 import Text.ParserCombinators.ReadP (ReadP, readP_to_S)
 import qualified Text.ParserCombinators.ReadP as ReadP
@@ -326,106 +309,6 @@ toQuantisationFactor dl = do
   if fac <= fromIntegral (maxBound :: Word32)
     then Just (QuantisationFactor (fromIntegral fac))
     else Nothing
-
--- | Parse a 'DecimalLiteral' from an 'Amount' of a currency with a given quantisation factor.
---
--- This fails when the 'QuantisationFactor' would prevent the account to be
--- represented as a finite decimal literal.
---
--- Note that:
---
--- * The resulting literals always have a (positive) sign.
--- * The resulting literals always have digits corresponding to the precision
---   that the quantisation factor prescribes.
---
--- >>> fromAmount (QuantisationFactor 100) (Amount 1)
--- Just (DecimalLiteral (Just True) 1 2)
--- >>> fromAmount (QuantisationFactor 100) (Amount 100)
--- Just (DecimalLiteral (Just True) 100 2)
--- >>> fromAmount (QuantisationFactor 20) (Amount 100)
--- Just (DecimalLiteral (Just True) 500 2)
--- >>> fromAmount (QuantisationFactor 1) (Amount 100)
--- Just (DecimalLiteral (Just True) 100 0)
--- >>> fromAmount (QuantisationFactor 17) (Amount 100)
--- Nothing
-fromAmount :: QuantisationFactor -> Money.Amount -> Maybe DecimalLiteral
-fromAmount qf acc =
-  let r = Amount.toRational qf acc
-   in setSignRequired . setMinimumDigits (QuantisationFactor.digits qf) <$> fromRational r
-
--- | Convert a 'DecimalLiteral' to an 'Amount' of a currency with a given quantisation factor.
---
--- This fails when:
---
--- * the result would be too big to fit into an 'Amount'.
--- * the decimal literal is too precise.
---
--- >>> toAmount (QuantisationFactor 100) (DecimalLiteral Nothing 100 0)
--- Just (Amount 10000)
--- >>> toAmount (QuantisationFactor 100) (DecimalLiteral Nothing 1 3)
--- Nothing
--- >>> toAmount (QuantisationFactor 1000000000) (DecimalLiteral Nothing 1000000000000 0)
--- Nothing
-toAmount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Amount
-toAmount qf = Amount.fromRational qf . toRational
-
--- | See 'fromAmount'
-fromAmountOf :: forall currency. IsCurrencyType currency => Money.AmountOf currency -> Maybe DecimalLiteral
-fromAmountOf (AmountOf a) = fromAmount (quantisationFactor (Proxy :: Proxy currency)) a
-
--- | See 'toAmount'
-toAmountOf :: forall currency. IsCurrencyType currency => DecimalLiteral -> Maybe (Money.AmountOf currency)
-toAmountOf = fmap AmountOf . Amount.fromRational (quantisationFactor (Proxy :: Proxy currency)) . toRational
-
--- | Parse a 'DecimalLiteral' from an 'Account' of a currency with a given quantisation factor.
---
--- This fails when the 'QuantisationFactor' would prevent the account to be
--- represented as a finite decimal literal.
---
--- Note that:
---
--- * The resulting literals always have a sign.
--- * The resulting literals always have digits corresponding to the precision
---   that the quantisation factor prescribes.
---
--- >>> fromAccount (QuantisationFactor 100) (Positive (Amount 1))
--- Just (DecimalLiteral (Just True) 1 2)
--- >>> fromAccount (QuantisationFactor 100) (Negative (Amount 100))
--- Just (DecimalLiteral (Just False) 100 2)
--- >>> fromAccount (QuantisationFactor 20) (Negative (Amount 100))
--- Just (DecimalLiteral (Just False) 500 2)
--- >>> fromAccount (QuantisationFactor 1) (Positive (Amount 100))
--- Just (DecimalLiteral (Just True) 100 0)
--- >>> fromAccount (QuantisationFactor 17) (Positive (Amount 100))
--- Nothing
-fromAccount :: QuantisationFactor -> Money.Account -> Maybe DecimalLiteral
-fromAccount qf acc =
-  let r = Account.toRational qf acc
-   in setSignRequired . setMinimumDigits (QuantisationFactor.digits qf) <$> fromRational r
-
--- | Convert a 'DecimalLiteral' to an 'Account' of a currency with a given quantisation factor.
---
--- This fails when:
---
--- * the result would be too big to fit into an 'Account'.
--- * the decimal literal is too precise.
---
--- >>> toAccount (QuantisationFactor 100) (DecimalLiteral Nothing 100 0)
--- Just (Positive (Amount 10000))
--- >>> toAccount (QuantisationFactor 100) (DecimalLiteral Nothing 1 3)
--- Nothing
--- >>> toAccount (QuantisationFactor 1000000000) (DecimalLiteral Nothing 1000000000000 0)
--- Nothing
-toAccount :: QuantisationFactor -> DecimalLiteral -> Maybe Money.Account
-toAccount qf = Account.fromRational qf . toRational
-
--- | See 'fromAccount'
-fromAccountOf :: forall currency. IsCurrencyType currency => Money.AccountOf currency -> Maybe DecimalLiteral
-fromAccountOf = fromAccount (quantisationFactor (Proxy :: Proxy currency)) . unAccountOf
-
--- | See 'toAccount'
-toAccountOf :: forall currency. IsCurrencyType currency => DecimalLiteral -> Maybe (Money.AccountOf currency)
-toAccountOf = fmap AccountOf . toAccount (quantisationFactor (Proxy :: Proxy currency))
 
 -- | Count how many digits the literal has after the decimal point
 --

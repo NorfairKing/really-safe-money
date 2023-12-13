@@ -1,3 +1,4 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -8,6 +9,7 @@ import Data.GenValidity.Vector ()
 import Data.Ratio
 import Data.Vector (Vector)
 import qualified Data.Vector as V
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Money.Account (Account (..), Distribution (..), Rounding (..))
 import qualified Money.Account as Account
 import Money.Account.Gen ()
@@ -15,6 +17,8 @@ import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
 import Money.QuantisationFactor
 import Money.QuantisationFactor.Gen ()
+import Numeric.DecimalLiteral (DecimalLiteral (..))
+import Numeric.DecimalLiteral.Gen ()
 import Test.Syd
 import Test.Syd.Validity
 
@@ -93,6 +97,43 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
           case Account.fromDouble quantisationFactor (Account.toDouble quantisationFactor account) of
             Nothing -> pure () -- Fine
             Just account' -> Account.toDouble quantisationFactor account' `shouldBe` Account.toDouble quantisationFactor account
+
+  describe "DecimalLiteral" $ do
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 100 2) (Positive (Amount 100))
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just False) 200 2) (Negative (Amount 200))
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just True) 3 2) (Positive (Amount 3))
+    decimalLiteralExampleSpec (QuantisationFactor 100) (DecimalLiteral (Just False) 4 2) (Negative (Amount 4))
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 500 2) (Positive (Amount 100))
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just False) 600 2) (Negative (Amount 120))
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just True) 10 2) (Positive (Amount 2))
+    decimalLiteralExampleSpec (QuantisationFactor 20) (DecimalLiteral (Just False) 20 2) (Negative (Amount 4))
+    decimalLiteralExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just True) 1 0) (Positive (Amount 1))
+    decimalLiteralExampleSpec (QuantisationFactor 1) (DecimalLiteral (Just False) 2 0) (Negative (Amount 2))
+    decimalLiteralExampleSpec (QuantisationFactor 100_000_000) (DecimalLiteral (Just True) 500 8) (Positive (Amount 500))
+
+    describe "Account.fromDecimalLiteral" $ do
+      it "produces valid factors" $
+        producesValid2 Account.fromDecimalLiteral
+
+      it "fails on this amount that is too precise" $
+        Account.fromDecimalLiteral (QuantisationFactor 100) (DecimalLiteral (Just False) 1 4) `shouldBe` Nothing
+      it "fails on this amount that is too precise" $
+        Account.fromDecimalLiteral (QuantisationFactor 20) (DecimalLiteral (Just False) 1 3) `shouldBe` Nothing
+
+    describe "Account.toDecimalLiteral" $ do
+      it "produces valid decimal literals" $
+        producesValid2 Account.toDecimalLiteral
+
+      it "roundtrips with Account.fromDecimalLiteral" $
+        forAllValid $ \acc ->
+          forAllValid $ \qf -> do
+            case Account.toDecimalLiteral qf acc of
+              Nothing -> pure () -- Fine
+              Just dl ->
+                context (show dl) $
+                  case Account.fromDecimalLiteral qf dl of
+                    Nothing -> expectationFailure "Should have been able to parse as an account"
+                    Just a -> a `shouldBe` acc
 
   describe "add" $ do
     it "fails for maxBound + 1" $
@@ -346,3 +387,21 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "format" $ do
     it "produces valid strings" $
       producesValid2 Account.format
+
+decimalLiteralExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+decimalLiteralExampleSpec qf dl a =
+  withFrozenCallStack $ do
+    decimalLiteralParseExampleSpec qf dl a
+    decimalLiteralRenderExampleSpec qf dl a
+
+decimalLiteralRenderExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+decimalLiteralRenderExampleSpec qf dl a =
+  withFrozenCallStack $
+    it (unwords ["can turn decimalLiteral", show qf, "into", show dl]) $
+      Account.toDecimalLiteral qf a `shouldBe` Just dl
+
+decimalLiteralParseExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+decimalLiteralParseExampleSpec qf dl a =
+  withFrozenCallStack $
+    it (unwords ["can turn", show dl, "into decimalLiteral", show qf]) $
+      Account.fromDecimalLiteral qf dl `shouldBe` Just a

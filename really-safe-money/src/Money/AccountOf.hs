@@ -25,12 +25,14 @@ module Money.AccountOf
     fromAmount,
     fromDouble,
     fromRational,
+    fromDecimalLiteral,
 
     -- * Destruction
     toMinimalQuantisations,
     toAccount,
     toDouble,
     toRational,
+    toDecimalLiteral,
 
     -- * Operations
 
@@ -80,6 +82,7 @@ import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
 import Money.Currency
+import Numeric.DecimalLiteral (DecimalLiteral)
 import Prelude hiding (abs, fromRational, negate, subtract, sum, toRational)
 
 newtype AccountOf (currency :: k) = AccountOf {unAccountOf :: Account}
@@ -130,6 +133,14 @@ toRational = Account.toRational (quantisationFactor (Proxy @currency)) . toAccou
 -- | See 'Account.fromRational'
 fromRational :: forall currency. IsCurrencyType currency => Rational -> Maybe (AccountOf currency)
 fromRational = fmap fromAccount . Account.fromRational (quantisationFactor (Proxy @currency))
+
+-- | See 'Account.toDecimalLiteral'
+toDecimalLiteral :: forall currency. IsCurrencyType currency => AccountOf currency -> Maybe DecimalLiteral
+toDecimalLiteral = Account.toDecimalLiteral (quantisationFactor (Proxy :: Proxy currency)) . unAccountOf
+
+-- | See 'Account.fromDecimalLiteral'
+fromDecimalLiteral :: forall currency. IsCurrencyType currency => DecimalLiteral -> Maybe (AccountOf currency)
+fromDecimalLiteral = fmap AccountOf . Account.fromDecimalLiteral (quantisationFactor (Proxy :: Proxy currency))
 
 -- | See 'Account.zero'
 zero :: AccountOf currency

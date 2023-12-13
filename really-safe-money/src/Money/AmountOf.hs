@@ -29,6 +29,7 @@ module Money.AmountOf
     fromRatio,
     fromDouble,
     fromRational,
+    fromDecimalLiteral,
 
     -- * Destruction
     toMinimalQuantisations,
@@ -36,6 +37,7 @@ module Money.AmountOf
     toRatio,
     toDouble,
     toRational,
+    toDecimalLiteral,
 
     -- * Operations
 
@@ -75,6 +77,8 @@ import GHC.Generics (Generic)
 import Money.Amount (Amount, Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Amount as Amount
 import Money.Currency as Currency
+import Numeric.DecimalLiteral (DecimalLiteral)
+import qualified Numeric.DecimalLiteral as DecimalLiteral
 import Numeric.Natural
 import Prelude hiding (fromRational, subtract, sum, toRational)
 
@@ -164,6 +168,14 @@ fromRatio = fmap fromAmount . Amount.fromRatio (quantisationFactor (Proxy @curre
 -- | See 'Amount.toRatio'
 toRatio :: forall currency. IsCurrencyType currency => AmountOf currency -> Ratio Natural
 toRatio = Amount.toRatio (quantisationFactor (Proxy @currency)) . toAmount
+
+-- | See 'Amount.toDecimalLiteral'
+toDecimalLiteral :: forall currency. IsCurrencyType currency => AmountOf currency -> Maybe DecimalLiteral
+toDecimalLiteral (AmountOf a) = Amount.toDecimalLiteral (quantisationFactor (Proxy :: Proxy currency)) a
+
+-- | See 'Amount.fromDecimalLiteral'
+fromDecimalLiteral :: forall currency. IsCurrencyType currency => DecimalLiteral -> Maybe (AmountOf currency)
+fromDecimalLiteral = fmap AmountOf . Amount.fromRational (quantisationFactor (Proxy :: Proxy currency)) . DecimalLiteral.toRational
 
 -- | See 'Amount.add'
 add ::

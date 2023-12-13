@@ -26,12 +26,14 @@ module Money.Amount
     fromRatio,
     fromDouble,
     fromRational,
+    fromDecimalLiteral,
 
     -- * Destruction
     toMinimalQuantisations,
     toRatio,
     toDouble,
     toRational,
+    toDecimalLiteral,
 
     -- * Operations
 
@@ -72,6 +74,9 @@ import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
 import Money.QuantisationFactor (QuantisationFactor (..))
+import qualified Money.QuantisationFactor as QuantisationFactor
+import Numeric.DecimalLiteral (DecimalLiteral (..))
+import qualified Numeric.DecimalLiteral as DecimalLiteral
 import Numeric.Natural
 import Text.Printf
 import Prelude hiding (fromRational, subtract, sum, toRational)
@@ -394,6 +399,48 @@ fromRational (QuantisationFactor qf) r
 -- 1 % 100
 toRational :: QuantisationFactor -> Amount -> Rational
 toRational quantisationFactor amount = (Prelude.toRational :: Ratio Natural -> Rational) $ toRatio quantisationFactor amount
+
+-- | Parse a 'DecimalLiteral' from an 'Amount' of a currency with a given quantisation factor.
+--
+-- This fails when the 'QuantisationFactor' would prevent the account to be
+-- represented as a finite decimal literal.
+--
+-- Note that:
+--
+-- * The resulting literals always have a (positive) sign.
+-- * The resulting literals always have digits corresponding to the precision
+--   that the quantisation factor prescribes.
+--
+-- >>> toDecimalLiteral (QuantisationFactor 100) (Amount 1)
+-- Just (DecimalLiteral (Just True) 1 2)
+-- >>> toDecimalLiteral (QuantisationFactor 100) (Amount 100)
+-- Just (DecimalLiteral (Just True) 100 2)
+-- >>> toDecimalLiteral (QuantisationFactor 20) (Amount 100)
+-- Just (DecimalLiteral (Just True) 500 2)
+-- >>> toDecimalLiteral (QuantisationFactor 1) (Amount 100)
+-- Just (DecimalLiteral (Just True) 100 0)
+-- >>> toDecimalLiteral (QuantisationFactor 17) (Amount 100)
+-- Nothing
+toDecimalLiteral :: QuantisationFactor -> Amount -> Maybe DecimalLiteral
+toDecimalLiteral qf acc =
+  let r = toRational qf acc
+   in DecimalLiteral.setSignRequired . DecimalLiteral.setMinimumDigits (QuantisationFactor.digits qf) <$> DecimalLiteral.fromRational r
+
+-- | Convert a 'DecimalLiteral' to an 'Amount' of a currency with a given quantisation factor.
+--
+-- This fails when:
+--
+-- * the result would be too big to fit into an 'Amount'.
+-- * the decimal literal is too precise.
+--
+-- >>> fromDecimalLiteral (QuantisationFactor 100) (DecimalLiteral Nothing 100 0)
+-- Just (Amount 10000)
+-- >>> fromDecimalLiteral (QuantisationFactor 100) (DecimalLiteral Nothing 1 3)
+-- Nothing
+-- >>> fromDecimalLiteral (QuantisationFactor 1000000000) (DecimalLiteral Nothing 1000000000000 0)
+-- Nothing
+fromDecimalLiteral :: QuantisationFactor -> DecimalLiteral -> Maybe Amount
+fromDecimalLiteral qf = fromRational qf . DecimalLiteral.toRational
 
 -- | Add two amounts of money.
 --
