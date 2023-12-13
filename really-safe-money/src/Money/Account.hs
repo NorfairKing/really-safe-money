@@ -60,6 +60,10 @@ module Money.Account
     fraction,
     fractionRatio,
 
+    -- ** Currency conversions
+    rate,
+    convert,
+
     -- * Formatting
     format,
     quantisationFactorFormatString,
@@ -78,6 +82,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import Money.Amount (Amount (..), Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Amount as Amount
+import Money.ConversionRate (ConversionRate (..))
 import Money.QuantisationFactor (QuantisationFactor (..))
 import qualified Money.QuantisationFactor as QuantisationFactor
 import Numeric.DecimalLiteral (DecimalLiteral (..))
@@ -519,6 +524,73 @@ fractionRatio ro account af =
         GT -> (Positive <$> ma, r)
         LT -> (Negative <$> ma, r)
    in func amount actualFraction
+
+-- | Compute the currency conversion rate between two accounts of money of
+-- different currencies.
+--
+-- The result will be the conversion rate to use to go from the first currency
+-- to the second.
+-- In other words it will be the number of seconds you get for a first.
+--
+-- This will fail if the rate is zero or infinite (if either amount is zero),
+-- or if the rate is negative (if accounts are of opposite signs).
+--
+--
+-- For example, here we compute the rate to convert 1 USD into 1.10 CHF.
+--
+-- >>> rate (QuantisationFactor 100) (Positive (Amount 100)) (QuantisationFactor 20) (Positive (Amount 22))
+-- Just (ConversionRate {unConversionRate = 11 % 10})
+rate ::
+  QuantisationFactor ->
+  Account ->
+  QuantisationFactor ->
+  Account ->
+  Maybe ConversionRate
+rate qf1 a1 qf2 a2 =
+  let aa1 = abs a1
+      aa2 = abs a2
+      mr = Amount.rate qf1 aa1 qf2 aa2
+   in case (a1, a2) of
+        (Positive _, Positive _) -> mr
+        (Positive _, Negative _) -> Nothing
+        (Negative _, Positive _) -> Nothing
+        (Negative _, Negative _) -> mr
+
+-- | Convert an amount of money of one currency into an amount of money of
+-- another currency using a conversion rate.
+--
+-- Note that this will use 'fraction' under the hood but you must not use the
+-- 'fraction' function with 'ConversionRate's directly.
+-- Indeed, the fraction contained in the 'ConversionRate' has a different
+-- _unit_ than a unitless fraction.
+--
+-- This will fail to produce an amount if the amount would be too big.
+-- This will fail to produce a conversion rate if it would be zero.
+--
+--
+-- For example, here we convert 1 USD into 1.10 CHF with a conversion rate of
+-- 1.1 (with no rounding of the conversion rate necessary):
+--
+-- >>> convert RoundNearest (QuantisationFactor 100) (Negative (Amount 100)) (ConversionRate (11 % 10)) (QuantisationFactor 20)
+-- (Just (Negative (Amount 22)),Just (ConversionRate {unConversionRate = 11 % 10}))
+convert ::
+  -- | Where to round the real ratio to
+  Rounding ->
+  -- Quantisation factor of the currency of the account
+  QuantisationFactor ->
+  -- | Account to convert
+  Account ->
+  -- | Conversion rate to use: Number of units of the following currency per number of units of the previous currency.
+  ConversionRate ->
+  -- | QuantisationFactor of the target currency
+  QuantisationFactor ->
+  -- | The amount and the real rate that was used, considering the 'Rounding'
+  (Maybe Account, Maybe ConversionRate)
+convert r qf1 a cr qf2 =
+  let (ma, mr) = Amount.convert r qf1 (abs a) cr qf2
+   in case a of
+        Positive _ -> (Positive <$> ma, mr)
+        Negative _ -> (Negative <$> ma, mr)
 
 -- | Format an account of money without a symbol.
 --

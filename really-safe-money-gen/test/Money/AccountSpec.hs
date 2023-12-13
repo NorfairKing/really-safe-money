@@ -15,6 +15,8 @@ import qualified Money.Account as Account
 import Money.Account.Gen ()
 import Money.Amount (Amount (..))
 import qualified Money.Amount as Amount
+import Money.ConversionRate
+import Money.ConversionRate.Gen ()
 import Money.QuantisationFactor
 import Money.QuantisationFactor.Gen ()
 import Numeric.DecimalLiteral (DecimalLiteral (..))
@@ -399,6 +401,54 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \requestedFraction ->
           let result@(_, actualFraction) = Account.fraction RoundUp a requestedFraction
            in context (show result) $ actualFraction `shouldSatisfy` (>= requestedFraction)
+
+  describe "rate" $ do
+    it "computes this USD to CHF rate correctly" $
+      Account.rate (QuantisationFactor 100) (Negative (Amount 100)) (QuantisationFactor 20) (Negative (Amount 22))
+        `shouldBe` Just (ConversionRate (11 % 10))
+
+    it "produces valid conversion rates" $
+      forAllValid $ \qf1 ->
+        forAllValid $ \a1 ->
+          forAllValid $ \qf2 ->
+            forAllValid $ \a2 ->
+              shouldBeValid $ Account.rate qf1 a1 qf2 a2
+
+    it "computes a rate that can be used to do a conversion without rounding" $
+      forAllValid $ \r ->
+        forAllValid $ \qf1 ->
+          forAllValid $ \a1 ->
+            forAllValid $ \qf2 ->
+              forAllValid $ \a2 ->
+                case Account.rate qf1 a1 qf2 a2 of
+                  Nothing -> pure () -- Fine
+                  Just cr -> Account.convert r qf1 a1 cr qf2 `shouldBe` (Just a2, Just cr)
+
+  describe "convert" $ do
+    it "converts this USD to CHF correctly" $
+      let cr = ConversionRate (110 % 100)
+       in Account.convert
+            RoundNearest
+            (QuantisationFactor 100)
+            (Positive (Amount 100))
+            cr
+            (QuantisationFactor 20)
+            `shouldBe` (Just (Positive (Amount 22)), Just cr)
+
+    it "succeeds in converting 1:1 without rounding if the quantisation factor is the same" $
+      forAllValid $ \r ->
+        forAllValid $ \qf ->
+          forAllValid $ \a ->
+            let cr = ConversionRate 1
+             in Account.convert r qf a cr qf `shouldBe` (Just a, Just cr)
+
+    it "produces valid amounts" $
+      forAllValid $ \r ->
+        forAllValid $ \qf1 ->
+          forAllValid $ \a ->
+            forAllValid $ \cr ->
+              forAllValid $ \qf2 ->
+                shouldBeValid $ Account.convert r qf1 a cr qf2
 
   describe "fractionRatio" $ do
     it "produces valid amounts" $

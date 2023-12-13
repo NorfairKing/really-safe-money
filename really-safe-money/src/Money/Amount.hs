@@ -734,13 +734,15 @@ rate (QuantisationFactor qf1) (Amount a1) (QuantisationFactor qf2) (Amount a2) =
 -- >>> convert RoundNearest (QuantisationFactor 100) (Amount 100) (ConversionRate (11 % 10)) (QuantisationFactor 20)
 -- (Just (Amount 22),Just (ConversionRate {unConversionRate = 11 % 10}))
 convert ::
-  Rounding ->
   -- | Where to round the real ratio to
+  Rounding ->
+  -- | Quantisation factor of the currency of the amount
   QuantisationFactor ->
-  -- | Amount to multiply
+  -- | Amount to convert
   Amount ->
   -- | Conversion rate to use: Number of units of the following currency per number of units of the previous currency.
   ConversionRate ->
+  -- | Quantisation factor of the target currency
   QuantisationFactor ->
   -- | The amount and the real rate that was used, considering the 'Rounding'
   (Maybe Amount, Maybe ConversionRate)
