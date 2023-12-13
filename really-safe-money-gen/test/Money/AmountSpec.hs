@@ -492,6 +492,16 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
             forAllValid $ \a2 ->
               shouldBeValid $ Amount.rate qf1 a1 qf2 a2
 
+    it "computes a rate that can be used to do a conversion without rounding" $
+      forAllValid $ \r ->
+        forAllValid $ \qf1 ->
+          forAllValid $ \a1 ->
+            forAllValid $ \qf2 ->
+              forAllValid $ \a2 ->
+                case Amount.rate qf1 a1 qf2 a2 of
+                  Nothing -> pure () -- Fine
+                  Just cr -> Amount.convert r qf1 a1 cr qf2 `shouldBe` (Just a2, Just cr)
+
   describe "convert" $ do
     it "converts this USD to CHF correctly" $
       let cr = ConversionRate (110 % 100)
@@ -503,14 +513,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
             (QuantisationFactor 20)
             `shouldBe` (Just (Amount 22), Just cr)
 
-    -- TODO
-    xit "succeeds in converting 1:1 without rounding" $
+    it "succeeds in converting 1:1 without rounding if the quantisation factor is the same" $
       forAllValid $ \r ->
-        forAllValid $ \qf1 ->
+        forAllValid $ \qf ->
           forAllValid $ \a ->
-            forAllValid $ \qf2 ->
-              let cr = ConversionRate 1
-               in Amount.convert r qf1 a cr qf2 `shouldBe` (Just a, Just cr)
+            let cr = ConversionRate 1
+             in Amount.convert r qf a cr qf `shouldBe` (Just a, Just cr)
 
     it "produces valid amounts" $
       forAllValid $ \r ->
