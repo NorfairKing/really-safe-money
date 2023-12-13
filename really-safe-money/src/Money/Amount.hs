@@ -57,6 +57,7 @@ module Money.Amount
     fraction,
 
     -- ** Currency conversions
+    rate,
     convert,
 
     -- * Formatting
@@ -692,6 +693,29 @@ instance Validity Rounding
 
 instance NFData Rounding
 
+-- | Compute the currency conversion rate between two amounts of money of
+-- different currencies.
+--
+-- The result will be the conversion rate to use to go from the first currency
+-- to the second.
+-- In other words it will be the number of seconds you get for a first.
+--
+-- This will fail if the rate is zero or infinite (if either amount is zero).
+--
+--
+--
+-- For example, here we compute the rate to convert 1 USD into 1.10 CHF.
+--
+-- >>> rate (QuantisationFactor 100) (Amount 100) (QuantisationFactor 20) (Amount 22)
+-- Just (ConversionRate {unConversionRate = 11 % 10})
+rate :: QuantisationFactor -> Amount -> QuantisationFactor -> Amount -> Maybe ConversionRate
+rate _ (Amount 0) _ _ = Nothing
+rate _ _ _ (Amount 0) = Nothing
+rate (QuantisationFactor qf1) (Amount a1) (QuantisationFactor qf2) (Amount a2) =
+  ConversionRate.fromRatio $
+    (fromIntegral a2 * fromIntegral qf1)
+      % (fromIntegral a1 * fromIntegral qf2)
+
 -- | Convert an amount of money of one currency into an amount of money of
 -- another currency using a conversion rate.
 --
@@ -708,7 +732,7 @@ instance NFData Rounding
 -- 1.1 (with no rounding of the conversion rate necessary):
 --
 -- >>> convert RoundNearest (QuantisationFactor 100) (Amount 100) (ConversionRate (11 % 10)) (QuantisationFactor 20)
--- (Just (Amount 22),Just (ConversionRate {unConversionRate (11 % 10)))
+-- (Just (Amount 22),Just (ConversionRate {unConversionRate = 11 % 10}))
 convert ::
   Rounding ->
   -- | Where to round the real ratio to

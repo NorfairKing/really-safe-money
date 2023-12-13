@@ -480,6 +480,18 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
           let (_, actualFraction) = Amount.fraction RoundUp a requestedFraction
            in actualFraction >= requestedFraction
 
+  describe "rate" $ do
+    it "computes this USD to CHF rate correctly" $
+      Amount.rate (QuantisationFactor 100) (Amount 100) (QuantisationFactor 20) (Amount 22)
+        `shouldBe` Just (ConversionRate (11 % 10))
+
+    it "produces valid conversion rates" $
+      forAllValid $ \qf1 ->
+        forAllValid $ \a1 ->
+          forAllValid $ \qf2 ->
+            forAllValid $ \a2 ->
+              shouldBeValid $ Amount.rate qf1 a1 qf2 a2
+
   describe "convert" $ do
     it "converts this USD to CHF correctly" $
       let cr = ConversionRate (110 % 100)
@@ -490,6 +502,15 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
             cr
             (QuantisationFactor 20)
             `shouldBe` (Just (Amount 22), Just cr)
+
+    -- TODO
+    xit "succeeds in converting 1:1 without rounding" $
+      forAllValid $ \r ->
+        forAllValid $ \qf1 ->
+          forAllValid $ \a ->
+            forAllValid $ \qf2 ->
+              let cr = ConversionRate 1
+               in Amount.convert r qf1 a cr qf2 `shouldBe` (Just a, Just cr)
 
     it "produces valid amounts" $
       forAllValid $ \r ->
