@@ -56,6 +56,9 @@ module Money.Amount
     Rounding (..),
     fraction,
 
+    -- ** Currency conversions
+    convert,
+
     -- * Formatting
     format,
     quantisationFactorFormatString,
@@ -73,6 +76,8 @@ import Data.Word
 import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
+import Money.ConversionRate (ConversionRate (..))
+import qualified Money.ConversionRate as ConversionRate
 import Money.QuantisationFactor (QuantisationFactor (..))
 import qualified Money.QuantisationFactor as QuantisationFactor
 import Numeric.DecimalLiteral (DecimalLiteral (..))
@@ -686,6 +691,45 @@ data Rounding
 instance Validity Rounding
 
 instance NFData Rounding
+
+-- | Convert an amount of money of one currency into an amount of money of
+-- another currency using a conversion rate.
+--
+-- Note that this will use 'fraction' under the hood but you must not use the
+-- 'fraction' function with 'ConversionRate's directly.
+-- Indeed, the fraction contained in the 'ConversionRate' has a different
+-- _unit_ than a unitless fraction.
+--
+-- This will fail to produce an amount if the amount would be too big.
+-- This will fail to produce a conversion rate if it would be zero.
+--
+--
+-- For example, here we convert 1 USD into 1.10 CHF with a conversion rate of
+-- 1.1 (with no rounding of the conversion rate necessary):
+--
+-- >>> convert RoundNearest (QuantisationFactor 100) (Amount 100) (ConversionRate (11 % 10)) (QuantisationFactor 20)
+-- (Just (Amount 22),Just (ConversionRate {unConversionRate (11 % 10)))
+convert ::
+  Rounding ->
+  -- | Where to round the real ratio to
+  QuantisationFactor ->
+  -- | Amount to multiply
+  Amount ->
+  -- | Conversion rate to use: Number of units of the following currency per number of units of the previous currency.
+  ConversionRate ->
+  QuantisationFactor ->
+  -- | The amount and the real rate that was used, considering the 'Rounding'
+  (Maybe Amount, Maybe ConversionRate)
+convert
+  rounding
+  (QuantisationFactor qf1)
+  a
+  (ConversionRate r)
+  (QuantisationFactor qf2) =
+    let qf1r = Prelude.fromIntegral qf1
+        qf2r = Prelude.fromIntegral qf2
+        (ma, ar) = fraction rounding a (r * qf2r / qf1r)
+     in (ma, ConversionRate.fromRatio (ar * qf1r / qf2r))
 
 -- | Format an amount of money without a symbol.
 --

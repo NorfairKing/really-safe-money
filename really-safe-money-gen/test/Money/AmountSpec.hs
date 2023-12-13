@@ -14,6 +14,8 @@ import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Money.Amount (Amount (..), Distribution (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.Amount.Gen ()
+import Money.ConversionRate (ConversionRate (..))
+import Money.ConversionRate.Gen ()
 import Money.QuantisationFactor
 import Money.QuantisationFactor.Gen ()
 import Numeric.DecimalLiteral (DecimalLiteral (..))
@@ -477,6 +479,25 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \requestedFraction ->
           let (_, actualFraction) = Amount.fraction RoundUp a requestedFraction
            in actualFraction >= requestedFraction
+
+  describe "convert" $ do
+    it "converts this USD to CHF correctly" $
+      let cr = ConversionRate (110 % 100)
+       in Amount.convert
+            RoundNearest
+            (QuantisationFactor 100)
+            (Amount 100)
+            cr
+            (QuantisationFactor 20)
+            `shouldBe` (Just (Amount 22), Just cr)
+
+    it "produces valid amounts" $
+      forAllValid $ \r ->
+        forAllValid $ \qf1 ->
+          forAllValid $ \a ->
+            forAllValid $ \cr ->
+              forAllValid $ \qf2 ->
+                shouldBeValid $ Amount.convert r qf1 a cr qf2
 
   describe "format" $ do
     it "formats 1 correctly with quantisation factor 1" $
