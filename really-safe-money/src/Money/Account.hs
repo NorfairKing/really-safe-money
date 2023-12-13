@@ -58,6 +58,7 @@ module Money.Account
     -- ** Fractional multiplication
     Rounding (..),
     fraction,
+    fractionRatio,
 
     -- * Formatting
     format,
@@ -485,7 +486,6 @@ fraction ::
   (Maybe Account, Rational)
 fraction rounding account f =
   let af = (realToFrac :: Rational -> Ratio Natural) ((Prelude.abs :: Rational -> Rational) f)
-      aa = abs account
       ro =
         if f >= 0
           then rounding
@@ -493,17 +493,32 @@ fraction rounding account f =
             RoundUp -> RoundDown
             RoundDown -> RoundUp
             RoundNearest -> RoundNearest
+      (ma, ar) = fractionRatio ro account af
+      r = (realToFrac :: Ratio Natural -> Rational) ar
+   in if f >= 0
+        then (ma, r)
+        else (negate <$> ma, -r)
+
+-- | Fractional multiplication with a positive fraction, see 'Amount.fraction' and 'Account.fraction'.
+--
+-- >>> fraction RoundNearest (Positive (Amount 100)) (1 % 2)
+-- (Just (Positive (Amount 50)),1 % 2)
+-- >>> fraction RoundNearest (Negative (Amount 100)) (1 % 4)
+-- (Just (Negative (Amount 25)),1 % 4)
+fractionRatio ::
+  Rounding ->
+  Account ->
+  Ratio Natural ->
+  (Maybe Account, Ratio Natural)
+fractionRatio ro account af =
+  let aa = abs account
       (amount, actualFraction) = Amount.fraction ro aa af
-      func :: Maybe Amount -> Rational -> (Maybe Account, Rational)
-      func ma r = case (compare account zero, compare f 0) of
-        (EQ, GT) -> (Just zero, r)
-        (EQ, LT) -> (Just zero, -r)
-        (_, EQ) -> (Just zero, 0)
-        (GT, GT) -> (Positive <$> ma, r)
-        (GT, LT) -> (Negative <$> ma, -r)
-        (LT, GT) -> (Negative <$> ma, r)
-        (LT, LT) -> (Positive <$> ma, -r)
-   in func amount ((realToFrac :: Ratio Natural -> Rational) actualFraction)
+      func :: Maybe Amount -> Ratio Natural -> (Maybe Account, Ratio Natural)
+      func ma r = case compare account zero of
+        EQ -> (Just zero, r)
+        GT -> (Positive <$> ma, r)
+        LT -> (Negative <$> ma, r)
+   in func amount actualFraction
 
 -- | Format an account of money without a symbol.
 --

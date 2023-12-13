@@ -400,6 +400,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
           let result@(_, actualFraction) = Account.fraction RoundUp a requestedFraction
            in context (show result) $ actualFraction `shouldSatisfy` (>= requestedFraction)
 
+  describe "fractionRatio" $ do
+    it "produces valid amounts" $
+      producesValid3 Account.fractionRatio
+
   describe "format" $ do
     it "produces valid strings" $
       producesValid2 Account.format
