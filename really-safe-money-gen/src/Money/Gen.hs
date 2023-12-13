@@ -6,6 +6,7 @@ module Money.Gen
     module Money.Account.Gen,
     module Money.AmountOf.Gen,
     module Money.AccountOf.Gen,
+    module Money.ConversionRate.Gen,
     module Money.Currency.Gen,
     module Money.MultiAccount.Gen,
     module Money.MultiAmount.Gen,
@@ -17,6 +18,7 @@ import Money.Account.Gen
 import Money.AccountOf.Gen
 import Money.Amount.Gen
 import Money.AmountOf.Gen
+import Money.ConversionRate.Gen
 import Money.Currency.Gen
 import Money.MultiAccount.Gen
 import Money.MultiAmount.Gen

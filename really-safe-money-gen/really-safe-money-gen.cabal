@@ -21,6 +21,7 @@ library
       Money.AccountOf.Gen
       Money.Amount.Gen
       Money.AmountOf.Gen
+      Money.ConversionRate.Gen
       Money.Currency.Gen
       Money.Gen
       Money.MultiAccount.Gen
@@ -47,6 +48,7 @@ test-suite really-safe-money-test
       Money.AccountSpec
       Money.AmountOfSpec
       Money.AmountSpec
+      Money.ConversionRateSpec
       Money.Currency.TestUtils
       Money.CurrencySpec
       Money.MultiAccountSpec
