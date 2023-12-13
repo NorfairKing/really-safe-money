@@ -78,6 +78,22 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
             Nothing -> pure () -- Fine
             Just account' -> account' `shouldBe` account
 
+  describe "toRatio" $ do
+    it "produces valid Ratios when the quantisation factor is nonzero" $
+      forAllValid $ \quantisationFactor ->
+        producesValid (Account.toRatio quantisationFactor)
+
+  describe "fromRatio" $ do
+    it "produces valid rational" $
+      producesValid2 Account.fromRatio
+
+    it "roundtrips with toRatio" $
+      forAllValid $ \quantisationFactor ->
+        forAllValid $ \account ->
+          case Account.toRatio quantisationFactor account of
+            Nothing -> pure () -- Fine
+            Just r -> Account.fromRatio quantisationFactor r `shouldBe` Just account
+
   describe "toDouble" $ do
     it "produces valid Doubles when the quantisation factor is nonzero" $
       forAllValid $ \quantisationFactor ->

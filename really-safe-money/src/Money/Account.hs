@@ -22,12 +22,14 @@ module Money.Account
     fromAmount,
     fromDouble,
     fromRational,
+    fromRatio,
     fromDecimalLiteral,
 
     -- * Destruction
     toMinimalQuantisations,
     toDouble,
     toRational,
+    toRatio,
     toDecimalLiteral,
 
     -- * Operations
@@ -224,6 +226,36 @@ fromRational quantisationFactor r =
   let r' = Prelude.abs r
       f = if r >= 0 then Positive else Negative
    in f <$> Amount.fromRational quantisationFactor r'
+
+-- | Turn a 'Rational' into an amount of money.
+--
+-- This function will fail if the 'Rational':
+--
+-- * Is NaN (0 :% 0)
+-- * Is infinite (1 :% 0) or (-1 :% 0)
+-- * Is non-normalised (5 :% 5)
+-- * Does represent an integer number of minimal quantisations.
+--
+-- >>> fromRatio (QuantisationFactor 100) (2 % 100)
+-- Just (Positive (Amount 2))
+--
+-- >>> fromRatio (QuantisationFactor 100) (1 % 1000)
+-- Nothing
+fromRatio :: QuantisationFactor -> Ratio Natural -> Maybe Account
+fromRatio qf r = Positive <$> Amount.fromRatio qf r
+
+-- | Turn an amount of money into a 'Rational'.
+--
+-- This will fail if the account is negative.
+--
+-- >>> toRatio (QuantisationFactor 100) (Positive (Amount 2))
+-- Just (1 % 50)
+--
+-- >>> toRatio (QuantisationFactor 20) (Negative (Amount 3))
+-- Nothing
+toRatio :: QuantisationFactor -> Account -> Maybe (Ratio Natural)
+toRatio _ (Negative _) = Nothing
+toRatio qf (Positive a) = Just $ Amount.toRatio qf a
 
 -- | Parse a 'DecimalLiteral' from an 'Account' of a currency with a given quantisation factor.
 --
