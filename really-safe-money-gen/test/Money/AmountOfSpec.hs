@@ -14,6 +14,7 @@ import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..), Distribution (..))
 import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
+import Money.ConversionRateOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
 import Money.QuantisationFactor
@@ -314,6 +315,17 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     let fraction = AmountOf.fraction @currency
     it "produces valid amounts" $
       producesValid3 fraction
+
+  forallCurrencies $ \(Proxy :: Proxy to) -> do
+    describe "rate" $ do
+      let rate = AmountOf.rate @currency @to
+      it "produces valid amounts" $
+        producesValid2 rate
+
+    describe "convert" $ do
+      let convert = AmountOf.convert @currency @to
+      it "produces valid amounts" $
+        producesValid3 convert
 
   describe "format" $ do
     let format = AmountOf.format @currency

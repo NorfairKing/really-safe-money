@@ -60,6 +60,10 @@ module Money.AmountOf
     Rounding (..),
     fraction,
 
+    -- ** Currency conversion
+    rate,
+    convert,
+
     -- * Formatting
     format,
     quantisationFactorFormatString,
@@ -76,6 +80,7 @@ import Data.Word
 import GHC.Generics (Generic)
 import Money.Amount (Amount, Distribution (..), Rounding (..), quantisationFactorFormatString)
 import qualified Money.Amount as Amount
+import Money.ConversionRateOf (ConversionRateOf (..))
 import Money.Currency as Currency
 import Numeric.DecimalLiteral (DecimalLiteral)
 import qualified Numeric.DecimalLiteral as DecimalLiteral
@@ -225,6 +230,31 @@ fraction ::
 fraction rounding (AmountOf a) f =
   let (a', r) = Amount.fraction rounding a f
    in (fromAmount <$> a', r)
+
+rate ::
+  forall from to.
+  (IsCurrencyType from, IsCurrencyType to) =>
+  AmountOf from ->
+  AmountOf to ->
+  Maybe (ConversionRateOf from to)
+rate (AmountOf a1) (AmountOf a2) =
+  ConversionRateOf
+    <$> Amount.rate
+      (quantisationFactor (Proxy :: Proxy from))
+      a1
+      (quantisationFactor (Proxy :: Proxy to))
+      a2
+
+convert ::
+  forall from to.
+  (IsCurrencyType from, IsCurrencyType to) =>
+  Rounding ->
+  AmountOf from ->
+  ConversionRateOf from to ->
+  (Maybe (AmountOf to), Maybe (ConversionRateOf from to))
+convert rounding (AmountOf a) (ConversionRateOf cr) =
+  let (ma, mrc) = Amount.convert rounding (quantisationFactor (Proxy :: Proxy from)) a cr (quantisationFactor (Proxy :: Proxy to))
+   in (AmountOf <$> ma, ConversionRateOf <$> mrc)
 
 -- | See 'Amount.formatAmount'
 format :: forall currency. IsCurrencyType currency => AmountOf currency -> String
