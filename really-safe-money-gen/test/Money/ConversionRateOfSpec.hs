@@ -66,3 +66,7 @@ spec =
       describe "invert" $
         it "produces valid rates" $
           producesValid (ConversionRateOf.invert @from @to)
+
+      describe "compose" $ do
+        it "produces valid rates" $
+          producesValid2 ConversionRateOf.compose

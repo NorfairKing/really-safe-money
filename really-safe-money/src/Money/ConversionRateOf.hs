@@ -9,6 +9,7 @@ module Money.ConversionRateOf
     toDecimalLiteral,
     fromDecimalLiteral,
     invert,
+    compose,
   )
 where
 
@@ -61,3 +62,7 @@ toDecimalLiteral = ConversionRate.toDecimalLiteral . unConversionRateOf
 -- | See 'ConversionRate.invert'
 invert :: ConversionRateOf from to -> ConversionRateOf from to
 invert (ConversionRateOf cr) = ConversionRateOf $ ConversionRate.invert cr
+
+-- | See 'unConversionRate.compose'
+compose :: ConversionRateOf a b -> ConversionRateOf b c -> ConversionRateOf a c
+compose (ConversionRateOf cr1) (ConversionRateOf cr2) = ConversionRateOf $ ConversionRate.compose cr1 cr2

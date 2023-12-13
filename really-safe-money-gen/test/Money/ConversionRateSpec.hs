@@ -3,9 +3,11 @@
 module Money.ConversionRateSpec (spec) where
 
 import Data.GenValidity.Vector ()
+import Money.Amount.Gen ()
 import Money.ConversionRate
 import qualified Money.ConversionRate as ConversionRate
 import Money.ConversionRate.Gen ()
+import Money.QuantisationFactor.Gen ()
 import Numeric.DecimalLiteral.Gen ()
 import Test.Syd
 import Test.Syd.Validity
@@ -53,3 +55,7 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "invert" $
     it "produces valid rates" $
       producesValid ConversionRate.invert
+
+  describe "compose" $ do
+    it "produces valid rates" $
+      producesValid2 ConversionRate.compose

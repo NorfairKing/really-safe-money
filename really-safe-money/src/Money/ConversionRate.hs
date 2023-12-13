@@ -9,6 +9,7 @@ module Money.ConversionRate
     toDecimalLiteral,
     fromDecimalLiteral,
     invert,
+    compose,
   )
 where
 
@@ -106,3 +107,14 @@ toDecimalLiteral =
 -- ConversionRate {unConversionRate = 2 % 1}
 invert :: ConversionRate -> ConversionRate
 invert (ConversionRate r) = ConversionRate (1 / r)
+
+-- | Compose two conversion rates
+--
+-- A -> B and B -> C
+-- to
+-- A -> C
+--
+-- >>> compose (ConversionRate (2 % 1)) (ConversionRate (1 % 2))
+-- ConversionRate {unConversionRate = 1 % 1}
+compose :: ConversionRate -> ConversionRate -> ConversionRate
+compose (ConversionRate cr1) (ConversionRate cr2) = ConversionRate $ cr1 * cr2
