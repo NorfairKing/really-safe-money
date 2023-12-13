@@ -61,6 +61,10 @@ module Money.AccountOf
     Rounding (..),
     fraction,
 
+    -- ** Currency conversion
+    rate,
+    convert,
+
     -- * Formatting
     format,
     quantisationFactorFormatString,
@@ -81,6 +85,7 @@ import qualified Money.Account as Account
 import Money.Amount (Amount (..))
 import Money.AmountOf (AmountOf (..))
 import qualified Money.AmountOf as AmountOf
+import Money.ConversionRateOf (ConversionRateOf (..))
 import Money.Currency
 import Numeric.DecimalLiteral (DecimalLiteral)
 import Prelude hiding (abs, fromRational, negate, subtract, sum, toRational)
@@ -190,6 +195,33 @@ fraction ::
 fraction rounding (AccountOf a) f =
   let (a', r) = Account.fraction rounding a f
    in (fromAccount <$> a', r)
+
+-- | See 'Account.rate'
+rate ::
+  forall from to.
+  (IsCurrencyType from, IsCurrencyType to) =>
+  AccountOf from ->
+  AccountOf to ->
+  Maybe (ConversionRateOf from to)
+rate (AccountOf a1) (AccountOf a2) =
+  ConversionRateOf
+    <$> Account.rate
+      (quantisationFactor (Proxy :: Proxy from))
+      a1
+      (quantisationFactor (Proxy :: Proxy to))
+      a2
+
+-- | See 'Account.convert'
+convert ::
+  forall from to.
+  (IsCurrencyType from, IsCurrencyType to) =>
+  Rounding ->
+  AccountOf from ->
+  ConversionRateOf from to ->
+  (Maybe (AccountOf to), Maybe (ConversionRateOf from to))
+convert rounding (AccountOf a) (ConversionRateOf cr) =
+  let (ma, mrc) = Account.convert rounding (quantisationFactor (Proxy :: Proxy from)) a cr (quantisationFactor (Proxy :: Proxy to))
+   in (AccountOf <$> ma, ConversionRateOf <$> mrc)
 
 -- | See 'formatAccount'
 format :: forall currency. IsCurrencyType currency => AccountOf currency -> String

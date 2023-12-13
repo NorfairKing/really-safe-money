@@ -13,6 +13,7 @@ import Money.AccountOf (AccountOf (..), Distribution (..))
 import qualified Money.AccountOf as AccountOf
 import Money.AccountOf.Gen ()
 import Money.AmountOf.Gen ()
+import Money.ConversionRateOf.Gen ()
 import Money.Currency.TestUtils
 import Test.Syd
 import Test.Syd.Validity
@@ -263,6 +264,17 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
                         context (show result) $
                           fromIntegral (toMinimalQuantisations fractionalAccountOf) / actualFraction
                             `shouldBe` fromIntegral (toMinimalQuantisations account)
+
+  forallCurrencies $ \(Proxy :: Proxy to) -> do
+    describe "rate" $ do
+      let rate = AccountOf.rate @currency @to
+      it "produces valid amounts" $
+        producesValid2 rate
+
+    describe "convert" $ do
+      let convert = AccountOf.convert @currency @to
+      it "produces valid amounts" $
+        producesValid3 convert
 
   describe "format" $ do
     let format = AccountOf.format @currency
