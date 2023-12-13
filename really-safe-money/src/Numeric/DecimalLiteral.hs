@@ -23,8 +23,6 @@ module Numeric.DecimalLiteral
     toRational,
     fromRatio,
     toRatio,
-    fromQuantisationFactor,
-    toQuantisationFactor,
     setSignRequired,
     setSignOptional,
     digits,
@@ -44,7 +42,6 @@ import Data.Validity.Scientific ()
 import Data.Word
 import GHC.Generics (Generic)
 import GHC.Real (Ratio (..))
-import Money.QuantisationFactor (QuantisationFactor (..))
 import Numeric.Natural
 import Text.ParserCombinators.ReadP (ReadP, readP_to_S)
 import qualified Text.ParserCombinators.ReadP as ReadP
@@ -288,61 +285,6 @@ toRatio :: DecimalLiteral -> Maybe (Ratio Natural)
 toRatio (DecimalLiteral mSign m e) = case mSign of
   Just False -> Nothing
   _ -> Just $ fromIntegral m / (10 ^ e)
-
--- | Render a 'DecimalLiteral' that represents the smallest unit from a 'QuantisationFactor'
---
--- Note that this fails on quantisation factors that cannot be represented
--- using a literal, for example because they would correspond to a number with
--- an infinite decimal representation.
---
--- this will always have a 'Nothing' sign.
---
--- >>> fromQuantisationFactor (QuantisationFactor 100)
--- Just (DecimalLiteral Nothing 1 2)
--- >>> fromQuantisationFactor (QuantisationFactor 20)
--- Just (DecimalLiteral Nothing 5 2)
--- >>> fromQuantisationFactor (QuantisationFactor 1)
--- Just (DecimalLiteral Nothing 1 0)
-fromQuantisationFactor :: QuantisationFactor -> Maybe DecimalLiteral
-fromQuantisationFactor (QuantisationFactor qfw) =
-  setSignOptional <$> fromRational (1 % fromIntegral qfw)
-
--- | Parse a 'QuantisationFactor' from a 'DecimalLiteral' that represents the smallest unit
--- TODO explain that it's the inverse.
---
--- Note that this fails on:
---
--- * Negative literals
--- * Integrals greater than 1
---
--- >>> toQuantisationFactor (DecimalLiteral Nothing 2 0)
--- Nothing
--- >>> toQuantisationFactor (DecimalLiteral (Just False) 2 2)
--- Nothing
--- >>> toQuantisationFactor (DecimalLiteral (Just True) 2 2)
--- Just (QuantisationFactor {unQuantisationFactor = 50})
-toQuantisationFactor :: DecimalLiteral -> Maybe QuantisationFactor
-toQuantisationFactor dl = do
-  irat <-
-    let r = toRational dl
-     in if numerator r == 0
-          then Nothing
-          else pure r
-
-  rat <-
-    let r = 1 / irat
-     in if r < 0
-          then Nothing
-          else Just r
-
-  fac <-
-    if denominator rat == 1
-      then Just (numerator rat)
-      else Nothing
-
-  if fac <= fromIntegral (maxBound :: Word32)
-    then Just (QuantisationFactor (fromIntegral fac))
-    else Nothing
 
 -- | Count how many digits the literal has after the decimal point
 --

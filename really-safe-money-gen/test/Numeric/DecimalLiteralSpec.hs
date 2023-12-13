@@ -5,8 +5,6 @@ module Numeric.DecimalLiteralSpec (spec) where
 
 import GHC.Stack
 import Money.Account.Gen ()
-import Money.QuantisationFactor
-import Money.QuantisationFactor.Gen ()
 import Numeric.DecimalLiteral as DecimalLiteral
 import Numeric.DecimalLiteral.Gen ()
 import Test.Syd
@@ -108,47 +106,6 @@ spec = do
                   context (show actual) $
                     DecimalLiteral.toRatio actual `shouldBe` DecimalLiteral.toRatio decimalLiteral
 
-  describe "QuantisationFactor" $ do
-    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 0) (QuantisationFactor 1)
-    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 1) (QuantisationFactor 10)
-    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 2) (QuantisationFactor 100)
-    quantisationFactorExampleSpec (DecimalLiteral Nothing 1 3) (QuantisationFactor 1_000)
-    quantisationFactorExampleSpec (DecimalLiteral Nothing 5 2) (QuantisationFactor 20)
-    quantisationFactorExampleSpec (DecimalLiteral Nothing 2 2) (QuantisationFactor 50)
-
-    describe "toQuantisationFactor" $ do
-      it "produces valid factors" $
-        producesValid toQuantisationFactor
-
-      it "fails to render negative fractionals" $
-        forAllValid $ \m ->
-          forAllValid $ \e ->
-            toQuantisationFactor (DecimalLiteral (Just False) m e) `shouldBe` Nothing
-
-      it "fails to render a 0" $
-        forAllValid $ \mSign ->
-          forAllValid $ \e ->
-            toQuantisationFactor (DecimalLiteral mSign 0 e) `shouldBe` Nothing
-
-      it "fails to render a non-1 integer" $
-        forAllValid $ \mSign ->
-          forAllValid $ \a ->
-            toQuantisationFactor (DecimalLiteral mSign (succ (succ a)) 0) `shouldBe` Nothing
-
-    describe "fromQuantisationFactor" $ do
-      it "produces valid literals" $
-        producesValid fromQuantisationFactor
-
-      it "roundtrips with toQuantisationFactor" $
-        forAllValid $ \qf -> do
-          case fromQuantisationFactor qf of
-            Nothing -> pure () -- Fine
-            Just dl ->
-              context (show dl) $
-                case toQuantisationFactor dl of
-                  Nothing -> expectationFailure "Should have been able to parse as an account"
-                  Just q -> q `shouldBe` qf
-
   describe "setSignRequired" $
     it "produces valid values" $
       producesValid setSignRequired
@@ -212,21 +169,3 @@ rationalRenderExampleSpec dl r =
   withFrozenCallStack $
     it (unwords ["can turn", show dl, "into rational", show r]) $
       DecimalLiteral.toRational dl `shouldBe` r
-
-quantisationFactorExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
-quantisationFactorExampleSpec dl qf =
-  withFrozenCallStack $ do
-    quantisationFactorParseExampleSpec dl qf
-    quantisationFactorRenderExampleSpec dl qf
-
-quantisationFactorParseExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
-quantisationFactorParseExampleSpec dl qf =
-  withFrozenCallStack $
-    it (unwords ["can turn quantisation factor", show (unQuantisationFactor qf), "into", show dl]) $
-      fromQuantisationFactor qf `shouldBe` Just dl
-
-quantisationFactorRenderExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
-quantisationFactorRenderExampleSpec dl qf =
-  withFrozenCallStack $
-    it (unwords ["can turn", show dl, "into quantisation factor", show (unQuantisationFactor qf)]) $
-      toQuantisationFactor dl `shouldBe` Just qf
