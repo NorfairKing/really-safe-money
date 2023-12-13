@@ -88,6 +88,26 @@ spec = do
               context (show actual) $
                 DecimalLiteral.toRational actual `shouldBe` DecimalLiteral.toRational decimalLiteral
 
+  describe "Ratio" $ do
+    describe "toRatio" $ do
+      it "renders to valid rationals" $
+        producesValid DecimalLiteral.toRatio
+
+    describe "fromRatio" $ do
+      it "renders to valid decimal literals" $
+        producesValid DecimalLiteral.fromRatio
+
+      it "can parse any rendered rational" $
+        forAllValid $ \decimalLiteral -> do
+          case DecimalLiteral.toRatio decimalLiteral of
+            Nothing -> pure () -- Fine
+            Just r ->
+              context (show r) $ case DecimalLiteral.fromRatio r of
+                Nothing -> expectationFailure "could not parse rational."
+                Just actual ->
+                  context (show actual) $
+                    DecimalLiteral.toRatio actual `shouldBe` DecimalLiteral.toRatio decimalLiteral
+
   describe "QuantisationFactor" $ do
     quantisationFactorExampleSpec (DecimalLiteral Nothing 1 0) (QuantisationFactor 1)
     quantisationFactorExampleSpec (DecimalLiteral Nothing 1 1) (QuantisationFactor 10)

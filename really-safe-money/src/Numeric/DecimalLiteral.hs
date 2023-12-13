@@ -21,6 +21,8 @@ module Numeric.DecimalLiteral
     format,
     fromRational,
     toRational,
+    fromRatio,
+    toRatio,
     fromQuantisationFactor,
     toQuantisationFactor,
     setSignRequired,
@@ -41,6 +43,7 @@ import Data.Validity
 import Data.Validity.Scientific ()
 import Data.Word
 import GHC.Generics (Generic)
+import GHC.Real (Ratio (..))
 import Money.QuantisationFactor (QuantisationFactor (..))
 import Numeric.Natural
 import Text.ParserCombinators.ReadP (ReadP, readP_to_S)
@@ -196,48 +199,13 @@ format = \case
 -- >>> fromRational (1 % 3)
 -- Nothing
 fromRational :: Rational -> Maybe DecimalLiteral
-fromRational = fromRationalRepetendLimited 256
-  where
-    fromRationalRepetendLimited ::
-      -- limit
-      Int ->
-      Rational ->
-      Maybe DecimalLiteral
-    fromRationalRepetendLimited l rational
-      | d == 0 = Nothing
-      | num < 0 = toLiteral (Just False) <$> longDiv (-num)
-      | otherwise = toLiteral Nothing <$> longDiv num
-      where
-        toLiteral mSign (m, e) = DecimalLiteral mSign m (fromIntegral e)
-        d = denominator rational
-        num = numerator rational
-
-        longDiv :: Integer -> Maybe (Natural, Int)
-        longDiv = longDivWithLimit 0 0 S.empty
-
-        longDivWithLimit ::
-          Integer ->
-          Int ->
-          Set Integer ->
-          Integer ->
-          Maybe (Natural, Int)
-        longDivWithLimit !c !e _ns 0 =
-          Just (fromIntegral (abs c), e)
-        longDivWithLimit !c !e ns !n
-          -- If there's a repetend, we can't turn it into a decimal literal
-          | S.member n ns = Nothing
-          -- Over the limit, stop trying
-          | e >= l = Nothing
-          | n < d =
-              let !ns' = S.insert n ns
-               in longDivWithLimit (c * 10) (succ e) ns' (n * 10)
-          | otherwise =
-              let (q, r') = n `quotRem` d
-               in longDivWithLimit (c + q) e ns r'
+fromRational (n :% d)
+  | n < 0 = (\(DecimalLiteral _ m e) -> DecimalLiteral (Just False) m e) <$> fromRatio (fromIntegral (abs n) % fromIntegral d)
+  | otherwise = fromRatio (fromIntegral n % fromIntegral d)
 
 -- | Turn a 'DecimalLiteral' into a 'Rational'
 --
--- This throws away all rendering information
+-- This throws away all rendering information.
 --
 -- >>> toRational (DecimalLiteral Nothing 1 0)
 -- 1 % 1
@@ -254,6 +222,72 @@ toRational (DecimalLiteral mSign m e) =
       Nothing -> 1
       Just True -> 1
       Just False -> -1
+
+-- | Parse a 'DecimalLiteral' from a 'Ratio Natural'
+--
+-- Because a 'Ratio Natural' contains no rendering information, we fill in the number of required digits.
+--
+-- This fails when the rational cannot be represented finitely.
+--
+-- >>> fromRatio (1 % 1)
+-- Just (DecimalLiteral Nothing 1 0)
+-- >>> fromRatio (1 % 3)
+-- Nothing
+fromRatio :: Ratio Natural -> Maybe DecimalLiteral
+fromRatio = fromRationalRepetendLimited 256
+  where
+    fromRationalRepetendLimited ::
+      -- limit
+      Int ->
+      Ratio Natural ->
+      Maybe DecimalLiteral
+    fromRationalRepetendLimited l rational
+      | d == 0 = Nothing
+      | otherwise = toLiteral Nothing <$> longDiv num
+      where
+        toLiteral mSign (m, e) = DecimalLiteral mSign m (fromIntegral e)
+        d = denominator rational
+        num = numerator rational
+
+        longDiv :: Natural -> Maybe (Natural, Int)
+        longDiv = longDivWithLimit 0 0 S.empty
+
+        longDivWithLimit ::
+          Natural ->
+          Int ->
+          Set Natural ->
+          Natural ->
+          Maybe (Natural, Int)
+        longDivWithLimit !c !e _ns 0 =
+          Just (c, e)
+        longDivWithLimit !c !e ns !n
+          -- If there's a repetend, we can't turn it into a decimal literal
+          | S.member n ns = Nothing
+          -- Over the limit, stop trying
+          | e >= l = Nothing
+          | n < d =
+              let !ns' = S.insert n ns
+               in longDivWithLimit (c * 10) (succ e) ns' (n * 10)
+          | otherwise =
+              let (q, r') = n `quotRem` d
+               in longDivWithLimit (c + q) e ns r'
+
+-- | Turn a 'DecimalLiteral' into a 'Ratio Natural'
+--
+-- This throws away all rendering information.
+--
+-- Note that this will fail if the decimal literal is negative.
+--
+-- >>> toRatio (DecimalLiteral Nothing 1 0)
+-- Just (1 % 1)
+-- >>> toRatio (DecimalLiteral (Just True) 2 1)
+-- Just (1 % 5)
+-- >>> toRatio (DecimalLiteral (Just False) 3 1)
+-- Nothing
+toRatio :: DecimalLiteral -> Maybe (Ratio Natural)
+toRatio (DecimalLiteral mSign m e) = case mSign of
+  Just False -> Nothing
+  _ -> Just $ fromIntegral m / (10 ^ e)
 
 -- | Render a 'DecimalLiteral' that represents the smallest unit from a 'QuantisationFactor'
 --
