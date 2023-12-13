@@ -23,6 +23,7 @@ library
       Money.Amount
       Money.AmountOf
       Money.ConversionRate
+      Money.ConversionRateOf
       Money.Currency
       Money.MultiAccount
       Money.MultiAmount
