@@ -17,20 +17,31 @@ module Money.MultiAccount
     zero,
     add,
     sum,
+    Rounding (..),
+    convertAll,
+    convertAllA,
+    Rounded (..),
   )
 where
 
 import Control.DeepSeq
 import Control.Monad
 import Data.Data
+import Data.Functor.Identity
 import Data.Map (Map)
 import qualified Data.Map as M
+import Data.Ratio
 import Data.Validity
 import Data.Validity.Map
 import GHC.Generics (Generic)
-import Money.Account (Account)
+import Money.Account (Account, Rounding (..))
 import qualified Money.Account as Account
+import Money.ConversionRate (ConversionRate)
+import qualified Money.ConversionRate as ConversionRate
+import Money.MultiAmount (Rounded (..))
+import Money.QuantisationFactor (QuantisationFactor)
 import Prelude hiding (sum)
+import qualified Prelude
 
 -- | A type for a combination of amounts of different currencies
 --
@@ -85,3 +96,66 @@ add (MultiAccount m1) (MultiAccount m2) =
 -- | Add multiple 'MultiAccount's
 sum :: (Foldable f, Ord currency) => f (MultiAccount currency) -> Maybe (MultiAccount currency)
 sum = foldM add zero
+
+-- | Try to convert every account to one currency.
+--
+-- This function can be more precise than calling 'Amount.convert' on each
+-- account and then adding the results together because rounding only happens once.
+--
+-- Note that this fails when the result becomes too big.
+convertAll ::
+  -- Where to round the result
+  Rounding ->
+  -- The quantisation factor of the currency to convert to
+  QuantisationFactor ->
+  -- The conversion rate and quantisation factor of each currency to convert from
+  (currency -> (ConversionRate, QuantisationFactor)) ->
+  -- The 'MultiAmount' to convert
+  MultiAccount currency ->
+  -- | The actual result and which rounding happened
+  (Maybe Account, Rounded)
+convertAll r qf1 func = runIdentity . convertAllA r qf1 (Identity . func)
+
+-- | Like 'convertAll', but you can decide to convert in your own Applicative.
+convertAllA ::
+  Applicative f =>
+  -- Where to round the *result*
+  Rounding ->
+  -- The quantisation factor of the currency to convert to
+  QuantisationFactor ->
+  -- The conversion rate and quantisation factor of each currency to convert from
+  (currency -> f (ConversionRate, QuantisationFactor)) ->
+  -- The 'MultiAccount' to convert
+  MultiAccount currency ->
+  -- | The actual result and which rounding happened
+  f (Maybe Account, Rounded)
+convertAllA r qf1 func =
+  fmap
+    ( ( \theoreticalResult ->
+          let rounder :: Rational -> Integer
+              rounder = case r of
+                RoundUp -> ceiling
+                RoundDown -> floor
+                RoundNearest -> round
+              roundedResult :: Integer
+              roundedResult = rounder theoreticalResult
+              rounded = case compare (fromIntegral roundedResult) theoreticalResult of
+                LT -> RoundedDown
+                EQ -> DidNotRound
+                GT -> RoundedUp
+           in (Account.fromMinimalQuantisations roundedResult, rounded)
+      )
+        . Prelude.sum
+    )
+    . traverse
+      ( \(currency, a) ->
+          ( \(cr, qf2) ->
+              let factor = ConversionRate.conversionFactor qf2 cr qf1
+               in Account.toMinimalQuantisations a
+                    * toInteger (numerator factor)
+                    % toInteger (denominator factor)
+          )
+            <$> func currency
+      )
+    . M.toList
+    . unMultiAccount

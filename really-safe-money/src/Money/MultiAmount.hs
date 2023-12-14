@@ -29,11 +29,12 @@ import Data.Data
 import Data.Functor.Identity
 import Data.Map (Map)
 import qualified Data.Map as M
+import Data.Ratio
 import Data.Validity
 import Data.Validity.Map
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount (..), Rounding (..))
+import Money.Amount (Amount, Rounding (..))
 import qualified Money.Amount as Amount
 import Money.ConversionRate (ConversionRate)
 import qualified Money.ConversionRate as ConversionRate
@@ -129,7 +130,8 @@ convertAllA ::
 convertAllA r qf1 func =
   fmap
     ( ( \theoreticalResult ->
-          let rounder = case r of
+          let rounder :: Ratio Natural -> Natural
+              rounder = case r of
                 RoundUp -> ceiling
                 RoundDown -> floor
                 RoundNearest -> round
@@ -150,9 +152,9 @@ convertAllA r qf1 func =
         . Prelude.sum
     )
     . traverse
-      ( \(currency, Amount a) ->
+      ( \(currency, a) ->
           ( \(cr, qf2) ->
-              fromIntegral a * ConversionRate.conversionFactor qf1 cr qf2
+              fromIntegral (Amount.toMinimalQuantisations a) * ConversionRate.conversionFactor qf2 cr qf1
           )
             <$> func currency
       )

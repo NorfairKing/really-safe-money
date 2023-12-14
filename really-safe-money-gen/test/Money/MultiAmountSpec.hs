@@ -7,14 +7,16 @@ module Money.MultiAmountSpec (spec) where
 import Data.GenValidity.Vector ()
 import qualified Data.Map as M
 import Data.Vector (Vector)
-import Money.Amount (Rounding (..))
+import Money.Amount (Amount (..), Rounding (..))
 import qualified Money.Amount as Amount
-import Money.ConversionRate as ConversionRate
+import Money.ConversionRate (ConversionRate (..))
+import qualified Money.ConversionRate as ConversionRate
 import Money.ConversionRate.Gen ()
 import Money.Currency
 import Money.MultiAmount (MultiAmount (..), Rounded (..))
 import qualified Money.MultiAmount as MultiAmount
 import Money.MultiAmount.Gen ()
+import Money.QuantisationFactor (QuantisationFactor (..))
 import Test.Syd
 import Test.Syd.Validity
 
@@ -66,6 +68,32 @@ spec = do
         producesValid (MultiAmount.sum @Vector @Currency)
 
     describe "convertAll" $ do
+      it "produces the right result in this example" $ do
+        forAllValid $ \rounding -> do
+          let qfEur = QuantisationFactor 100
+              eur = Currency "EUR" qfEur
+          let qfChf = QuantisationFactor 20
+              chf = Currency "CHF" qfChf
+          let qfUsd = QuantisationFactor 100
+              usd = Currency "USD" qfUsd
+          let aEur = Amount 100
+          let aChf = Amount 20
+          let aUsd = Amount 100
+          let ma =
+                MultiAmount $
+                  M.fromList
+                    [ (eur, aEur),
+                      (usd, aUsd),
+                      (chf, aChf)
+                    ]
+              func c = case currencySymbol c of
+                "CHF" -> pure (ConversionRate 1, qfChf)
+                "EUR" -> pure (ConversionRate 1.5, qfEur)
+                "USD" -> pure (ConversionRate 2.0, qfUsd)
+                _ -> expectationFailure "Should not happen."
+          (mResult, _) <- MultiAmount.convertAllA rounding qfChf func ma
+          mResult `shouldBe` Just (Amount 90)
+
       it "produces valid results when converting two currencies to one" $
         forAllValid $ \c1 ->
           forAllValid $ \c2 ->
@@ -78,9 +106,9 @@ spec = do
                             rounding
                             (currencyQuantisationFactor c1)
                             ( \c ->
-                                if currencySymbol c == currencySymbol c1
-                                  then (ConversionRate 1, currencyQuantisationFactor c1)
-                                  else (cr, currencyQuantisationFactor c2)
+                                ( if c == c1 then ConversionRate.oneToOne else cr,
+                                  currencyQuantisationFactor c
+                                )
                             )
                             (MultiAmount (M.fromList [(c1, a1), (c2, a2)]))
                     shouldBeValid mResult
@@ -100,5 +128,5 @@ spec = do
                       qf2 = currencyQuantisationFactor c2
                       ma = MultiAmount.fromAmount c1 a
                       (mMA, _) = MultiAmount.convertAll rounding qf1 (\_ -> (cr, qf2)) ma
-                      (mA, _) = Amount.convert rounding qf1 a cr qf2
+                      (mA, _) = Amount.convert rounding qf2 a cr qf1
                    in mMA `shouldBe` mA
