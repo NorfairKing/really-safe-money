@@ -44,6 +44,7 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - containers
     - genvalidity-sydtest
     - genvalidity-vector
     - really-safe-money

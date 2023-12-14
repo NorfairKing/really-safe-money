@@ -1,4 +1,4 @@
-{ mkDerivation, base, criterion, deepseq, genvalidity
+{ mkDerivation, base, containers, criterion, deepseq, genvalidity
 , genvalidity-containers, genvalidity-criterion
 , genvalidity-sydtest, genvalidity-vector, lib, QuickCheck
 , really-safe-money, sydtest, sydtest-discover, vector
@@ -12,8 +12,8 @@ mkDerivation {
     really-safe-money
   ];
   testHaskellDepends = [
-    base genvalidity-sydtest genvalidity-vector really-safe-money
-    sydtest vector
+    base containers genvalidity-sydtest genvalidity-vector
+    really-safe-money sydtest vector
   ];
   testToolDepends = [ sydtest-discover ];
   benchmarkHaskellDepends = [

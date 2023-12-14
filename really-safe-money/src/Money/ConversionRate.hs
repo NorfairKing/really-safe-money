@@ -8,8 +8,10 @@ module Money.ConversionRate
     Money.ConversionRate.toRational,
     toDecimalLiteral,
     fromDecimalLiteral,
+    oneToOne,
     invert,
     compose,
+    conversionFactor,
   )
 where
 
@@ -17,6 +19,7 @@ import Control.DeepSeq
 import Data.Ratio
 import Data.Validity
 import GHC.Generics (Generic)
+import Money.QuantisationFactor (QuantisationFactor (..))
 import Numeric.DecimalLiteral (DecimalLiteral (..))
 import qualified Numeric.DecimalLiteral as DecimalLiteral
 import Numeric.Natural
@@ -101,6 +104,10 @@ toDecimalLiteral =
     . DecimalLiteral.fromRational
     . toRational
 
+-- | One-to-one conversion rate
+oneToOne :: ConversionRate
+oneToOne = ConversionRate 1
+
 -- | Invert a 'ConversionRate', to convert in the other direction.
 --
 -- >>> invert (ConversionRate (1 % 2))
@@ -118,3 +125,8 @@ invert (ConversionRate r) = ConversionRate (1 / r)
 -- ConversionRate {unConversionRate = 1 % 1}
 compose :: ConversionRate -> ConversionRate -> ConversionRate
 compose (ConversionRate cr1) (ConversionRate cr2) = ConversionRate $ cr1 * cr2
+
+-- | The factor to multiply by when converting currencies.
+conversionFactor :: QuantisationFactor -> ConversionRate -> QuantisationFactor -> Ratio Natural
+conversionFactor (QuantisationFactor qf1) (ConversionRate cr) (QuantisationFactor qf2) =
+  cr * fromIntegral qf2 / fromIntegral qf1

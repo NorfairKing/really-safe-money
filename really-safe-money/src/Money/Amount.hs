@@ -748,13 +748,13 @@ convert ::
   (Maybe Amount, Maybe ConversionRate)
 convert
   rounding
-  (QuantisationFactor qf1)
+  qf1
   a
-  (ConversionRate r)
-  (QuantisationFactor qf2) =
-    let qf1r = Prelude.fromIntegral qf1
-        qf2r = Prelude.fromIntegral qf2
-        (ma, ar) = fraction rounding a (r * qf2r / qf1r)
+  cr
+  qf2 =
+    let qf1r = Prelude.fromIntegral (QuantisationFactor.unQuantisationFactor qf1)
+        qf2r = Prelude.fromIntegral (QuantisationFactor.unQuantisationFactor qf2)
+        (ma, ar) = fraction rounding a (ConversionRate.conversionFactor qf1 cr qf2)
      in (ma, ConversionRate.fromRatio (ar * qf1r / qf2r))
 
 -- | Format an amount of money without a symbol.

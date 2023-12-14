@@ -65,6 +65,7 @@ test-suite really-safe-money-test
       sydtest-discover:sydtest-discover
   build-depends:
       base >=4.7 && <5
+    , containers
     , genvalidity-sydtest
     , genvalidity-vector
     , really-safe-money

@@ -1,5 +1,6 @@
 - ignore: { name: "Redundant <$>" }
 - ignore: { name: "Use ++" }
 - ignore: { name: "Use bimap" }
+- ignore: { name: "Use const" }
 - ignore: { name: "Use first" }
 - ignore: { name: "Use second" }
