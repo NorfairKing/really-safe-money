@@ -16,7 +16,10 @@ module Money.MultiAccount
     fromAccount,
     zero,
     add,
+    subtract,
     sum,
+    addAccount,
+    subtractAccount,
     Rounding (..),
     convertAll,
     convertAllA,
@@ -28,13 +31,13 @@ import Control.DeepSeq
 import Control.Monad
 import Data.Data
 import Data.Functor.Identity
-import Data.Map (Map)
-import qualified Data.Map as M
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Ratio
 import Data.Validity
 import Data.Validity.Map
 import GHC.Generics (Generic)
-import Money.Account (Account, Rounding (..))
+import Money.Account (Account(..), Rounding (..))
 import qualified Money.Account as Account
 import Money.ConversionRate (ConversionRate)
 import qualified Money.ConversionRate as ConversionRate
@@ -77,25 +80,30 @@ zero = MultiAccount M.empty
 
 -- | Add two 'MultiAccount's
 add :: forall currency. Ord currency => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
-add (MultiAccount m1) (MultiAccount m2) =
-  fmap MultiAccount $ foldM go m1 $ M.toList m2
-  where
-    go ::
-      Map currency Account ->
-      (currency, Account) ->
-      Maybe (Map currency Account)
-    go m (currency, amount) = case M.lookup currency m of
-      Nothing -> Just $ M.insert currency amount m
-      Just a -> do
-        r <- Account.add amount a
-        Just $
-          if r == Account.zero
-            then M.delete currency m
-            else M.insert currency r m
+add m1 = foldM (\m (c, a) -> addAccount m c a) m1 . M.toList . unMultiAccount
 
 -- | Add multiple 'MultiAccount's
 sum :: (Foldable f, Ord currency) => f (MultiAccount currency) -> Maybe (MultiAccount currency)
 sum = foldM add zero
+
+
+-- | Subtract a 'MultiAccount' from a 'MultiAccount'
+subtract :: forall currency. Ord currency => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
+subtract m1 = foldM (\m (c, a) -> subtractAccount m c a) m1 . M.toList . unMultiAccount
+
+-- | Add an 'Account' to a 'MultiAccount'
+addAccount :: Ord currency => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
+addAccount m _ (Positive (Amount 0)) = Just m
+addAccount m _ (Negative (Amount 0)) = Just m
+addAccount (MultiAccount m) currency account =
+  fmap MultiAccount $ case M.lookup currency m of
+    Nothing -> Just $ M.insert currency account m
+    Just a -> do
+      r <- Account.add a account
+      Just $
+        if r == Account.zero
+          then M.delete currency m
+          else M.insert currency r m
 
 -- | Try to convert every account to one currency.
 --

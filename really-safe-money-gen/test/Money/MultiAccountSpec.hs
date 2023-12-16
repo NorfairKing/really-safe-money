@@ -63,9 +63,26 @@ spec = do
           forAllValid $ \a2 ->
             MultiAccount.add @Currency a1 a2 `shouldBe` MultiAccount.add @Currency a2 a1
 
+    describe "subtract" $ do
+      it "produces valid amounts" $
+        producesValid2 (MultiAccount.subtract @Currency)
+
+      it "has a right-identity: zero" $
+        forAllValid $ \a ->
+          MultiAccount.subtract @Currency a MultiAccount.zero `shouldBe` Just a
+
     describe "sum" $ do
       it "produces valid amounts" $
         producesValid (MultiAccount.sum @Vector @Currency)
+
+    describe "addAccount" $ do
+      it "produces valid amounts" $
+        producesValid3 (MultiAccount.addAccount @Currency)
+
+    describe "subtractAccount" $ do
+      it "produces valid amounts" $
+        producesValid3 (MultiAccount.subtractAccount @Currency)
+
 
     describe "convertAll" $ do
       it "produces the right result in this example" $ do
