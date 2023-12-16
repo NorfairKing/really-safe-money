@@ -83,7 +83,6 @@ spec = do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.subtractAccount @Currency)
 
-
     describe "convertAll" $ do
       it "produces the right result in this example" $ do
         forAllValid $ \rounding -> do

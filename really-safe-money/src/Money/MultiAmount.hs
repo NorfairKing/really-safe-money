@@ -37,13 +37,13 @@ import Data.Validity
 import Data.Validity.Map
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount(..), Rounding (..))
+import Money.Amount (Amount (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.ConversionRate (ConversionRate)
 import qualified Money.ConversionRate as ConversionRate
 import Money.QuantisationFactor (QuantisationFactor)
 import Numeric.Natural
-import Prelude hiding (sum, subtract)
+import Prelude hiding (subtract, sum)
 import qualified Prelude
 
 -- | A type for a combination of amounts of different currencies

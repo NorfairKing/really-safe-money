@@ -37,13 +37,14 @@ import Data.Ratio
 import Data.Validity
 import Data.Validity.Map
 import GHC.Generics (Generic)
-import Money.Account (Account(..), Rounding (..))
+import Money.Account (Account (..), Rounding (..))
 import qualified Money.Account as Account
+import Money.Amount (Amount (..))
 import Money.ConversionRate (ConversionRate)
 import qualified Money.ConversionRate as ConversionRate
 import Money.MultiAmount (Rounded (..))
 import Money.QuantisationFactor (QuantisationFactor)
-import Prelude hiding (sum)
+import Prelude hiding (subtract, sum)
 import qualified Prelude
 
 -- | A type for a combination of amounts of different currencies
@@ -86,7 +87,6 @@ add m1 = foldM (\m (c, a) -> addAccount m c a) m1 . M.toList . unMultiAccount
 sum :: (Foldable f, Ord currency) => f (MultiAccount currency) -> Maybe (MultiAccount currency)
 sum = foldM add zero
 
-
 -- | Subtract a 'MultiAccount' from a 'MultiAccount'
 subtract :: forall currency. Ord currency => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
 subtract m1 = foldM (\m (c, a) -> subtractAccount m c a) m1 . M.toList . unMultiAccount
@@ -98,6 +98,20 @@ addAccount m _ (Negative (Amount 0)) = Just m
 addAccount (MultiAccount m) currency account =
   fmap MultiAccount $ case M.lookup currency m of
     Nothing -> Just $ M.insert currency account m
+    Just a -> do
+      r <- Account.add a account
+      Just $
+        if r == Account.zero
+          then M.delete currency m
+          else M.insert currency r m
+
+-- | Add an 'Account' to a 'MultiAccount'
+subtractAccount :: Ord currency => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
+subtractAccount m _ (Positive (Amount 0)) = Just m
+subtractAccount m _ (Negative (Amount 0)) = Just m
+subtractAccount (MultiAccount m) currency account =
+  fmap MultiAccount $ case M.lookup currency m of
+    Nothing -> Just $ M.insert currency (Account.negate account) m
     Just a -> do
       r <- Account.add a account
       Just $
