@@ -18,6 +18,7 @@ module Money.MultiAmount
     add,
     sum,
     addAmount,
+    subtractAmount,
     convertAll,
     convertAllA,
     Rounded (..),
@@ -76,18 +77,33 @@ zero = MultiAmount M.empty
 
 -- | Add two 'MultiAmount's
 add :: forall currency. Ord currency => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
-add m1 = foldM (\m (c, a) -> addAmount c a m) m1 . M.toList . unMultiAmount
+add m1 = foldM (\m (c, a) -> addAmount m c a) m1 . M.toList . unMultiAmount
 
 -- | Add multiple 'MultiAmount's
 sum :: (Foldable f, Ord currency) => f (MultiAmount currency) -> Maybe (MultiAmount currency)
 sum = foldM add zero
 
-addAmount :: Ord currency => currency -> Amount -> MultiAmount currency -> Maybe (MultiAmount currency)
-addAmount currency amount (MultiAmount m) =
+-- | Add an 'Amount' to a 'MultiAmount'
+addAmount :: Ord currency => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
+addAmount m _ (Amount 0) = Just m
+addAmount (MultiAmount m) currency amount =
   fmap MultiAmount $ case M.lookup currency m of
     Nothing -> Just $ M.insert currency amount m
     Just a -> do
-      r <- Amount.add amount a
+      r <- Amount.add a amount
+      Just $
+        if r == Amount.zero
+          then M.delete currency m
+          else M.insert currency r m
+
+-- | Subtract an 'Amount' from a 'MultiAmount'
+subtractAmount :: Ord currency => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
+subtractAmount m _ (Amount 0) = Just m
+subtractAmount (MultiAmount m) currency amount =
+  fmap MultiAmount $ case M.lookup currency m of
+    Nothing -> Nothing -- Can't go below zero
+    Just a -> do
+      r <- Amount.subtract a amount
       Just $
         if r == Amount.zero
           then M.delete currency m

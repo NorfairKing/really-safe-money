@@ -5,7 +5,7 @@
 module Money.MultiAmountSpec (spec) where
 
 import Data.GenValidity.Vector ()
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Vector (Vector)
 import Money.Amount (Amount (..), Rounding (..))
 import qualified Money.Amount as Amount
@@ -66,6 +66,14 @@ spec = do
     describe "sum" $ do
       it "produces valid amounts" $
         producesValid (MultiAmount.sum @Vector @Currency)
+
+    describe "addAmount" $ do
+      it "produces valid amounts" $
+        producesValid3 (MultiAmount.addAmount @Currency)
+
+    describe "subtractAmount" $ do
+      it "produces valid amounts" $
+        producesValid3 (MultiAmount.subtractAmount @Currency)
 
     describe "convertAll" $ do
       it "produces the right result in this example" $ do
