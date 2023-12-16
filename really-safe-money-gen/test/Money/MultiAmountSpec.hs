@@ -63,6 +63,14 @@ spec = do
           forAllValid $ \a2 ->
             MultiAmount.add @Currency a1 a2 `shouldBe` MultiAmount.add @Currency a2 a1
 
+    describe "subtract" $ do
+      it "produces valid amounts" $
+        producesValid2 (MultiAmount.subtract @Currency)
+
+      it "has a right-identity: zero" $
+        forAllValid $ \a ->
+          MultiAmount.subtract @Currency a MultiAmount.zero `shouldBe` Just a
+
     describe "sum" $ do
       it "produces valid amounts" $
         producesValid (MultiAmount.sum @Vector @Currency)

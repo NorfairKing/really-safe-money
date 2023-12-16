@@ -17,6 +17,7 @@ module Money.MultiAmount
     zero,
     add,
     sum,
+    subtract,
     addAmount,
     subtractAmount,
     convertAll,
@@ -36,13 +37,13 @@ import Data.Validity
 import Data.Validity.Map
 import Data.Word
 import GHC.Generics (Generic)
-import Money.Amount (Amount, Rounding (..))
+import Money.Amount (Amount(..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.ConversionRate (ConversionRate)
 import qualified Money.ConversionRate as ConversionRate
 import Money.QuantisationFactor (QuantisationFactor)
 import Numeric.Natural
-import Prelude hiding (sum)
+import Prelude hiding (sum, subtract)
 import qualified Prelude
 
 -- | A type for a combination of amounts of different currencies
@@ -82,6 +83,10 @@ add m1 = foldM (\m (c, a) -> addAmount m c a) m1 . M.toList . unMultiAmount
 -- | Add multiple 'MultiAmount's
 sum :: (Foldable f, Ord currency) => f (MultiAmount currency) -> Maybe (MultiAmount currency)
 sum = foldM add zero
+
+-- | Subtract a 'MultiAmount' from a 'MultiAmount'
+subtract :: forall currency. Ord currency => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
+subtract m1 = foldM (\m (c, a) -> subtractAmount m c a) m1 . M.toList . unMultiAmount
 
 -- | Add an 'Amount' to a 'MultiAmount'
 addAmount :: Ord currency => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
