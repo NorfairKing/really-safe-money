@@ -17,6 +17,7 @@ module Money.MultiAmount
     zero,
     add,
     sum,
+    addAmount,
     convertAll,
     convertAllA,
     Rounded (..),
@@ -27,8 +28,8 @@ import Control.DeepSeq
 import Control.Monad
 import Data.Data
 import Data.Functor.Identity
-import Data.Map (Map)
-import qualified Data.Map as M
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Ratio
 import Data.Validity
 import Data.Validity.Map
@@ -75,25 +76,22 @@ zero = MultiAmount M.empty
 
 -- | Add two 'MultiAmount's
 add :: forall currency. Ord currency => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
-add (MultiAmount m1) (MultiAmount m2) =
-  fmap MultiAmount $ foldM go m1 $ M.toList m2
-  where
-    go ::
-      Map currency Amount ->
-      (currency, Amount) ->
-      Maybe (Map currency Amount)
-    go m (currency, amount) = case M.lookup currency m of
-      Nothing -> Just $ M.insert currency amount m
-      Just a -> do
-        r <- Amount.add amount a
-        Just $
-          if r == Amount.zero
-            then M.delete currency m
-            else M.insert currency r m
+add m1 = foldM (\m (c, a) -> addAmount c a m) m1 . M.toList . unMultiAmount
 
 -- | Add multiple 'MultiAmount's
 sum :: (Foldable f, Ord currency) => f (MultiAmount currency) -> Maybe (MultiAmount currency)
 sum = foldM add zero
+
+addAmount :: Ord currency => currency -> Amount -> MultiAmount currency -> Maybe (MultiAmount currency)
+addAmount currency amount (MultiAmount m) =
+  fmap MultiAmount $ case M.lookup currency m of
+    Nothing -> Just $ M.insert currency amount m
+    Just a -> do
+      r <- Amount.add amount a
+      Just $
+        if r == Amount.zero
+          then M.delete currency m
+          else M.insert currency r m
 
 -- | Try to convert every amount to one currency.
 --
