@@ -8,4 +8,4 @@ import Money.ConversionRate
 
 instance GenValid ConversionRate where
   genValid = ConversionRate <$> ((%) <$> (succ <$> genValid) <*> (succ <$> genValid))
-  shrinkValid = fmap ConversionRate . filter (== 0) . shrinkValid . unConversionRate
+  shrinkValid = fmap ConversionRate . filter (/= 0) . shrinkValid . unConversionRate
