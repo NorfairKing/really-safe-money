@@ -520,14 +520,17 @@ multiply ::
   Word32 ->
   Amount ->
   Maybe Amount
-multiply f (Amount a) =
-  let maxBoundI :: Integer
-      maxBoundI = (fromIntegral :: Word64 -> Integer) (maxBound :: Word64)
-      r :: Integer
-      r = (fromIntegral :: Word32 -> Integer) f * (fromIntegral :: Word64 -> Integer) a
-   in if r > maxBoundI
+multiply (W32# f) (Amount (W64# a)) =
+  case timesWord642# (wordToWord64# (word32ToWord# f)) a of
+    (# highWord#, lowWord# #) ->
+      if isTrue# (gtWord64# highWord# (wordToWord64# 0##))
         then Nothing
-        else Just (Amount ((fromInteger :: Integer -> Word64) r))
+        else Just (Amount (W64# lowWord#))
+
+timesWord642# :: Word64# -> Word64# -> (# Word64#, Word64# #)
+timesWord642# a b = case timesWord2# (word64ToWord# a) (word64ToWord# b) of
+  (# highWord#, lowWord# #) ->
+    (# wordToWord64# highWord#, wordToWord64# lowWord# #)
 
 -- | Distribute an amount of money into chunks that are as evenly distributed as possible.
 --
