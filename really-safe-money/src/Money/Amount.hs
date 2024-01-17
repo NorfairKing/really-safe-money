@@ -1,9 +1,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports -Wno-dodgy-exports -Wno-unused-imports #-}
 
@@ -70,13 +72,16 @@ module Money.Amount
 where
 
 import Control.DeepSeq
+import Control.Monad
 import Data.Data
 import Data.Foldable hiding (sum)
 import Data.Validity
 import Data.Word
+import GHC.Exts
 import GHC.Generics (Generic)
 import GHC.Real (Ratio ((:%)), (%))
 import GHC.TypeLits
+import GHC.Word
 import Money.ConversionRate (ConversionRate (..))
 import qualified Money.ConversionRate as ConversionRate
 import Money.QuantisationFactor (QuantisationFactor (..))
@@ -460,18 +465,12 @@ fromDecimalLiteral qf = fromRational qf . DecimalLiteral.toRational
 -- >>> add (Amount (2 ^ 64 - 1)) (Amount 1)
 -- Nothing
 add :: Amount -> Amount -> Maybe Amount
-add (Amount a1) (Amount a2) =
-  let i1 :: Integer
-      i1 = (fromIntegral :: Word64 -> Integer) a1
-      i2 :: Integer
-      i2 = (fromIntegral :: Word64 -> Integer) a2
-      maxBoundI :: Integer
-      maxBoundI = fromIntegral (maxBound :: Word64)
-      r :: Integer
-      r = i1 + i2
-   in if r > maxBoundI
+add (Amount (W64# a1)) (Amount (W64# a2)) =
+  case addWord64C# a1 a2 of
+    (# resultW#, overflowInt# #) ->
+      if isTrue# overflowInt#
         then Nothing
-        else Just (Amount ((fromInteger :: Integer -> Word64) r))
+        else Just (Amount (W64# resultW#))
 
 -- | Add a number of amounts of money together.
 --
@@ -483,14 +482,7 @@ add (Amount a1) (Amount a2) =
 -- >>> sum [Amount (2 ^ 64 - 3), Amount 1, Amount 2]
 -- Nothing
 sum :: forall f. Foldable f => f Amount -> Maybe Amount
-sum l =
-  let maxBoundI :: Integer
-      maxBoundI = fromIntegral (maxBound :: Word64)
-      r :: Integer
-      r = foldl' (\acc a -> (toInteger :: Word64 -> Integer) (toMinimalQuantisations a) + acc) 0 l
-   in if r > maxBoundI
-        then Nothing
-        else Just (Amount ((fromInteger :: Integer -> Word64) r))
+sum = foldM add zero
 
 -- | Add two amounts of money.
 --
@@ -504,16 +496,12 @@ sum l =
 -- >>> subtract (Amount 8) (Amount 9)
 -- Nothing
 subtract :: Amount -> Amount -> Maybe Amount
-subtract (Amount a1) (Amount a2) =
-  let i1 :: Integer
-      i1 = (fromIntegral :: Word64 -> Integer) a1
-      i2 :: Integer
-      i2 = (fromIntegral :: Word64 -> Integer) a2
-      r :: Integer
-      r = i1 - i2
-   in if r < 0
+subtract (Amount (W64# a1)) (Amount (W64# a2)) =
+  case subWord64C# a1 a2 of
+    (# resultW#, overflowInt# #) ->
+      if isTrue# overflowInt#
         then Nothing
-        else Just (Amount ((fromInteger :: Integer -> Word64) r))
+        else Just (Amount (W64# resultW#))
 
 -- | Multiply an amount of money by an integer scalar
 --
@@ -800,3 +788,20 @@ quantisationFactorFormatString (QuantisationFactor qf) =
 -- | Validate that an 'Amount' is strictly positive. I.e. not 'zero'.
 validateStrictlyPositive :: Amount -> Validation
 validateStrictlyPositive amount = declare "The Amount is strictly positive" $ amount > zero
+
+-- We define these here until
+-- https://gitlab.haskell.org/ghc/ghc/-/issues/24341
+-- is solved.
+-- Note that this implementation is silently wrong on 32-bit architectures.
+-- This should be fixed once the GHC issue is fixed.
+-- Once `addWord64C#` exists, this should fail to compile because of a
+-- name collision, which is when we can remove the function here.
+addWord64C# :: Word64# -> Word64# -> (# Word64#, Int# #)
+addWord64C# a b = case addWordC# (word64ToWord# a) (word64ToWord# b) of
+  (# result#, overflowInt# #) ->
+    (# wordToWord64# result#, overflowInt# #)
+
+subWord64C# :: Word64# -> Word64# -> (# Word64#, Int# #)
+subWord64C# a b = case subWordC# (word64ToWord# a) (word64ToWord# b) of
+  (# result#, overflowInt# #) ->
+    (# wordToWord64# result#, overflowInt# #)
