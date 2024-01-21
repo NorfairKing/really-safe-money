@@ -48,6 +48,62 @@ spec = do
           Nothing -> expectationFailure "could not parse."
           Just dl -> dl `shouldBe` decimalLiteral
 
+  describe "Natural" $ do
+    describe "toNatural" $ do
+      it "renders to valid naturals" $
+        producesValid DecimalLiteral.toNatural
+
+    describe "fromNatural" $ do
+      it "renders to valid decimal literals" $
+        producesValid DecimalLiteral.fromNatural
+
+      it "can parse any rendered literal" $
+        forAllValid $ \nat -> do
+          let dl = DecimalLiteral.fromWord nat
+          context (show dl) $ DecimalLiteral.toWord dl `shouldBe` Just nat
+
+  describe "Word" $ do
+    describe "toWord" $ do
+      it "renders to valid words" $
+        producesValid DecimalLiteral.toWord
+
+    describe "fromWord" $ do
+      it "renders to valid decimal literals" $
+        producesValid DecimalLiteral.fromWord
+
+      it "can parse any rendered literal" $
+        forAllValid $ \word -> do
+          let dl = DecimalLiteral.fromWord word
+          context (show dl) $ DecimalLiteral.toWord dl `shouldBe` Just word
+
+  describe "Integer" $ do
+    describe "toInteger" $ do
+      it "renders to valid words" $
+        producesValid DecimalLiteral.toInteger
+
+    describe "fromInteger" $ do
+      it "renders to valid decimal literals" $
+        producesValid DecimalLiteral.fromInteger
+
+      it "can parse any rendered literal" $
+        forAllValid $ \int -> do
+          let dl = DecimalLiteral.fromInteger int
+          context (show dl) $ DecimalLiteral.toInteger dl `shouldBe` Just int
+
+  describe "Int" $ do
+    describe "toInt" $ do
+      it "renders to valid words" $
+        producesValid DecimalLiteral.toInt
+
+    describe "fromInt" $ do
+      it "renders to valid decimal literals" $
+        producesValid DecimalLiteral.fromInt
+
+      it "can parse any rendered literal" $
+        forAllValid $ \int -> do
+          let dl = DecimalLiteral.fromInt int
+          context (show dl) $ DecimalLiteral.toInt dl `shouldBe` Just int
+
   describe "Rational" $ do
     rationalExampleSpec (DecimalLiteral Nothing 1 0) 1
     rationalExampleSpec (DecimalLiteral Nothing 10 0) 10

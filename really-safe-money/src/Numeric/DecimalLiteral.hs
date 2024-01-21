@@ -23,6 +23,14 @@ module Numeric.DecimalLiteral
     toRational,
     fromRatio,
     toRatio,
+    fromWord,
+    toWord,
+    fromNatural,
+    toNatural,
+    fromInt,
+    toInt,
+    fromInteger,
+    toInteger,
     setSignRequired,
     setSignOptional,
     digits,
@@ -31,6 +39,7 @@ module Numeric.DecimalLiteral
 where
 
 import Control.DeepSeq
+import Control.Monad
 import qualified Data.Char as Char
 import Data.List (find)
 import Data.Ratio
@@ -45,7 +54,8 @@ import GHC.Real (Ratio (..))
 import Numeric.Natural
 import Text.ParserCombinators.ReadP (ReadP, readP_to_S)
 import qualified Text.ParserCombinators.ReadP as ReadP
-import Prelude hiding (fromRational, toRational)
+import Prelude hiding (fromInteger, fromRational, toInteger, toRational)
+import qualified Prelude (toInteger)
 
 -- | Decimal literal
 --
@@ -212,13 +222,7 @@ fromRational (n :% d)
 -- (-3) % 10
 toRational :: DecimalLiteral -> Rational
 toRational (DecimalLiteral mSign m e) =
-  (signRational mSign * fromIntegral m) / (10 ^ e)
-  where
-    signRational :: Maybe Bool -> Rational
-    signRational = \case
-      Nothing -> 1
-      Just True -> 1
-      Just False -> -1
+  signSignum mSign (fromIntegral m / (10 ^ e))
 
 -- | Parse a 'DecimalLiteral' from a 'Ratio Natural'
 --
@@ -286,6 +290,60 @@ toRatio (DecimalLiteral mSign m e) = case mSign of
   Just False -> Nothing
   _ -> Just $ fromIntegral m / (10 ^ e)
 
+-- | Construct a 'DecimalLiteral' from a 'Word'
+fromWord :: Word -> DecimalLiteral
+fromWord = fromNatural . fromIntegral
+
+-- | Turn a 'DecimalLiteral' into a 'Word'
+toWord :: DecimalLiteral -> Maybe Word
+toWord dl = do
+  n <- toNatural dl
+  guard $ n <= fromIntegral (maxBound :: Word)
+  pure $ fromIntegral n
+
+-- | Construct a 'DecimalLiteral' from a 'Natural'
+fromNatural :: Natural -> DecimalLiteral
+fromNatural n = DecimalLiteral Nothing n 0
+
+-- | Turn a 'DecimalLiteral' into a 'Natural'
+toNatural :: DecimalLiteral -> Maybe Natural
+toNatural = \case
+  DecimalLiteral (Just False) _ _ -> Nothing
+  DecimalLiteral _ n 0 -> Just n
+  _ -> Nothing
+
+-- | Construct a 'DecimalLiteral' from an 'Integer'
+fromInteger :: Integer -> DecimalLiteral
+fromInteger n = DecimalLiteral (numSign n) (fromIntegral (abs n)) 0
+
+-- | Turn a 'DecimalLiteral' into an 'Integer'
+toInteger :: DecimalLiteral -> Maybe Integer
+toInteger = \case
+  DecimalLiteral mSign n 0 ->
+    Just $ signSignum mSign (Prelude.toInteger n)
+  _ -> Nothing
+
+-- | Construct a 'DecimalLiteral' from an 'Int'
+fromInt :: Int -> DecimalLiteral
+fromInt = fromInteger . Prelude.toInteger
+
+-- | Turn a 'DecimalLiteral' into an 'Int'
+toInt :: DecimalLiteral -> Maybe Int
+toInt dl = do
+  n <- toInteger dl
+  guard $ n <= fromIntegral (maxBound :: Int)
+  guard $ n >= fromIntegral (minBound :: Int)
+  pure $ fromIntegral n
+
+numSign :: (Ord a, Num a) => a -> Maybe Bool
+numSign a = if a >= 0 then Nothing else Just False
+
+signSignum :: Num a => Maybe Bool -> (a -> a)
+signSignum = \case
+  Nothing -> id
+  Just True -> id
+  Just False -> negate
+
 -- | Count how many digits the literal has after the decimal point
 --
 -- >>> digits (DecimalLiteral Nothing 1 0)
@@ -294,8 +352,6 @@ toRatio (DecimalLiteral mSign m e) = case mSign of
 -- 2
 -- >>> digits (DecimalLiteral Nothing 1 2)
 -- 2
---
--- API Note: We have to return Word16 because there might be 256 digits.
 digits :: DecimalLiteral -> Word8
 digits (DecimalLiteral _ _ w) = w
 
