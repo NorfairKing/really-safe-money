@@ -380,7 +380,7 @@ instance IsCurrencyType Hypothetical where
 
 nameOf ::
   forall a.
-  Typeable a =>
+  (Typeable a) =>
   String
 nameOf =
   let s = show $ typeRep (Proxy @a)

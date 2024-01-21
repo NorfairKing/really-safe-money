@@ -67,7 +67,7 @@ instance (Validity currency, Show currency, Ord currency) => Validity (MultiAcco
 
 -- TODO no empty currencies
 
-instance NFData currency => NFData (MultiAccount currency)
+instance (NFData currency) => NFData (MultiAccount currency)
 
 fromAccount :: currency -> Account -> MultiAccount currency
 fromAccount currency amount =
@@ -80,7 +80,7 @@ zero :: MultiAccount currency
 zero = MultiAccount M.empty
 
 -- | Add two 'MultiAccount's
-add :: forall currency. Ord currency => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
+add :: forall currency. (Ord currency) => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
 add m1 = foldM (\m (c, a) -> addAccount m c a) m1 . M.toList . unMultiAccount
 
 -- | Add multiple 'MultiAccount's
@@ -88,11 +88,11 @@ sum :: (Foldable f, Ord currency) => f (MultiAccount currency) -> Maybe (MultiAc
 sum = foldM add zero
 
 -- | Subtract a 'MultiAccount' from a 'MultiAccount'
-subtract :: forall currency. Ord currency => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
+subtract :: forall currency. (Ord currency) => MultiAccount currency -> MultiAccount currency -> Maybe (MultiAccount currency)
 subtract m1 = foldM (\m (c, a) -> subtractAccount m c a) m1 . M.toList . unMultiAccount
 
 -- | Add an 'Account' to a 'MultiAccount'
-addAccount :: Ord currency => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
+addAccount :: (Ord currency) => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
 addAccount m _ (Positive (Amount 0)) = Just m
 addAccount m _ (Negative (Amount 0)) = Just m
 addAccount (MultiAccount m) currency account =
@@ -106,7 +106,7 @@ addAccount (MultiAccount m) currency account =
           else M.insert currency r m
 
 -- | Add an 'Account' to a 'MultiAccount'
-subtractAccount :: Ord currency => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
+subtractAccount :: (Ord currency) => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
 subtractAccount m _ (Positive (Amount 0)) = Just m
 subtractAccount m _ (Negative (Amount 0)) = Just m
 subtractAccount (MultiAccount m) currency account =
@@ -140,7 +140,7 @@ convertAll r qf1 func = runIdentity . convertAllA r qf1 (Identity . func)
 
 -- | Like 'convertAll', but you can decide to convert in your own Applicative.
 convertAllA ::
-  Applicative f =>
+  (Applicative f) =>
   -- Where to round the *result*
   Rounding ->
   -- The quantisation factor of the currency to convert to

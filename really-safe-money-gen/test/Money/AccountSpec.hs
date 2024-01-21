@@ -458,19 +458,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "produces valid strings" $
       producesValid2 Account.format
 
-decimalLiteralExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+decimalLiteralExampleSpec :: (HasCallStack) => QuantisationFactor -> DecimalLiteral -> Account -> Spec
 decimalLiteralExampleSpec qf dl a =
   withFrozenCallStack $ do
     decimalLiteralParseExampleSpec qf dl a
     decimalLiteralRenderExampleSpec qf dl a
 
-decimalLiteralRenderExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+decimalLiteralRenderExampleSpec :: (HasCallStack) => QuantisationFactor -> DecimalLiteral -> Account -> Spec
 decimalLiteralRenderExampleSpec qf dl a =
   withFrozenCallStack $
     it (unwords ["can turn decimalLiteral", show qf, "into", show dl]) $
       Account.toDecimalLiteral qf a `shouldBe` Just dl
 
-decimalLiteralParseExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Account -> Spec
+decimalLiteralParseExampleSpec :: (HasCallStack) => QuantisationFactor -> DecimalLiteral -> Account -> Spec
 decimalLiteralParseExampleSpec qf dl a =
   withFrozenCallStack $
     it (unwords ["can turn", show dl, "into decimalLiteral", show qf]) $

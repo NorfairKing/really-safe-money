@@ -190,37 +190,37 @@ spec = do
           let dl' = DecimalLiteral.setMinimumDigits d dl
            in DecimalLiteral.digits dl' `shouldSatisfy` (>= d)
 
-exampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
+exampleSpec :: (HasCallStack) => String -> DecimalLiteral -> Spec
 exampleSpec s dl =
   withFrozenCallStack $ do
     parseExampleSpec s dl
     renderExampleSpec s dl
 
-parseExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
+parseExampleSpec :: (HasCallStack) => String -> DecimalLiteral -> Spec
 parseExampleSpec s dl =
   withFrozenCallStack $
     it ("can parse " <> show s) $
       DecimalLiteral.fromString s `shouldBe` Just dl
 
-renderExampleSpec :: HasCallStack => String -> DecimalLiteral -> Spec
+renderExampleSpec :: (HasCallStack) => String -> DecimalLiteral -> Spec
 renderExampleSpec s dl =
   withFrozenCallStack $
     it ("can render " <> show dl) $
       DecimalLiteral.format dl `shouldBe` s
 
-rationalExampleSpec :: HasCallStack => DecimalLiteral -> Rational -> Spec
+rationalExampleSpec :: (HasCallStack) => DecimalLiteral -> Rational -> Spec
 rationalExampleSpec dl qf =
   withFrozenCallStack $ do
     rationalParseExampleSpec dl qf
     rationalRenderExampleSpec dl qf
 
-rationalParseExampleSpec :: HasCallStack => DecimalLiteral -> Rational -> Spec
+rationalParseExampleSpec :: (HasCallStack) => DecimalLiteral -> Rational -> Spec
 rationalParseExampleSpec dl r =
   withFrozenCallStack $
     it (unwords ["can turn rational", show r, "into", show dl]) $
       DecimalLiteral.fromRational r `shouldBe` Just dl
 
-rationalRenderExampleSpec :: HasCallStack => DecimalLiteral -> Rational -> Spec
+rationalRenderExampleSpec :: (HasCallStack) => DecimalLiteral -> Rational -> Spec
 rationalRenderExampleSpec dl r =
   withFrozenCallStack $
     it (unwords ["can turn", show dl, "into rational", show r]) $

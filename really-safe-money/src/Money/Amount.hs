@@ -181,43 +181,46 @@ instance Validity Amount
 instance NFData Amount
 
 instance
-  TypeError
-    ( 'Text "This would require that Amounts of money are an instance of Enum"
-        ':$$: 'Text "Amounts of money must not be an instance of Enum. Don't do this."
-        ':$$: 'Text "In particular:"
-        ':$$: 'Text "* succ and pred would be partial."
-        ':$$: 'Text "* the fromEnum :: Amount -> Int function would be partial on 32-bit systems."
-        ':$$: 'Text "* the toEnum :: Int -> Amount function would fail for negative Ints."
-    ) =>
+  ( TypeError
+      ( 'Text "This would require that Amounts of money are an instance of Enum"
+          ':$$: 'Text "Amounts of money must not be an instance of Enum. Don't do this."
+          ':$$: 'Text "In particular:"
+          ':$$: 'Text "* succ and pred would be partial."
+          ':$$: 'Text "* the fromEnum :: Amount -> Int function would be partial on 32-bit systems."
+          ':$$: 'Text "* the toEnum :: Int -> Amount function would fail for negative Ints."
+      )
+  ) =>
   Enum Amount
   where
   toEnum = undefined
   fromEnum = undefined
 
 instance
-  TypeError
-    ( 'Text "This would require that Amounts of money are an instance of Bounded"
-        ':$$: 'Text "Amounts of money must not be an instance of Bounded. Don't do this."
-        ':$$: 'Text "The reasoning is more philosophical than practical:"
-        ':$$: 'Text "It is not clear which bound to choose."
-        ':$$: 'Text "Setting the bounds equal to the bounds of the representation is surprising if there is a clear bound on the amount of a currency, like in the case of BTC."
-        ':$$: 'Text "Setting the bounds equal to the bounds of currency is only possible if there is a clear bound, like in the case of BTC, and that the instance exists at all would be surprising in the case of USD."
-    ) =>
+  ( TypeError
+      ( 'Text "This would require that Amounts of money are an instance of Bounded"
+          ':$$: 'Text "Amounts of money must not be an instance of Bounded. Don't do this."
+          ':$$: 'Text "The reasoning is more philosophical than practical:"
+          ':$$: 'Text "It is not clear which bound to choose."
+          ':$$: 'Text "Setting the bounds equal to the bounds of the representation is surprising if there is a clear bound on the amount of a currency, like in the case of BTC."
+          ':$$: 'Text "Setting the bounds equal to the bounds of currency is only possible if there is a clear bound, like in the case of BTC, and that the instance exists at all would be surprising in the case of USD."
+      )
+  ) =>
   Bounded Amount
   where
   minBound = undefined
   maxBound = undefined
 
 instance
-  TypeError
-    ( 'Text "This would require that Amounts of money are an instance of Num"
-        ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
-        ':$$: 'Text "In particular:"
-        ':$$: 'Text "* (*) cannot be implemented because the units don't match."
-        ':$$: 'Text "* fromInteger cannot be implemented because we don't know the minimal quantisation of an arbitrary amount and integers can be negative."
-        ':$$: 'Text "* abs would be wrong for minBound."
-        ':$$: 'Text "* negate would be wrong for minBound."
-    ) =>
+  ( TypeError
+      ( 'Text "This would require that Amounts of money are an instance of Num"
+          ':$$: 'Text "Amounts of money must not be an instance of Num. Don't do this."
+          ':$$: 'Text "In particular:"
+          ':$$: 'Text "* (*) cannot be implemented because the units don't match."
+          ':$$: 'Text "* fromInteger cannot be implemented because we don't know the minimal quantisation of an arbitrary amount and integers can be negative."
+          ':$$: 'Text "* abs would be wrong for minBound."
+          ':$$: 'Text "* negate would be wrong for minBound."
+      )
+  ) =>
   Num Amount
   where
   (+) = undefined
@@ -229,11 +232,12 @@ instance
   (-) = undefined
 
 instance
-  TypeError
-    ( 'Text "This would require that Amounts of money are an instance of Semigroup"
-        ':$$: 'Text "Amounts of money must not be an instance of Semigroup. Don't do this."
-        ':$$: 'Text "In particular, (<>) cannot be implemented because add must be able to fail."
-    ) =>
+  ( TypeError
+      ( 'Text "This would require that Amounts of money are an instance of Semigroup"
+          ':$$: 'Text "Amounts of money must not be an instance of Semigroup. Don't do this."
+          ':$$: 'Text "In particular, (<>) cannot be implemented because add must be able to fail."
+      )
+  ) =>
   Semigroup Amount
   where
   (<>) = undefined
@@ -482,7 +486,7 @@ add (Amount a1) (Amount a2) =
 --
 -- >>> sum [Amount (2 ^ 64 - 3), Amount 1, Amount 2]
 -- Nothing
-sum :: forall f. Foldable f => f Amount -> Maybe Amount
+sum :: forall f. (Foldable f) => f Amount -> Maybe Amount
 sum l =
   let maxBoundI :: Integer
       maxBoundI = fromIntegral (maxBound :: Word64)
@@ -604,7 +608,7 @@ instance (Validity amount, Ord amount) => Validity (Distribution amount) where
           _ -> valid
       ]
 
-instance NFData amount => NFData (Distribution amount)
+instance (NFData amount) => NFData (Distribution amount)
 
 -- | Fractional multiplication
 --

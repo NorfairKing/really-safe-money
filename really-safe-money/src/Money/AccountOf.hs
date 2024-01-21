@@ -124,27 +124,27 @@ toMinimalQuantisations :: AccountOf currency -> Integer
 toMinimalQuantisations = Account.toMinimalQuantisations . toAccount
 
 -- | See 'Account.toDouble'
-toDouble :: forall currency. IsCurrencyType currency => AccountOf currency -> Double
+toDouble :: forall currency. (IsCurrencyType currency) => AccountOf currency -> Double
 toDouble = Account.toDouble (quantisationFactor (Proxy @currency)) . toAccount
 
 -- | See 'Account.fromDouble'
-fromDouble :: forall currency. IsCurrencyType currency => Double -> Maybe (AccountOf currency)
+fromDouble :: forall currency. (IsCurrencyType currency) => Double -> Maybe (AccountOf currency)
 fromDouble = fmap fromAccount . Account.fromDouble (quantisationFactor (Proxy @currency))
 
 -- | See 'Account.toRational'
-toRational :: forall currency. IsCurrencyType currency => AccountOf currency -> Rational
+toRational :: forall currency. (IsCurrencyType currency) => AccountOf currency -> Rational
 toRational = Account.toRational (quantisationFactor (Proxy @currency)) . toAccount
 
 -- | See 'Account.fromRational'
-fromRational :: forall currency. IsCurrencyType currency => Rational -> Maybe (AccountOf currency)
+fromRational :: forall currency. (IsCurrencyType currency) => Rational -> Maybe (AccountOf currency)
 fromRational = fmap fromAccount . Account.fromRational (quantisationFactor (Proxy @currency))
 
 -- | See 'Account.toDecimalLiteral'
-toDecimalLiteral :: forall currency. IsCurrencyType currency => AccountOf currency -> Maybe DecimalLiteral
+toDecimalLiteral :: forall currency. (IsCurrencyType currency) => AccountOf currency -> Maybe DecimalLiteral
 toDecimalLiteral = Account.toDecimalLiteral (quantisationFactor (Proxy :: Proxy currency)) . unAccountOf
 
 -- | See 'Account.fromDecimalLiteral'
-fromDecimalLiteral :: forall currency. IsCurrencyType currency => DecimalLiteral -> Maybe (AccountOf currency)
+fromDecimalLiteral :: forall currency. (IsCurrencyType currency) => DecimalLiteral -> Maybe (AccountOf currency)
 fromDecimalLiteral = fmap AccountOf . Account.fromDecimalLiteral (quantisationFactor (Proxy :: Proxy currency))
 
 -- | See 'Account.zero'
@@ -156,7 +156,7 @@ add :: AccountOf currency -> AccountOf currency -> Maybe (AccountOf currency)
 add (AccountOf a1) (AccountOf a2) = fromAccount <$> Account.add a1 a2
 
 -- | See 'Account.sum'
-sum :: forall f currency. Foldable f => f (AccountOf currency) -> Maybe (AccountOf currency)
+sum :: forall f currency. (Foldable f) => f (AccountOf currency) -> Maybe (AccountOf currency)
 sum as = fromAccount <$> Account.sum (map toAccount (Foldable.toList as))
 
 -- | See 'Account.subtract'
@@ -224,5 +224,5 @@ convert rounding (AccountOf a) (ConversionRateOf cr) =
    in (AccountOf <$> ma, ConversionRateOf <$> mrc)
 
 -- | See 'formatAccount'
-format :: forall currency. IsCurrencyType currency => AccountOf currency -> String
+format :: forall currency. (IsCurrencyType currency) => AccountOf currency -> String
 format ao = Account.format (quantisationFactor (Proxy @currency)) (toAccount ao)

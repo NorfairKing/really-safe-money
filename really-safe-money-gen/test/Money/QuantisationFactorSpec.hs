@@ -78,19 +78,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                   Nothing -> expectationFailure "Should have been able to parse as an account"
                   Just q -> q `shouldBe` qf
 
-decimalLiteralExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
+decimalLiteralExampleSpec :: (HasCallStack) => DecimalLiteral -> QuantisationFactor -> Spec
 decimalLiteralExampleSpec dl qf =
   withFrozenCallStack $ do
     decimalLiteralParseExampleSpec dl qf
     decimalLiteralRenderExampleSpec dl qf
 
-decimalLiteralRenderExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
+decimalLiteralRenderExampleSpec :: (HasCallStack) => DecimalLiteral -> QuantisationFactor -> Spec
 decimalLiteralRenderExampleSpec dl qf =
   withFrozenCallStack $
     it (unwords ["can turn quantisation factor", show (unQuantisationFactor qf), "into", show dl]) $
       toDecimalLiteral qf `shouldBe` Just dl
 
-decimalLiteralParseExampleSpec :: HasCallStack => DecimalLiteral -> QuantisationFactor -> Spec
+decimalLiteralParseExampleSpec :: (HasCallStack) => DecimalLiteral -> QuantisationFactor -> Spec
 decimalLiteralParseExampleSpec dl qf =
   withFrozenCallStack $
     it (unwords ["can turn", show dl, "into quantisation factor", show (unQuantisationFactor qf)]) $

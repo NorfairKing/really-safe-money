@@ -64,7 +64,7 @@ instance (Validity currency, Show currency, Ord currency) => Validity (MultiAmou
             a /= Amount.zero
       ]
 
-instance NFData currency => NFData (MultiAmount currency)
+instance (NFData currency) => NFData (MultiAmount currency)
 
 fromAmount :: currency -> Amount -> MultiAmount currency
 fromAmount currency amount =
@@ -77,7 +77,7 @@ zero :: MultiAmount currency
 zero = MultiAmount M.empty
 
 -- | Add two 'MultiAmount's
-add :: forall currency. Ord currency => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
+add :: forall currency. (Ord currency) => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
 add m1 = foldM (\m (c, a) -> addAmount m c a) m1 . M.toList . unMultiAmount
 
 -- | Add multiple 'MultiAmount's
@@ -85,11 +85,11 @@ sum :: (Foldable f, Ord currency) => f (MultiAmount currency) -> Maybe (MultiAmo
 sum = foldM add zero
 
 -- | Subtract a 'MultiAmount' from a 'MultiAmount'
-subtract :: forall currency. Ord currency => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
+subtract :: forall currency. (Ord currency) => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
 subtract m1 = foldM (\m (c, a) -> subtractAmount m c a) m1 . M.toList . unMultiAmount
 
 -- | Add an 'Amount' to a 'MultiAmount'
-addAmount :: Ord currency => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
+addAmount :: (Ord currency) => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
 addAmount m _ (Amount 0) = Just m
 addAmount (MultiAmount m) currency amount =
   fmap MultiAmount $ case M.lookup currency m of
@@ -102,7 +102,7 @@ addAmount (MultiAmount m) currency amount =
           else M.insert currency r m
 
 -- | Subtract an 'Amount' from a 'MultiAmount'
-subtractAmount :: Ord currency => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
+subtractAmount :: (Ord currency) => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
 subtractAmount m _ (Amount 0) = Just m
 subtractAmount (MultiAmount m) currency amount =
   fmap MultiAmount $ case M.lookup currency m of
@@ -135,7 +135,7 @@ convertAll r qf1 func = runIdentity . convertAllA r qf1 (Identity . func)
 
 -- | Like 'convertAll', but you can decide to convert in your own Applicative.
 convertAllA ::
-  Applicative f =>
+  (Applicative f) =>
   -- Where to round the result
   Rounding ->
   -- The quantisation factor of the currency to convert to

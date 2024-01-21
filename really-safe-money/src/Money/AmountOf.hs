@@ -103,21 +103,21 @@ instance Validity (AmountOf currency)
 instance NFData (AmountOf currency)
 
 instance
-  Enum Amount =>
+  (Enum Amount) =>
   Enum (AmountOf currency)
   where
   toEnum = undefined
   fromEnum = undefined
 
 instance
-  Bounded Amount =>
+  (Bounded Amount) =>
   Bounded (AmountOf currency)
   where
   minBound = undefined
   maxBound = undefined
 
 instance
-  Num Amount =>
+  (Num Amount) =>
   Num (AmountOf currency)
   where
   (+) = undefined
@@ -151,35 +151,35 @@ fromMinimalQuantisations :: Word64 -> AmountOf currency
 fromMinimalQuantisations = fromAmount . Amount.fromMinimalQuantisations
 
 -- | See 'Amount.fromDouble'
-fromDouble :: forall currency. IsCurrencyType currency => Double -> Maybe (AmountOf currency)
+fromDouble :: forall currency. (IsCurrencyType currency) => Double -> Maybe (AmountOf currency)
 fromDouble = fmap fromAmount . Amount.fromDouble (quantisationFactor (Proxy @currency))
 
 -- | See 'Amount.toDouble'
-toDouble :: forall currency. IsCurrencyType currency => AmountOf currency -> Double
+toDouble :: forall currency. (IsCurrencyType currency) => AmountOf currency -> Double
 toDouble = Amount.toDouble (quantisationFactor (Proxy @currency)) . toAmount
 
 -- | See 'Amount.fromRational'
-fromRational :: forall currency. IsCurrencyType currency => Rational -> Maybe (AmountOf currency)
+fromRational :: forall currency. (IsCurrencyType currency) => Rational -> Maybe (AmountOf currency)
 fromRational = fmap fromAmount . Amount.fromRational (quantisationFactor (Proxy @currency))
 
 -- | See 'Amount.toRational'
-toRational :: forall currency. IsCurrencyType currency => AmountOf currency -> Rational
+toRational :: forall currency. (IsCurrencyType currency) => AmountOf currency -> Rational
 toRational = Amount.toRational (quantisationFactor (Proxy @currency)) . toAmount
 
 -- | See 'Amount.fromRatio'
-fromRatio :: forall currency. IsCurrencyType currency => Ratio Natural -> Maybe (AmountOf currency)
+fromRatio :: forall currency. (IsCurrencyType currency) => Ratio Natural -> Maybe (AmountOf currency)
 fromRatio = fmap fromAmount . Amount.fromRatio (quantisationFactor (Proxy @currency))
 
 -- | See 'Amount.toRatio'
-toRatio :: forall currency. IsCurrencyType currency => AmountOf currency -> Ratio Natural
+toRatio :: forall currency. (IsCurrencyType currency) => AmountOf currency -> Ratio Natural
 toRatio = Amount.toRatio (quantisationFactor (Proxy @currency)) . toAmount
 
 -- | See 'Amount.toDecimalLiteral'
-toDecimalLiteral :: forall currency. IsCurrencyType currency => AmountOf currency -> Maybe DecimalLiteral
+toDecimalLiteral :: forall currency. (IsCurrencyType currency) => AmountOf currency -> Maybe DecimalLiteral
 toDecimalLiteral (AmountOf a) = Amount.toDecimalLiteral (quantisationFactor (Proxy :: Proxy currency)) a
 
 -- | See 'Amount.fromDecimalLiteral'
-fromDecimalLiteral :: forall currency. IsCurrencyType currency => DecimalLiteral -> Maybe (AmountOf currency)
+fromDecimalLiteral :: forall currency. (IsCurrencyType currency) => DecimalLiteral -> Maybe (AmountOf currency)
 fromDecimalLiteral = fmap AmountOf . Amount.fromRational (quantisationFactor (Proxy :: Proxy currency)) . DecimalLiteral.toRational
 
 -- | See 'Amount.add'
@@ -192,7 +192,7 @@ add (AmountOf a1) (AmountOf a2) = fromAmount <$> Amount.add a1 a2
 -- | See 'Amount.sum'
 sum ::
   forall f currency.
-  Foldable f =>
+  (Foldable f) =>
   f (AmountOf currency) ->
   Maybe (AmountOf currency)
 sum as = fromAmount <$> Amount.sum (map toAmount (Foldable.toList as))
@@ -257,5 +257,5 @@ convert rounding (AmountOf a) (ConversionRateOf cr) =
    in (AmountOf <$> ma, ConversionRateOf <$> mrc)
 
 -- | See 'Amount.formatAmount'
-format :: forall currency. IsCurrencyType currency => AmountOf currency -> String
+format :: forall currency. (IsCurrencyType currency) => AmountOf currency -> String
 format ao = Amount.format (quantisationFactor (Proxy @currency)) (toAmount ao)

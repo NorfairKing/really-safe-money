@@ -66,18 +66,16 @@ import qualified Prelude (toInteger)
 --   Because then there are multiple representations of negative numbers.
 -- * Why not only a @DecimalLiteral (Maybe Bool) Natural Int8@?
 --   Because then there are multiple representations of "10": (Nothing, 10, 0) and (Nothing, 1, 1)
+--
+-- Fractional decimal literal
+--
+-- Using a and e to represent
+-- sign * m * 10 ^(-e)
 data DecimalLiteral
-  = -- | Fractional decimal literal
-    --
-    -- Using a and e to represent
-    -- m * 10 ^(-e)
-    DecimalLiteral
+  = DecimalLiteral
       !(Maybe Bool)
-      -- ^ Sign
       !Natural
-      -- ^ m
       !Word8
-      -- ^ e
   deriving (Show, Eq, Generic)
 
 instance Validity DecimalLiteral
@@ -110,7 +108,7 @@ fromString :: String -> Maybe DecimalLiteral
 fromString = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
 
 -- | Like 'fromString' but in a 'MonadFail'
-fromStringM :: MonadFail m => String -> m DecimalLiteral
+fromStringM :: (MonadFail m) => String -> m DecimalLiteral
 fromStringM s = case Numeric.DecimalLiteral.fromString s of
   Nothing -> fail $ "Failed to parse decimal literal from:" <> show s
   Just dl -> pure dl
@@ -338,7 +336,7 @@ toInt dl = do
 numSign :: (Ord a, Num a) => a -> Maybe Bool
 numSign a = if a >= 0 then Nothing else Just False
 
-signSignum :: Num a => Maybe Bool -> (a -> a)
+signSignum :: (Num a) => Maybe Bool -> (a -> a)
 signSignum = \case
   Nothing -> id
   Just True -> id

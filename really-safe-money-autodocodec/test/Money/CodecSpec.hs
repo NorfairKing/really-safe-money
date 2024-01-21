@@ -156,14 +156,14 @@ codecSpec name dir c = describe name $ do
                       ]
                in context ctx $ decoded `shouldBe` a
 
-parseSuccessSpec :: HasCallStack => (Show a, Eq a) => JSONCodec a -> JSON.Value -> a -> Spec
+parseSuccessSpec :: (HasCallStack) => (Show a, Eq a) => JSONCodec a -> JSON.Value -> a -> Spec
 parseSuccessSpec c v expected = withFrozenCallStack $
   it (unwords ["fails to parse", show v]) $
     case JSON.parseEither (parseJSONVia c) v of
       Left err -> expectationFailure $ unlines ["Failed to parse:", err]
       Right actual -> actual `shouldBe` expected
 
-parseFailSpec :: HasCallStack => Show a => JSONCodec a -> JSON.Value -> Spec
+parseFailSpec :: (HasCallStack) => (Show a) => JSONCodec a -> JSON.Value -> Spec
 parseFailSpec c v = withFrozenCallStack $
   it (unwords ["fails to parse", show v]) $
     case JSON.parseEither (parseJSONVia c) v of

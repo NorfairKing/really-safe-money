@@ -352,7 +352,7 @@ add a1 a2 =
 --
 -- >>> sum [Negative (Amount (2 ^ 64 - 3)), Negative (Amount 4), Positive (Amount 2)]
 -- Nothing
-sum :: forall f. Foldable f => f Account -> Maybe Account
+sum :: forall f. (Foldable f) => f Account -> Maybe Account
 sum = foldM add zero
 
 -- | Add two accounts of money.

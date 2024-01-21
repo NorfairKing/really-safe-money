@@ -538,19 +538,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "produces valid strings" $
       producesValid2 Amount.format
 
-decimalLiteralExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
+decimalLiteralExampleSpec :: (HasCallStack) => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
 decimalLiteralExampleSpec qf dl a =
   withFrozenCallStack $ do
     decimalLiteralParseExampleSpec qf dl a
     decimalLiteralRenderExampleSpec qf dl a
 
-decimalLiteralRenderExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
+decimalLiteralRenderExampleSpec :: (HasCallStack) => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
 decimalLiteralRenderExampleSpec qf dl a =
   withFrozenCallStack $
     it (unwords ["can turn decimalLiteral", show qf, "into", show dl]) $
       Amount.toDecimalLiteral qf a `shouldBe` Just dl
 
-decimalLiteralParseExampleSpec :: HasCallStack => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
+decimalLiteralParseExampleSpec :: (HasCallStack) => QuantisationFactor -> DecimalLiteral -> Amount -> Spec
 decimalLiteralParseExampleSpec qf dl a =
   withFrozenCallStack $
     it (unwords ["can turn", show dl, "into decimalLiteral", show qf]) $
