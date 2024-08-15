@@ -75,6 +75,15 @@ spec = do
       it "produces valid amounts" $
         producesValid (MultiAmount.sum @Vector @Currency)
 
+    describe "lookupAmount" $ do
+      it "produces valid amounts" $
+        producesValid2 (MultiAmount.lookupAmount @Currency)
+
+      it "can find an added amount" $
+        forAllValid $ \currency ->
+          forAllValid $ \a ->
+            (MultiAmount.lookupAmount @Currency currency <$> MultiAmount.addAmount @Currency MultiAmount.zero currency a) `shouldBe` Just a
+
     describe "addAmount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAmount.addAmount @Currency)

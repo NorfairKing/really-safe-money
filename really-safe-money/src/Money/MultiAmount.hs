@@ -18,6 +18,7 @@ module Money.MultiAmount
     add,
     sum,
     subtract,
+    lookupAmount,
     addAmount,
     subtractAmount,
     convertAll,
@@ -32,6 +33,7 @@ import Data.Data
 import Data.Functor.Identity
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe
 import Data.Ratio
 import Data.Validity
 import Data.Validity.Map
@@ -87,6 +89,10 @@ sum = foldM add zero
 -- | Subtract a 'MultiAmount' from a 'MultiAmount'
 subtract :: forall currency. (Ord currency) => MultiAmount currency -> MultiAmount currency -> Maybe (MultiAmount currency)
 subtract m1 = foldM (\m (c, a) -> subtractAmount m c a) m1 . M.toList . unMultiAmount
+
+-- | Lookup up the amount of one currency in a 'MultiAmount'
+lookupAmount :: (Ord currency) => currency -> MultiAmount currency -> Amount
+lookupAmount currency (MultiAmount m) = fromMaybe Amount.zero $ M.lookup currency m
 
 -- | Add an 'Amount' to a 'MultiAmount'
 addAmount :: (Ord currency) => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
