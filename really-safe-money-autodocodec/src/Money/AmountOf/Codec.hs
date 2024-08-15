@@ -1,3 +1,9 @@
+-- | Codecs for 'AmountOf'
+--
+-- This does not contain:
+--
+-- * `codecViaDecimalLiteral` because converting an 'AmountOf' to a 'DecimalLiteral' can fail.
+-- * A codec that en/decodes a 'Scientific' because that can fail.
 module Money.AmountOf.Codec
   ( codecViaString,
     codecViaNumber,

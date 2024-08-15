@@ -1,5 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Codecs for 'Amount'
+--
+-- This does not contain:
+--
+-- * `codecViaDecimalLiteral` because converting an 'Amount' to a 'DecimalLiteral' can fail.
+-- * A codec that en/decodes a 'Scientific' because that can fail.
 module Money.Amount.Codec
   ( codecViaString,
     codecViaNumber,
