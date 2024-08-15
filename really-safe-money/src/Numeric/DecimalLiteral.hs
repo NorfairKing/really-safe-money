@@ -18,7 +18,7 @@ module Numeric.DecimalLiteral
   ( DecimalLiteral (..),
     Numeric.DecimalLiteral.fromString,
     fromStringM,
-    format,
+    toString,
     fromRational,
     toRational,
     fromRatio,
@@ -159,20 +159,20 @@ parseDigits f z = do
 
 -- | Render a decimal literal to a string
 --
--- >>> format (DecimalLiteral Nothing 5 0)
+-- >>> toString (DecimalLiteral Nothing 5 0)
 -- "5"
--- >>> format (DecimalLiteral (Just True) 60 0)
+-- >>> toString (DecimalLiteral (Just True) 60 0)
 -- "+60"
--- >>> format (DecimalLiteral (Just False) 700 0)
+-- >>> toString (DecimalLiteral (Just False) 700 0)
 -- "-700"
--- >>> format (DecimalLiteral Nothing 8 3)
+-- >>> toString (DecimalLiteral Nothing 8 3)
 -- "0.008"
--- >>> format (DecimalLiteral (Just True) 90 5)
+-- >>> toString (DecimalLiteral (Just True) 90 5)
 -- "+0.00090"
--- >>> format (DecimalLiteral (Just False) 100 7)
+-- >>> toString (DecimalLiteral (Just False) 100 7)
 -- "-0.0000100"
-format :: DecimalLiteral -> String
-format = \case
+toString :: DecimalLiteral -> String
+toString = \case
   DecimalLiteral s m 0 -> sign s ++ show m
   DecimalLiteral s m e -> sign s ++ goFrac m e
   where
@@ -190,7 +190,7 @@ format = \case
 
 -- | Parse a 'DecimalLiteral' from a 'Rational'
 --
--- Because a 'Rational' contains no rendering information, we fill in these details:
+-- Because a 'Rational' contains no rendering intoStringion, we fill in these details:
 --
 -- * Use "No sign" for positive numbers
 -- * Use the minimum number of required digits.
@@ -210,7 +210,7 @@ fromRational (n :% d)
 
 -- | Turn a 'DecimalLiteral' into a 'Rational'
 --
--- This throws away all rendering information.
+-- This throws away all rendering intoStringion.
 --
 -- >>> toRational (DecimalLiteral Nothing 1 0)
 -- 1 % 1
@@ -224,7 +224,7 @@ toRational (DecimalLiteral mSign m e) =
 
 -- | Parse a 'DecimalLiteral' from a 'Ratio Natural'
 --
--- Because a 'Ratio Natural' contains no rendering information, we fill in the number of required digits.
+-- Because a 'Ratio Natural' contains no rendering intoStringion, we fill in the number of required digits.
 --
 -- This fails when the rational cannot be represented finitely.
 --
@@ -273,7 +273,7 @@ fromRatio = fromRationalRepetendLimited 256
 
 -- | Turn a 'DecimalLiteral' into a 'Ratio Natural'
 --
--- This throws away all rendering information.
+-- This throws away all rendering intoStringion.
 --
 -- Note that this will fail if the decimal literal is negative.
 --

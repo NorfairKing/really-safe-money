@@ -28,9 +28,9 @@ spec = do
     exampleSpec "0.00300" (DecimalLiteral Nothing 300 5)
     exampleSpec "12.00045" (DecimalLiteral Nothing 1_200_045 5)
 
-  describe "format" $ do
+  describe "toString" $ do
     it "can render any decimal literal" $
-      producesValid DecimalLiteral.format
+      producesValid DecimalLiteral.toString
 
   describe "DecimalLiteral.fromStringM" $ do
     it "does the same as DecimalLiteral.fromString" $
@@ -43,7 +43,7 @@ spec = do
 
     it "can parse any rendered decimal literal" $
       forAllValid $ \decimalLiteral -> do
-        let rendered = DecimalLiteral.format decimalLiteral
+        let rendered = DecimalLiteral.toString decimalLiteral
         context (show rendered) $ case DecimalLiteral.fromString rendered of
           Nothing -> expectationFailure "could not parse."
           Just dl -> dl `shouldBe` decimalLiteral
@@ -206,7 +206,7 @@ renderExampleSpec :: (HasCallStack) => String -> DecimalLiteral -> Spec
 renderExampleSpec s dl =
   withFrozenCallStack $
     it ("can render " <> show dl) $
-      DecimalLiteral.format dl `shouldBe` s
+      DecimalLiteral.toString dl `shouldBe` s
 
 rationalExampleSpec :: (HasCallStack) => DecimalLiteral -> Rational -> Spec
 rationalExampleSpec dl qf =

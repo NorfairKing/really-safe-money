@@ -33,11 +33,9 @@ import qualified Numeric.DecimalLiteral as DecimalLiteral
 -- >>> JSON.parseMaybe (parseJSONVia codecViaString) (String "three") :: Maybe DecimalLiteral
 -- Nothing
 codecViaString :: JSONCodec DecimalLiteral
-codecViaString = bimapCodec f g stringCodec <?> "DecimalLiteral"
+codecViaString = bimapCodec f DecimalLiteral.toString stringCodec <?> "DecimalLiteral"
   where
     f :: String -> Either String DecimalLiteral
     f s = case DecimalLiteral.fromString s of
       Nothing -> Left $ unwords ["Could not read string as a DecimalLiteral:", s]
       Just a -> Right a
-    g :: DecimalLiteral -> String
-    g = DecimalLiteral.format
