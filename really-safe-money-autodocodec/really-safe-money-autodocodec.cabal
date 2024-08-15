@@ -19,6 +19,7 @@ extra-source-files:
     test_resources/amount-of/string.txt
     test_resources/amount/number.txt
     test_resources/amount/string.txt
+    test_resources/decimal-literal/string.txt
     test_resources/quantisation-factor/number.txt
 
 source-repository head
@@ -32,6 +33,7 @@ library
       Money.Amount.Codec
       Money.AmountOf.Codec
       Money.QuantisationFactor.Codec
+      Numeric.DecimalLiteral.Codec
   other-modules:
       Paths_really_safe_money_autodocodec
   hs-source-dirs:
@@ -60,6 +62,7 @@ test-suite really-safe-money-autodocodec-test
   main-is: Spec.hs
   other-modules:
       Money.CodecSpec
+      Numeric.DecimalLiteral.CodecSpec
       Paths_really_safe_money_autodocodec
   hs-source-dirs:
       test

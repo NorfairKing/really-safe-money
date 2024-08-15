@@ -110,7 +110,7 @@ fromString = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
 -- | Like 'fromString' but in a 'MonadFail'
 fromStringM :: (MonadFail m) => String -> m DecimalLiteral
 fromStringM s = case Numeric.DecimalLiteral.fromString s of
-  Nothing -> fail $ "Failed to parse decimal literal from:" <> show s
+  Nothing -> fail $ "Failed to parse decimal literal from: " <> show s
   Just dl -> pure dl
 
 decimalLiteralP :: ReadP DecimalLiteral
