@@ -84,6 +84,14 @@ spec = do
           forAllValid $ \a ->
             (MultiAccount.lookupAccount @Currency currency <$> MultiAccount.addAccount @Currency MultiAccount.zero currency a) `shouldBe` Just a
 
+    describe "addAmount" $ do
+      it "produces valid amounts" $
+        producesValid3 (MultiAccount.addAmount @Currency)
+
+    describe "subtractAmount" $ do
+      it "produces valid amounts" $
+        producesValid3 (MultiAccount.subtractAmount @Currency)
+
     describe "addAccount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.addAccount @Currency)

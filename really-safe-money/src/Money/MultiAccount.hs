@@ -19,6 +19,8 @@ module Money.MultiAccount
     subtract,
     sum,
     lookupAccount,
+    addAmount,
+    subtractAmount,
     addAccount,
     subtractAccount,
     Rounding (..),
@@ -96,6 +98,14 @@ subtract m1 = foldM (\m (c, a) -> subtractAccount m c a) m1 . M.toList . unMulti
 -- | Lookup up the amount of one currency in a 'MultiAccount'
 lookupAccount :: (Ord currency) => currency -> MultiAccount currency -> Account
 lookupAccount currency (MultiAccount m) = fromMaybe Account.zero $ M.lookup currency m
+
+-- | Add an 'Amount' to a 'MultiAccount'
+addAmount :: (Ord currency) => MultiAccount currency -> currency -> Amount -> Maybe (MultiAccount currency)
+addAmount ma cur a = addAccount ma cur (Positive a)
+
+-- | Subtract an 'Amount' from a 'MultiAccount'
+subtractAmount :: (Ord currency) => MultiAccount currency -> currency -> Amount -> Maybe (MultiAccount currency)
+subtractAmount ma cur a = subtractAccount ma cur (Positive a)
 
 -- | Add an 'Account' to a 'MultiAccount'
 addAccount :: (Ord currency) => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
