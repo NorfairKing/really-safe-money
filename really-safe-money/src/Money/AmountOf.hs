@@ -74,7 +74,6 @@ import Control.DeepSeq
 import Data.Foldable as Foldable hiding (sum)
 import Data.Proxy
 import Data.Ratio
-import Data.Typeable
 import Data.Validity
 import Data.Word
 import GHC.Generics (Generic)
@@ -96,7 +95,7 @@ import Prelude hiding (fromRational, subtract, sum, toRational)
 newtype AmountOf (currency :: k) = AmountOf
   { unAmountOf :: Amount
   }
-  deriving (Show, Read, Eq, Ord, Typeable, Generic)
+  deriving (Show, Read, Eq, Ord, Generic)
 
 instance Validity (AmountOf currency)
 

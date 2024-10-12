@@ -55,7 +55,7 @@ import qualified Prelude
 newtype MultiAmount currency = MultiAmount
   { unMultiAmount :: Map currency Amount
   }
-  deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance (Validity currency, Show currency, Ord currency) => Validity (MultiAmount currency) where
   validate ma@(MultiAmount m) =

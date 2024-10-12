@@ -1,4 +1,4 @@
-resolver: lts-21.22
+resolver: lts-22.22
 packages:
 - really-safe-money
 - really-safe-money-autodocodec
@@ -10,14 +10,14 @@ ghc-options:
 
 extra-deps:
 - github: NorfairKing/autodocodec
-  commit: e7f4ec8d1d47e77c0f7fe83c8032abae5b082572
+  commit: a7488a3303e06cf06d3d0f2f20203f67fa4500ce
   subdirs:
   - autodocodec
   - autodocodec-schema
   - autodocodec-yaml
 
 - github: NorfairKing/safe-coloured-text
-  commit: 50abcbfa2a2ed15c6186fa2381fe818bd93a730b
+  commit: 9ed65a40b3b2fade447c9d5fcb941d58f6367308
   subdirs:
   - safe-coloured-text
   - safe-coloured-text-layout

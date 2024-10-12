@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -108,7 +107,6 @@ spec = do
     parseSuccessSpec AccountOf.codecViaNumber (Number 18446744073709551615) (AccountOf (Positive (Amount 18446744073709551615)))
 
 data USD
-  deriving (Typeable)
 
 instance IsCurrencyType USD where
   quantisationFactor Proxy = QuantisationFactor 100

@@ -58,7 +58,7 @@ import qualified Prelude
 newtype MultiAccount currency = MultiAccount
   { unMultiAccount :: Map currency Account
   }
-  deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance (Validity currency, Show currency, Ord currency) => Validity (MultiAccount currency) where
   validate ma@(MultiAccount m) =

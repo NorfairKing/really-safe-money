@@ -174,7 +174,7 @@ import qualified Prelude
 --     * 'RealFloat', because an amount of money is not represented using a floating-point number.
 --     * 'Monoid' could work if there was a 'Semigroup Amount', but there isn't and there shouldn't be.
 newtype Amount = Amount Word64
-  deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance Validity Amount
 

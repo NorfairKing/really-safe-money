@@ -31,7 +31,7 @@ import qualified Numeric.DecimalLiteral as DecimalLiteral
 --
 -- This is a newtype because it must not be 0.
 newtype QuantisationFactor = QuantisationFactor {unQuantisationFactor :: Word32}
-  deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance Validity QuantisationFactor where
   validate qf@(QuantisationFactor w) =

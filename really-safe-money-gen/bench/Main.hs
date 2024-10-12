@@ -373,7 +373,6 @@ forAllCurrencies func =
   ]
 
 data Hypothetical
-  deriving (Typeable)
 
 instance IsCurrencyType Hypothetical where
   quantisationFactor Proxy = QuantisationFactor 47

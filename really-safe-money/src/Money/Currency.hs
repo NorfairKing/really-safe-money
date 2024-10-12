@@ -35,7 +35,7 @@ data Currency = Currency
   { currencySymbol :: !String,
     currencyQuantisationFactor :: !QuantisationFactor
   }
-  deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance Validity Currency
 

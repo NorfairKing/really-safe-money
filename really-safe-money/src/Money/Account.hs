@@ -96,7 +96,7 @@ import qualified Prelude
 data Account
   = Positive !Amount
   | Negative !Amount
-  deriving (Show, Read, Data, Typeable, Generic)
+  deriving (Show, Read, Data, Generic)
 
 instance Validity Account
 
