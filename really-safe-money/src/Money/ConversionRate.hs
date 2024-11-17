@@ -29,7 +29,7 @@ import Prelude hiding (fromRational, toRational)
 --
 -- This value must not be zero (or negative).
 newtype ConversionRate = ConversionRate {unConversionRate :: Ratio Natural}
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Validity ConversionRate where
   validate cr@(ConversionRate r) =
