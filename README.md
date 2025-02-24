@@ -2,8 +2,8 @@
 
 ## Status
 
-Ready to try out!
-This is not used in production anywhere yet, and the docs are incomplete, so try it out with the appropriate amount of caution.
+Ready to use.
+This is used in production at [NixCI](https://nix-ci.com/) and [Centjes](https://centjes.cs-syd.eu/).
 
 ## Features
 
