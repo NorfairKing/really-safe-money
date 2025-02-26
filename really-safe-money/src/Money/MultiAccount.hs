@@ -129,7 +129,7 @@ subtractAccount (MultiAccount m) currency account =
   fmap MultiAccount $ case M.lookup currency m of
     Nothing -> Just $ M.insert currency (Account.negate account) m
     Just a -> do
-      r <- Account.add a account
+      r <- Account.subtract a account
       Just $
         if r == Account.zero
           then M.delete currency m

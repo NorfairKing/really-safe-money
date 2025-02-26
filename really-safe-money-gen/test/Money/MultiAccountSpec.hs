@@ -88,9 +88,39 @@ spec = do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.addAmount @Currency)
 
+      it "computes this example correctly" $
+        forAllValid $ \cur ->
+          MultiAccount.addAccount (MultiAccount (M.fromList [(cur :: Currency, Positive (Amount 2))])) cur (Positive (Amount 1))
+            `shouldBe` Just (MultiAccount (M.fromList [(cur, Positive (Amount 3))]))
+
+      it "removes a zero amount" $
+        forAllValid $ \cur ->
+          MultiAccount.addAccount (MultiAccount (M.fromList [(cur :: Currency, Positive (Amount 1))])) cur (Negative (Amount 1))
+            `shouldBe` Just MultiAccount.zero
+
+      it "adds a non zero amount" $
+        forAllValid $ \cur ->
+          MultiAccount.addAccount MultiAccount.zero cur (Negative (Amount 1))
+            `shouldBe` Just (MultiAccount (M.fromList [(cur :: Currency, Negative (Amount 1))]))
+
     describe "subtractAmount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.subtractAmount @Currency)
+
+      it "computes this example correctly" $
+        forAllValid $ \cur ->
+          MultiAccount.subtractAccount (MultiAccount (M.fromList [(cur :: Currency, Positive (Amount 2))])) cur (Positive (Amount 1))
+            `shouldBe` Just (MultiAccount (M.fromList [(cur, Positive (Amount 1))]))
+
+      it "removes a zero amount" $
+        forAllValid $ \cur ->
+          MultiAccount.subtractAccount (MultiAccount (M.fromList [(cur :: Currency, Positive (Amount 1))])) cur (Positive (Amount 1))
+            `shouldBe` Just MultiAccount.zero
+
+      it "adds a non zero amount" $
+        forAllValid $ \cur ->
+          MultiAccount.subtractAccount MultiAccount.zero cur (Positive (Amount 1))
+            `shouldBe` Just (MultiAccount (M.fromList [(cur :: Currency, Negative (Amount 1))]))
 
     describe "addAccount" $ do
       it "produces valid amounts" $
