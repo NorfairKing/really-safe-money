@@ -7,7 +7,8 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-25.05";
+    nixpkgs-24_11.url = "github:NixOS/nixpkgs?ref=nixos-24.11";
     nixpkgs-24_05.url = "github:NixOS/nixpkgs?ref=nixos-24.05";
     nixpkgs-23_11.url = "github:NixOS/nixpkgs?ref=nixos-23.11";
     horizon-advance.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-advance";
@@ -31,6 +32,7 @@
   outputs =
     { self
     , nixpkgs
+    , nixpkgs-24_11
     , nixpkgs-24_05
     , nixpkgs-23_11
     , horizon-advance
@@ -70,6 +72,7 @@
           backwardCompatibilityCheckFor = nixpkgs: (haskellPackagesFor nixpkgs).reallySafeMoneyRelease;
           allNixpkgs = {
             inherit
+              nixpkgs-24_11
               nixpkgs-24_05
               nixpkgs-23_11;
           };
