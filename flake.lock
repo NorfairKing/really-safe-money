@@ -19,11 +19,11 @@
     "dekking": {
       "flake": false,
       "locked": {
-        "lastModified": 1748244419,
-        "narHash": "sha256-t2vGMttCqnnUWIvqQJYRVgSYa4c3ziQBtWTnyJD49kw=",
+        "lastModified": 1748338649,
+        "narHash": "sha256-vxO8eWLCIsOFd2s+UXFxAiyJkh7gpzG6H6WKU4KaKl8=",
         "owner": "NorfairKing",
         "repo": "dekking",
-        "rev": "3a4ce90a3966e61906470ccf5d1035e5dc12a1ef",
+        "rev": "bccf2c59c22a5117bf9200c5cc0096f6695eb299",
         "type": "github"
       },
       "original": {
@@ -258,22 +258,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-23_11": {
-      "locked": {
-        "lastModified": 1720535198,
-        "narHash": "sha256-zwVvxrdIzralnSbcpghA92tWu2DV2lwv89xZc8MTrbg=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "205fd4226592cc83fd4c0885a3e4c9c400efabb5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-23.11",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-24_05": {
       "locked": {
         "lastModified": 1735563628,
@@ -453,7 +437,6 @@
         "fast-myers-diff": "fast-myers-diff",
         "horizon-advance": "horizon-advance",
         "nixpkgs": "nixpkgs_5",
-        "nixpkgs-23_11": "nixpkgs-23_11",
         "nixpkgs-24_05": "nixpkgs-24_05",
         "nixpkgs-24_11": "nixpkgs-24_11",
         "opt-env-conf": "opt-env-conf",
