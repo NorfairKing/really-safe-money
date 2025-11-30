@@ -4,3 +4,5 @@
 - ignore: { name: "Use const" }
 - ignore: { name: "Use first" }
 - ignore: { name: "Use second" }
+- ignore: { name: "Parenthesize unary negation" }
+- ignore: { name: "Functor law" }
