@@ -1,4 +1,4 @@
-resolver: lts-23.19
+resolver: lts-24.16
 packages:
 - really-safe-money
 - really-safe-money-autodocodec
