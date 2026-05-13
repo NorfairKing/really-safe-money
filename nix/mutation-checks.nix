@@ -13,6 +13,5 @@ in
     tests = [
       "really-safe-money-gen"
     ];
-    assertScore = true;
-  }).score;
+  }).check;
 }
