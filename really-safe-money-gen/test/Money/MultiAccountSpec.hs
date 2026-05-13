@@ -8,6 +8,7 @@ import Data.GenValidity.Vector ()
 import qualified Data.Map.Strict as M
 import Data.Vector (Vector)
 import Money.Account (Account (..), Rounding (..))
+import qualified Money.Account as Account
 import Money.Amount (Amount (..))
 import Money.ConversionRate (ConversionRate (..))
 import qualified Money.ConversionRate as ConversionRate
@@ -28,9 +29,29 @@ spec = do
     eqSpec @(MultiAccount Currency)
     ordSpec @(MultiAccount Currency)
 
+    it "is invalid when it contains a zero account" $
+      forAllValid $ \(currency :: Currency) ->
+        shouldBeInvalid (MultiAccount (M.singleton currency Account.zero))
+
     describe "fromAccount" $ do
       it "produces valid amounts" $ do
         producesValid2 (MultiAccount.fromAccount @Currency)
+
+      it "returns zero when given a zero account" $
+        forAllValid $ \(currency :: Currency) ->
+          MultiAccount.fromAccount currency Account.zero `shouldBe` MultiAccount.zero
+
+      it "returns a singleton when given a positive non-zero account" $
+        forAllValid $ \(currency :: Currency) ->
+          let nonZero = Positive (Amount 1)
+           in MultiAccount.fromAccount currency nonZero
+                `shouldBe` MultiAccount (M.singleton currency nonZero)
+
+      it "returns a singleton when given a negative account" $
+        forAllValid $ \(currency :: Currency) ->
+          let acc = Negative (Amount 1)
+           in MultiAccount.fromAccount currency acc
+                `shouldBe` MultiAccount (M.singleton currency acc)
 
     describe "zero" $ do
       it "is valid" $

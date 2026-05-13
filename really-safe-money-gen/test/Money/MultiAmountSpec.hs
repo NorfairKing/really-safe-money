@@ -28,6 +28,10 @@ spec = do
     eqSpec @(MultiAmount Currency)
     ordSpec @(MultiAmount Currency)
 
+    it "is invalid when it contains a zero amount" $
+      forAllValid $ \(currency :: Currency) ->
+        shouldBeInvalid (MultiAmount (M.singleton currency Amount.zero))
+
     describe "fromAmount" $ do
       it "produces valid amounts" $ do
         producesValid2 (MultiAmount.fromAmount @Currency)
@@ -91,6 +95,22 @@ spec = do
     describe "subtractAmount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAmount.subtractAmount @Currency)
+
+      it "removes the currency entry when subtracting the full amount" $
+        forAllValid $ \(currency :: Currency) ->
+          forAllValid $ \a ->
+            MultiAmount.subtractAmount (MultiAmount.fromAmount currency a) currency a
+              `shouldBe` Just MultiAmount.zero
+
+      it "keeps the currency entry when subtracting less than the full amount" $
+        forAllValid $ \(currency :: Currency) ->
+          forAllValid $ \a ->
+            case Amount.subtract a (Amount 1) of
+              Nothing -> pure () -- a is zero, fine
+              Just rest ->
+                case MultiAmount.subtractAmount (MultiAmount.fromAmount currency a) currency (Amount 1) of
+                  Nothing -> expectationFailure "Should have succeeded"
+                  Just result -> MultiAmount.lookupAmount currency result `shouldBe` rest
 
     describe "convertAll" $ do
       it "produces the right result in this example" $ do

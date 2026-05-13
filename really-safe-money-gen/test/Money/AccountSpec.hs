@@ -56,6 +56,21 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       forAllValid $ \account ->
         Account.fromMinimalQuantisations (Account.toMinimalQuantisations account) `shouldBe` Just account
 
+    it "returns a Positive result for 0" $
+      case Account.fromMinimalQuantisations 0 of
+        Just (Positive _) -> pure ()
+        other -> expectationFailure $ "Expected Just (Positive _), got: " <> show other
+
+    it "returns a Positive result for positive values" $
+      case Account.fromMinimalQuantisations 1 of
+        Just (Positive (Amount 1)) -> pure ()
+        other -> expectationFailure $ "Expected Just (Positive (Amount 1)), got: " <> show other
+
+    it "returns a Negative result for negative values" $
+      case Account.fromMinimalQuantisations (-1) of
+        Just (Negative (Amount 1)) -> pure ()
+        other -> expectationFailure $ "Expected Just (Negative (Amount 1)), got: " <> show other
+
   describe "fromAmount" $ do
     it "produces valid accounts" $
       producesValid Account.fromAmount

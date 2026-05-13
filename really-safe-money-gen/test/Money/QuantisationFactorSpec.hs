@@ -17,6 +17,9 @@ spec :: Spec
 spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   genValidSpec @QuantisationFactor
 
+  it "is invalid when the quantisation factor is zero" $
+    shouldBeInvalid (QuantisationFactor 0)
+
   describe "fromWord32" $
     it "produces valid quantisation factors" $
       producesValid QuantisationFactor.fromWord32
@@ -63,6 +66,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         forAllValid $ \mSign ->
           forAllValid $ \a ->
             fromDecimalLiteral (DecimalLiteral mSign (succ (succ a)) 0) `shouldBe` Nothing
+
+      it "succeeds on a valid quantisation factor decimal literal (e.g. 0.05 -> QuantisationFactor 20)" $
+        fromDecimalLiteral (DecimalLiteral Nothing 5 2) `shouldBe` Just (QuantisationFactor 20)
 
     describe "toDecimalLiteral" $ do
       it "produces valid literals" $

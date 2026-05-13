@@ -16,6 +16,9 @@ spec :: Spec
 spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   genValidSpec @ConversionRate
 
+  it "is invalid when the rate is zero" $
+    shouldBeInvalid (ConversionRate 0)
+
   describe "Ratio" $ do
     describe "toRatio" $ do
       it "produces valid ratios" $
@@ -51,6 +54,13 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
           case toDecimalLiteral cr of
             Nothing -> pure () -- Fine
             Just dl -> fromDecimalLiteral dl `shouldBe` Just cr
+
+  describe "oneToOne" $ do
+    it "is valid" $
+      shouldBeValid ConversionRate.oneToOne
+
+    it "converts without changing the amount" $
+      ConversionRate.toRational ConversionRate.oneToOne `shouldBe` 1
 
   describe "invert" $
     it "produces valid rates" $

@@ -332,6 +332,16 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       Amount.subtract (Amount 0) (Amount maxBound)
         `shouldBe` Nothing
 
+    it "succeeds for x - x = 0" $
+      forAllValid $ \a ->
+        Amount.subtract a a `shouldBe` Just Amount.zero
+
+    it "succeeds for (x+1) - x = 1" $
+      forAllValid $ \a ->
+        case Amount.add a (Amount 1) of
+          Nothing -> pure () -- Fine
+          Just a' -> Amount.subtract a' a `shouldBe` Just (Amount 1)
+
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 -> do
@@ -398,6 +408,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     genValidSpec @Amount.AmountDistribution
     eqSpec @Amount.AmountDistribution
     showReadSpec @Amount.AmountDistribution
+
+    it "produces unequal chunks where the larger is strictly greater than the smaller" $
+      forAllValid $ \a ->
+        forAllValid $ \f ->
+          case Amount.distribute a f of
+            DistributedIntoUnequalChunks _ larger _ smaller ->
+              larger `shouldSatisfy` (> smaller)
+            _ -> pure () -- Fine
+    it "is invalid when the larger chunk is not larger" $
+      shouldBeInvalid (DistributedIntoUnequalChunks 1 (Amount 1) 1 (Amount 1) :: Amount.AmountDistribution)
+
+    it "is invalid when the so-called larger chunk is smaller" $
+      shouldBeInvalid (DistributedIntoUnequalChunks 1 (Amount 1) 1 (Amount 2) :: Amount.AmountDistribution)
 
     it "correctly distributes 3 into 3" $
       Amount.distribute (Amount 3) 3 `shouldBe` Amount.DistributedIntoEqualChunks 3 (Amount 1)
