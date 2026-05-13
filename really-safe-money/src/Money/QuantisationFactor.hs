@@ -34,11 +34,8 @@ newtype QuantisationFactor = QuantisationFactor {unQuantisationFactor :: Word32}
   deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance Validity QuantisationFactor where
-  validate qf@(QuantisationFactor w) =
-    mconcat
-      [ genericValidate qf,
-        declare "The quantisation factor is not zero" $ w /= 0
-      ]
+  validate (QuantisationFactor w) =
+    declare "The quantisation factor is not zero" $ w /= 0
 
 instance NFData QuantisationFactor
 
@@ -84,15 +81,11 @@ fromDecimalLiteral :: DecimalLiteral -> Maybe QuantisationFactor
 fromDecimalLiteral dl = do
   irat <-
     let r = DecimalLiteral.toRational dl
-     in if numerator r == 0
+     in if r <= 0
           then Nothing
           else pure r
 
-  rat <-
-    let r = 1 / irat
-     in if r < 0
-          then Nothing
-          else Just r
+  let rat = 1 / irat
 
   fac <-
     if denominator rat == 1
