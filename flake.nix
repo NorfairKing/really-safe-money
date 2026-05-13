@@ -78,6 +78,23 @@
           backwardCompatibilityChecks = pkgs.lib.mapAttrs (_: nixpkgs: backwardCompatibilityCheckFor nixpkgs) allNixpkgs;
         in
         backwardCompatibilityChecks // {
+          mutation = haskellPackages.sydtest.mutationCheck {
+            name = "really-safe-money";
+            libraries = [
+              "really-safe-money"
+              "really-safe-money-autodocodec"
+            ];
+            tests = [
+              "really-safe-money-autodocodec-gen"
+              "really-safe-money-gen"
+            ];
+            # really-safe-money-gen's benchmark inlines code from the
+            # instrumented really-safe-money library, so its bench executable
+            # needs sydtest-mutation-runtime on its link line.
+            needToBeLinkedAgainstMutationRuntime = [
+              "really-safe-money-gen"
+            ];
+          };
           forwardCompatibility = horizonPkgs.reallySafeMoneyRelease;
           shell = self.devShells.${system}.default;
           coverage-report = haskellPackages.dekking.makeCoverageReport {
@@ -87,6 +104,7 @@
               "really-safe-money-autodocodec"
             ];
             coverage = [
+              "really-safe-money-autodocodec-gen"
               "really-safe-money-gen"
             ];
           };

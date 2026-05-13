@@ -365,9 +365,10 @@ setMinimumDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
 setMinimumDigits wantedDigits dl =
   let currentDigits :: Word8
       currentDigits = digits dl
-   in if wantedDigits <= currentDigits
-        then dl
-        else increaseDigits (wantedDigits - currentDigits) dl
+   in case compare wantedDigits currentDigits of
+        GT -> increaseDigits (wantedDigits - currentDigits) dl
+        EQ -> dl
+        LT -> dl
   where
     increaseDigits :: Word8 -> DecimalLiteral -> DecimalLiteral
     increaseDigits 0 = id

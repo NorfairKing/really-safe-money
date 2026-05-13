@@ -1,18 +1,33 @@
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Numeric.DecimalLiteralSpec (spec) where
 
+import Control.Exception
+import Data.Ratio
 import GHC.Stack
 import Money.Account.Gen ()
 import Numeric.DecimalLiteral as DecimalLiteral
 import Numeric.DecimalLiteral.Gen ()
+import Numeric.Natural
 import Test.Syd
 import Test.Syd.Validity
 
 spec :: Spec
 spec = do
   genValidSpec @DecimalLiteral
+  describe "IsString" $ do
+    it "parses a valid literal via OverloadedStrings" $
+      ("1.5" :: DecimalLiteral) `shouldBe` DecimalLiteral Nothing 15 1
+
+    it "throws an informative error for an invalid string literal" $ do
+      result <- try (evaluate ("1E1" :: DecimalLiteral))
+      case result of
+        Left (err :: SomeException) -> show err `shouldContain` "Invalid DecimalLiteral"
+        Right _ -> expectationFailure "Should have thrown an exception"
+
   describe "examples" $ do
     exampleSpec "1" (DecimalLiteral Nothing 1 0)
     exampleSpec "+2" (DecimalLiteral (Just True) 2 0)
@@ -37,9 +52,21 @@ spec = do
       forAllValid $ \s ->
         DecimalLiteral.fromStringM s `shouldBe` DecimalLiteral.fromString s
 
+    it "succeeds when fromString succeeds" $
+      DecimalLiteral.fromStringM "1.5" `shouldBe` Just (DecimalLiteral Nothing 15 1)
+
+    it "fails when fromString fails" $
+      (DecimalLiteral.fromStringM "1E1" :: Maybe DecimalLiteral) `shouldBe` Nothing
+
   describe "DecimalLiteral.fromString" $ do
     it "fails to parse scientific notation" $
       DecimalLiteral.fromString "1E1" `shouldBe` Nothing
+
+    it "parses an integer followed by non-digit characters (stops at the non-digit)" $
+      DecimalLiteral.fromString "5" `shouldBe` Just (DecimalLiteral Nothing 5 0)
+
+    it "parses a decimal number with a fractional part" $
+      DecimalLiteral.fromString "0.8" `shouldBe` Just (DecimalLiteral Nothing 8 1)
 
     it "can parse any rendered decimal literal" $
       forAllValid $ \decimalLiteral -> do
@@ -67,6 +94,12 @@ spec = do
       it "renders to valid words" $
         producesValid DecimalLiteral.toWord
 
+      it "fails on a value exceeding maxBound Word" $
+        DecimalLiteral.toWord (DecimalLiteral Nothing (fromIntegral (maxBound :: Word) + 1) 0) `shouldBe` Nothing
+
+      it "succeeds on maxBound Word" $
+        DecimalLiteral.toWord (DecimalLiteral Nothing (fromIntegral (maxBound :: Word)) 0) `shouldBe` Just maxBound
+
     describe "fromWord" $ do
       it "renders to valid decimal literals" $
         producesValid DecimalLiteral.fromWord
@@ -85,6 +118,15 @@ spec = do
       it "renders to valid decimal literals" $
         producesValid DecimalLiteral.fromInteger
 
+      it "represents 0 without a negative sign" $
+        DecimalLiteral.fromInteger 0 `shouldBe` DecimalLiteral Nothing 0 0
+
+      it "represents positive integers with no sign" $
+        DecimalLiteral.fromInteger 5 `shouldBe` DecimalLiteral Nothing 5 0
+
+      it "represents negative integers with Just False sign" $
+        DecimalLiteral.fromInteger (-3) `shouldBe` DecimalLiteral (Just False) 3 0
+
       it "can parse any rendered literal" $
         forAllValid $ \int -> do
           let dl = DecimalLiteral.fromInteger int
@@ -94,6 +136,21 @@ spec = do
     describe "toInt" $ do
       it "renders to valid words" $
         producesValid DecimalLiteral.toInt
+
+      it "fails on a value exceeding maxBound Int" $
+        -- maxBound Int is 2^63-1, so 2^63 exceeds it
+        DecimalLiteral.toInt (DecimalLiteral Nothing (2 ^ (63 :: Int)) 0) `shouldBe` Nothing
+
+      it "fails on a value below minBound Int" $
+        -- minBound Int is -(2^63), so -(2^63+1) is below it
+        DecimalLiteral.toInt (DecimalLiteral (Just False) (2 ^ (63 :: Int) + 1) 0) `shouldBe` Nothing
+
+      it "succeeds on maxBound Int" $
+        DecimalLiteral.toInt (DecimalLiteral (Just True) (fromIntegral (maxBound :: Int)) 0) `shouldBe` Just maxBound
+
+      it "succeeds on minBound Int" $
+        -- minBound Int is -(2^63), represented as sign=False, mantissa=2^63
+        DecimalLiteral.toInt (DecimalLiteral (Just False) (2 ^ (63 :: Int)) 0) `shouldBe` Just minBound
 
     describe "fromInt" $ do
       it "renders to valid decimal literals" $
@@ -133,6 +190,21 @@ spec = do
       it "renders to valid decimal literals" $
         producesValid DecimalLiteral.fromRational
 
+      it "renders 0 as a non-negative literal" $
+        case DecimalLiteral.fromRational 0 of
+          Nothing -> expectationFailure "Should have parsed 0"
+          Just dl -> dl `shouldSatisfy` (\(DecimalLiteral mS _ _) -> mS /= Just False)
+
+      it "renders -1 with a negative sign" $
+        case DecimalLiteral.fromRational (-1) of
+          Nothing -> expectationFailure "Should have parsed -1"
+          Just dl -> dl `shouldSatisfy` (\(DecimalLiteral mS _ _) -> mS == Just False)
+
+      it "renders -3 with a negative sign" $
+        case DecimalLiteral.fromRational (-3) of
+          Nothing -> expectationFailure "Should have parsed -3"
+          Just dl -> dl `shouldSatisfy` (\(DecimalLiteral mS _ _) -> mS == Just False)
+
       it "can parse any rendered rational" $
         forAllValid $ \decimalLiteral -> do
           let r = DecimalLiteral.toRational decimalLiteral
@@ -147,9 +219,19 @@ spec = do
       it "renders to valid rationals" $
         producesValid DecimalLiteral.toRatio
 
+      it "gives 1 % 10 for DecimalLiteral Nothing 1 1" $
+        DecimalLiteral.toRatio (DecimalLiteral Nothing 1 1) `shouldBe` Just (1 % 10)
+
+      it "gives Nothing for a negative literal" $
+        DecimalLiteral.toRatio (DecimalLiteral (Just False) 3 1) `shouldBe` Nothing
+
     describe "fromRatio" $ do
       it "renders to valid decimal literals" $
         producesValid DecimalLiteral.fromRatio
+
+      it "fails at the 256-digit limit (1 / 2^256 needs 256 fractional digits)" $
+        DecimalLiteral.fromRatio (1 % ((2 :: Natural) ^ (256 :: Int)))
+          `shouldBe` Nothing
 
       it "can parse any rendered rational" $
         forAllValid $ \decimalLiteral -> do
@@ -162,9 +244,18 @@ spec = do
                   context (show actual) $
                     DecimalLiteral.toRatio actual `shouldBe` DecimalLiteral.toRatio decimalLiteral
 
-  describe "setSignRequired" $
+  describe "setSignRequired" $ do
     it "produces valid values" $
       producesValid setSignRequired
+
+    it "turns a Nothing sign into Just True (positive)" $
+      setSignRequired (DecimalLiteral Nothing 5 0) `shouldBe` DecimalLiteral (Just True) 5 0
+
+    it "does not change an existing positive sign" $
+      setSignRequired (DecimalLiteral (Just True) 5 0) `shouldBe` DecimalLiteral (Just True) 5 0
+
+    it "does not change an existing negative sign" $
+      setSignRequired (DecimalLiteral (Just False) 5 0) `shouldBe` DecimalLiteral (Just False) 5 0
 
   describe "setSignOptional" $
     it "produces valid values" $

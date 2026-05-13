@@ -1,16 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Money.CodecSpec (spec) where
 
-import Autodocodec
-import Autodocodec.Yaml
-import Control.DeepSeq
-import Control.Exception
 import Data.Aeson.Types as JSON
 import Data.Typeable
-import GHC.Stack
 import Money.Account (Account (..))
 import Money.Account.Codec as Account
 import Money.Account.Gen ()
@@ -23,12 +17,12 @@ import Money.Amount.Gen ()
 import Money.AmountOf (AmountOf (..))
 import Money.AmountOf.Codec as AmountOf
 import Money.AmountOf.Gen ()
+import Money.Autodocodec.Gen
 import Money.Currency (IsCurrencyType (..))
 import Money.QuantisationFactor (QuantisationFactor (..))
 import Money.QuantisationFactor.Codec as QuantisationFactor
 import Money.QuantisationFactor.Gen ()
 import Test.Syd
-import Test.Syd.Validity
 
 spec :: Spec
 spec = do
@@ -41,8 +35,12 @@ spec = do
   describe "Amount" $ do
     codecSpec @Amount "amount" "string" Amount.codecViaString
     parseFailSpec Amount.codecViaString (String "0.1")
+    parseFailMessageSpec @Amount Amount.codecViaString (String "0.1") "Error in $: Could not read string as an Amount: 0.1"
     parseFailSpec Amount.codecViaString (String "-1")
+    parseFailMessageSpec @Amount Amount.codecViaString (String "-1") "Error in $: Negative number of minimal quantisations: -1"
     parseFailSpec Amount.codecViaString (String "18446744073709551617")
+    parseFailMessageSpec @Amount Amount.codecViaString (String "18446744073709551616") "Error in $: Number of minimal quantisations is too big: 18446744073709551616"
+    parseSuccessSpec Amount.codecViaString (String "0") (Amount 0)
     parseSuccessSpec Amount.codecViaString (String "1") (Amount 1)
     parseSuccessSpec Amount.codecViaString (String "18446744073709551615") (Amount 18446744073709551615)
 
@@ -71,6 +69,7 @@ spec = do
   describe "Account" $ do
     codecSpec @Account "account" "string" Account.codecViaString
     parseFailSpec Account.codecViaString (String "0.1")
+    parseFailMessageSpec @Account Account.codecViaString (String "0.1") "Error in $: Could not read string as an Account: 0.1"
     parseFailSpec Account.codecViaString (String "18446744073709551617")
     parseFailSpec Account.codecViaString (String "-18446744073709551617")
     parseSuccessSpec Account.codecViaString (String "-18446744073709551615") (Negative (Amount 18446744073709551615))
@@ -110,60 +109,3 @@ data USD
 
 instance IsCurrencyType USD where
   quantisationFactor Proxy = QuantisationFactor 100
-
-codecSpec ::
-  forall a.
-  (Show a, Eq a, GenValid a) =>
-  String ->
-  String ->
-  JSONCodec a ->
-  Spec
-codecSpec name dir c = describe name $ do
-  it "has the same schema as before" $
-    pureGoldenTextFile (concat ["test_resources/", name, "/", dir, ".txt"]) (renderColouredSchemaVia c)
-
-  it "never fails to encode" $
-    forAllValid $ \a -> do
-      val <- evaluate (force (toJSONVia c a))
-      shouldBeValid val
-
-  it "roundtrips to json" $
-    forAllValid $ \a ->
-      let encoded = toJSONVia c a
-          errOrDecoded = JSON.parseEither (parseJSONVia c) encoded
-       in case errOrDecoded of
-            Left err ->
-              expectationFailure $
-                unlines
-                  [ "Decoding failed with error",
-                    err,
-                    "instead of decoding to",
-                    show a,
-                    "'encode' encoded it to the json",
-                    show encoded
-                  ]
-            Right decoded ->
-              let ctx =
-                    unlines
-                      [ "Decoding succeeded, but the decoded value",
-                        show decoded,
-                        "differs from expected decoded value",
-                        show a,
-                        "'encode' encoded it to the json",
-                        show encoded
-                      ]
-               in context ctx $ decoded `shouldBe` a
-
-parseSuccessSpec :: (HasCallStack) => (Show a, Eq a) => JSONCodec a -> JSON.Value -> a -> Spec
-parseSuccessSpec c v expected = withFrozenCallStack $
-  it (unwords ["fails to parse", show v]) $
-    case JSON.parseEither (parseJSONVia c) v of
-      Left err -> expectationFailure $ unlines ["Failed to parse:", err]
-      Right actual -> actual `shouldBe` expected
-
-parseFailSpec :: (HasCallStack) => (Show a) => JSONCodec a -> JSON.Value -> Spec
-parseFailSpec c v = withFrozenCallStack $
-  it (unwords ["fails to parse", show v]) $
-    case JSON.parseEither (parseJSONVia c) v of
-      Left _ -> pure ()
-      Right a -> expectationFailure $ unlines ["Should have failed to decode, but got", ppShow a]

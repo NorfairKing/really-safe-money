@@ -9,6 +9,7 @@ import Data.GenValidity.Vector ()
 import Data.Ratio
 import Data.Vector (Vector)
 import qualified Data.Vector as V
+import Data.Word (Word64)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Money.Account (Account (..), Distribution (..), Rounding (..))
 import qualified Money.Account as Account
@@ -56,6 +57,27 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       forAllValid $ \account ->
         Account.fromMinimalQuantisations (Account.toMinimalQuantisations account) `shouldBe` Just account
 
+    it "returns a Positive result for 0" $
+      case Account.fromMinimalQuantisations 0 of
+        Just (Positive _) -> pure ()
+        other -> expectationFailure $ "Expected Just (Positive _), got: " <> show other
+
+    it "returns a Positive result for positive values" $
+      case Account.fromMinimalQuantisations 1 of
+        Just (Positive (Amount 1)) -> pure ()
+        other -> expectationFailure $ "Expected Just (Positive (Amount 1)), got: " <> show other
+
+    it "returns a Negative result for negative values" $
+      case Account.fromMinimalQuantisations (-1) of
+        Just (Negative (Amount 1)) -> pure ()
+        other -> expectationFailure $ "Expected Just (Negative (Amount 1)), got: " <> show other
+
+    it "fails for values exceeding maxBound Word64" $
+      Account.fromMinimalQuantisations (toInteger (maxBound :: Word64) + 1) `shouldBe` Nothing
+
+    it "fails for values below minBound Word64 negated" $
+      Account.fromMinimalQuantisations (negate (toInteger (maxBound :: Word64)) - 1) `shouldBe` Nothing
+
   describe "fromAmount" $ do
     it "produces valid accounts" $
       producesValid Account.fromAmount
@@ -72,6 +94,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "fromRational" $ do
     it "produces valid rational" $
       producesValid2 Account.fromRational
+
+    it "represents 0 with a Positive sign" $
+      forAllValid $ \quantisationFactor ->
+        case Account.fromRational quantisationFactor 0 of
+          Just (Positive _) -> pure ()
+          other -> expectationFailure $ "Expected Just (Positive _), got: " <> show other
 
     it "roundtrips with toRational" $
       forAllValid $ \quantisationFactor ->
@@ -108,6 +136,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "fromDouble" $ do
     it "produces valid rational" $
       producesValid2 Account.fromDouble
+
+    it "represents 0 with a Positive sign" $
+      forAllValid $ \quantisationFactor ->
+        case Account.fromDouble quantisationFactor 0 of
+          Just (Positive _) -> pure ()
+          other -> expectationFailure $ "Expected Just (Positive _), got: " <> show other
 
     it "roundtrips with toDouble back to double" $
       forAllValid $ \quantisationFactor ->
@@ -372,6 +406,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       Account.fraction RoundNearest (Positive (Amount 101)) (1 % 100)
         `shouldBe` (Just (Positive (Amount 1)), 1 % 101)
 
+    it "preserves the Positive sign when fractioning a positive account by zero" $
+      case Account.fraction RoundNearest (Positive (Amount 5)) 0 of
+        (Just (Positive _), _) -> pure ()
+        other -> expectationFailure $ "Expected Just (Positive _), got: " <> show other
+
     it "produces valid amounts" $
       producesValid3 Account.fraction
 
@@ -453,6 +492,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "fractionRatio" $ do
     it "produces valid amounts" $
       producesValid3 Account.fractionRatio
+
+    it "returns zero when the account is zero" $
+      forAllValid $ \rounding ->
+        forAllValid $ \af ->
+          Account.fractionRatio rounding Account.zero af
+            `shouldBe` (Just Account.zero, af)
 
   describe "format" $ do
     it "produces valid strings" $

@@ -440,6 +440,16 @@ multiply factor account =
 --
 -- >>> distribute (Positive (Amount 11)) 3
 -- DistributedIntoUnequalChunks 2 (Positive (Amount 4)) 1 (Positive (Amount 3))
+--
+-- [check] If you change this function, re-verify that the @EQ@ branches of
+-- the @case compare a zero@ blocks below are still unreachable, so the
+-- @DisableMutation@ annotation is still justified.
+--
+-- The @EQ@ branches are unreachable: when @a == zero@, @aa = abs a = Amount 0@,
+-- and @Amount.distribute (Amount 0) _ = DistributedZero@, which is matched by
+-- an earlier arm. So the comparison is only consulted for non-zero @a@. The
+-- @RemoveCase@ mutation on the @EQ@ branches is therefore unkillable.
+{-# ANN distribute ("DisableMutation: RemoveCase" :: String) #-}
 distribute :: Account -> Word16 -> AccountDistribution
 distribute a f =
   let aa = abs a
@@ -448,13 +458,15 @@ distribute a f =
         DistributedIntoZeroChunks -> DistributedIntoZeroChunks
         DistributedZero -> DistributedZero
         DistributedIntoEqualChunks numberOfChunks chunk ->
-          if a >= zero
-            then DistributedIntoEqualChunks numberOfChunks (Positive chunk)
-            else DistributedIntoEqualChunks numberOfChunks (Negative chunk)
+          case compare a zero of
+            LT -> DistributedIntoEqualChunks numberOfChunks (Negative chunk)
+            EQ -> DistributedIntoEqualChunks numberOfChunks (Positive chunk)
+            GT -> DistributedIntoEqualChunks numberOfChunks (Positive chunk)
         DistributedIntoUnequalChunks numberOfLargerChunks largerChunk numberOfSmallerChunks smallerChunk ->
-          if a >= zero
-            then DistributedIntoUnequalChunks numberOfLargerChunks (Positive largerChunk) numberOfSmallerChunks (Positive smallerChunk)
-            else DistributedIntoUnequalChunks numberOfSmallerChunks (Negative smallerChunk) numberOfLargerChunks (Negative largerChunk)
+          case compare a zero of
+            LT -> DistributedIntoUnequalChunks numberOfSmallerChunks (Negative smallerChunk) numberOfLargerChunks (Negative largerChunk)
+            EQ -> DistributedIntoUnequalChunks numberOfLargerChunks (Positive largerChunk) numberOfSmallerChunks (Positive smallerChunk)
+            GT -> DistributedIntoUnequalChunks numberOfLargerChunks (Positive largerChunk) numberOfSmallerChunks (Positive smallerChunk)
 
 type AccountDistribution = Amount.Distribution Account
 
@@ -484,6 +496,16 @@ type AccountDistribution = Amount.Distribution Account
 --
 -- >>> fraction RoundNearest (Positive (Amount (2^63))) 3
 -- (Nothing,3 % 1)
+--
+-- [check] If you change this function, re-verify that the @EQ@ branch of
+-- the @ro = case compare f 0@ block is still unkillable, so the
+-- @DisableMutation@ annotation is still justified.
+--
+-- The @EQ@ branch is unkillable: when @f == 0@, @af == 0@, and
+-- @Amount.fraction _ _ 0 = (Just zero, 0)@ inside @fractionRatio@ — the
+-- rounding @ro@ is never consulted. So whether the @EQ@ arm produces
+-- @rounding@ or the flipped rounding produces the same observable result.
+{-# ANN fraction ("DisableMutation: RemoveCase" :: String) #-}
 fraction ::
   Rounding ->
   Account ->
@@ -491,18 +513,19 @@ fraction ::
   (Maybe Account, Rational)
 fraction rounding account f =
   let af = (realToFrac :: Rational -> Ratio Natural) ((Prelude.abs :: Rational -> Rational) f)
-      ro =
-        if f >= 0
-          then rounding
-          else case rounding of
-            RoundUp -> RoundDown
-            RoundDown -> RoundUp
-            RoundNearest -> RoundNearest
+      ro = case compare f 0 of
+        LT -> case rounding of
+          RoundUp -> RoundDown
+          RoundDown -> RoundUp
+          RoundNearest -> RoundNearest
+        EQ -> rounding
+        GT -> rounding
       (ma, ar) = fractionRatio ro account af
       r = (realToFrac :: Ratio Natural -> Rational) ar
-   in if f >= 0
-        then (ma, r)
-        else (negate <$> ma, -r)
+   in case compare f 0 of
+        LT -> (negate <$> ma, -r)
+        EQ -> (ma, r)
+        GT -> (ma, r)
 
 -- | Fractional multiplication with a positive fraction, see 'Amount.fraction' and 'Account.fraction'.
 --

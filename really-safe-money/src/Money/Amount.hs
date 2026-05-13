@@ -311,6 +311,29 @@ toRatio (QuantisationFactor quantisationFactor) a =
 --
 -- >>> fromDouble (QuantisationFactor 100) 20E62
 -- Nothing
+--
+-- [check] If you change this function, re-verify that the disabled mutations
+-- below are still unkillable, so the @DisableMutations@ annotation is still
+-- justified.
+--
+-- We disable these specific mutations because:
+--
+-- 1. The exponent > 65 guard is a performance shortcut: it short-circuits
+--    before allocating a multi-thousand-digit Natural for inputs like 10e1000.
+--    It is observationally equivalent to the maxBound check below it (any
+--    input with exponent >= 65 has ceiled >= 2^64, which the inner check
+--    rejects anyway), so the guard's > vs >= and True/False mutations are
+--    unkillable by tests.
+--
+-- 2. The @EQ@ branch of the @case compare ceiled maxBound@ is unreachable:
+--    @ceiled@ is the @ceiling@ of a @Double@, and doubles near @2^64@ have
+--    spacing @2^12 = 4096@ — none of them have a ceiling exactly equal to
+--    @maxBound :: Word64 = 2^64 - 1@. So the @RemoveCase@ mutation on that
+--    branch is unkillable.
+--
+-- Note: these ANNs target the monomorphic inner binding inside GHC's AbsBinds
+-- wrapper, which may not match.
+{-# ANN fromDouble ("DisableMutations: ConstBool, Cmp, RemoveCase" :: String) #-}
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   QuantisationFactor ->
@@ -318,17 +341,15 @@ fromDouble ::
   Maybe Amount
 fromDouble (QuantisationFactor qf) d
   | d < 0 = Nothing
+  | isNaN d = Nothing
+  | isInfinite d = Nothing
   | otherwise =
       let resultDouble :: Double
           resultDouble = d * (fromIntegral :: Word32 -> Double) qf
-       in go resultDouble
-  where
-    go resultDouble
-      | isNaN d = Nothing
-      | isInfinite d = Nothing
-      | otherwise =
-          -- Shortcut for numbers that are way too big anyway
-          -- so that we don't have to compute the according 'Natural' values.
+       in -- Short-circuit before allocating a huge Natural for inputs that
+          -- are way too large to fit in a Word64.  ceiling/floor on a
+          -- Double with exponent > 65 would produce a multi-thousand-digit
+          -- Natural before the maxBound check discards it anyway.
           if exponent resultDouble > 65
             then Nothing
             else
@@ -337,10 +358,10 @@ fromDouble (QuantisationFactor qf) d
                   floored :: Natural
                   floored = (floor :: Double -> Natural) resultDouble
                in if ceiled == floored
-                    then
-                      if ceiled > (fromIntegral :: Word64 -> Natural) (maxBound :: Word64)
-                        then Nothing
-                        else Just $ Amount (fromIntegral ceiled)
+                    then case compare ceiled ((fromIntegral :: Word64 -> Natural) (maxBound :: Word64)) of
+                      GT -> Nothing
+                      EQ -> Just $ Amount (fromIntegral ceiled)
+                      LT -> Just $ Amount (fromIntegral ceiled)
                     else Nothing
 
 -- | Turn an amount of money into a 'Double'.
@@ -597,16 +618,13 @@ data Distribution amount
     DistributedIntoUnequalChunks !Word32 !amount !Word32 !amount
   deriving (Show, Read, Eq, Generic)
 
-instance (Validity amount, Ord amount) => Validity (Distribution amount) where
+instance (Ord amount) => Validity (Distribution amount) where
   validate ad =
-    mconcat
-      [ genericValidate ad,
-        case ad of
-          DistributedIntoUnequalChunks _ a1 _ a2 ->
-            declare "The larger chunks are larger" $
-              a1 > a2
-          _ -> valid
-      ]
+    case ad of
+      DistributedIntoUnequalChunks _ a1 _ a2 ->
+        declare "The larger chunks are larger" $
+          a1 > a2
+      _ -> valid
 
 instance (NFData amount) => NFData (Distribution amount)
 

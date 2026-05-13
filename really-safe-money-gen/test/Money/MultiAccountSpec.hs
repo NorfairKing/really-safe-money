@@ -8,6 +8,7 @@ import Data.GenValidity.Vector ()
 import qualified Data.Map.Strict as M
 import Data.Vector (Vector)
 import Money.Account (Account (..), Rounding (..))
+import qualified Money.Account as Account
 import Money.Amount (Amount (..))
 import Money.ConversionRate (ConversionRate (..))
 import qualified Money.ConversionRate as ConversionRate
@@ -28,9 +29,33 @@ spec = do
     eqSpec @(MultiAccount Currency)
     ordSpec @(MultiAccount Currency)
 
+    it "is invalid when it contains a zero account" $
+      forAllValid $ \(currency :: Currency) ->
+        shouldBeInvalid (MultiAccount (M.singleton currency Account.zero))
+
+    it "is invalid when it contains a currency with a zero quantisation factor" $
+      forAllValid $ \symbol ->
+        shouldBeInvalid (MultiAccount (M.singleton (Currency symbol (QuantisationFactor 0)) (Positive (Amount 1))))
+
     describe "fromAccount" $ do
       it "produces valid amounts" $ do
         producesValid2 (MultiAccount.fromAccount @Currency)
+
+      it "returns zero when given a zero account" $
+        forAllValid $ \(currency :: Currency) ->
+          MultiAccount.fromAccount currency Account.zero `shouldBe` MultiAccount.zero
+
+      it "returns a singleton when given a positive non-zero account" $
+        forAllValid $ \(currency :: Currency) ->
+          let nonZero = Positive (Amount 1)
+           in MultiAccount.fromAccount currency nonZero
+                `shouldBe` MultiAccount (M.singleton currency nonZero)
+
+      it "returns a singleton when given a negative account" $
+        forAllValid $ \(currency :: Currency) ->
+          let acc = Negative (Amount 1)
+           in MultiAccount.fromAccount currency acc
+                `shouldBe` MultiAccount (M.singleton currency acc)
 
     describe "zero" $ do
       it "is valid" $
@@ -126,9 +151,33 @@ spec = do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.addAccount @Currency)
 
+      it "is a no-op when adding a positive zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.addAccount m cur (Positive (Amount 0))
+              `shouldBe` Just m
+
+      it "is a no-op when adding a negative zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.addAccount m cur (Negative (Amount 0))
+              `shouldBe` Just m
+
     describe "subtractAccount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.subtractAccount @Currency)
+
+      it "is a no-op when subtracting a positive zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.subtractAccount m cur (Positive (Amount 0))
+              `shouldBe` Just m
+
+      it "is a no-op when subtracting a negative zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.subtractAccount m cur (Negative (Amount 0))
+              `shouldBe` Just m
 
     describe "convertAll" $ do
       it "produces the right result in this example" $ do

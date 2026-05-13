@@ -34,11 +34,8 @@ newtype QuantisationFactor = QuantisationFactor {unQuantisationFactor :: Word32}
   deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance Validity QuantisationFactor where
-  validate qf@(QuantisationFactor w) =
-    mconcat
-      [ genericValidate qf,
-        declare "The quantisation factor is not zero" $ w /= 0
-      ]
+  validate (QuantisationFactor w) =
+    declare "The quantisation factor is not zero" $ w /= 0
 
 instance NFData QuantisationFactor
 
@@ -80,25 +77,33 @@ toDecimalLiteral (QuantisationFactor qfw) =
 -- Nothing
 -- >>> fromDecimalLiteral (DecimalLiteral (Just True) 2 2)
 -- Just (QuantisationFactor {unQuantisationFactor = 50})
+--
+-- [check] If you change this function, re-verify that the @EQ@ branch of the
+-- @case compare fac maxBound@ below is still unreachable, so the @DisableMutations@
+-- annotation is still justified.
+--
+-- The @EQ@ branch is unreachable: a decimal literal's @toRational@ has the
+-- form @m / 10^e@, so @fac = 10^e / m@ has only 2 and 5 as prime factors,
+-- but @maxBound :: Word32 = 4294967295 = 3 * 5 * 17 * 257 * 65537@. No input
+-- can hit the boundary, so we disable the @RemoveCase@ and @MaybeOp@
+-- mutations on that branch.
+{-# ANN fromDecimalLiteral ("DisableMutations: RemoveCase, MaybeOp" :: String) #-}
 fromDecimalLiteral :: DecimalLiteral -> Maybe QuantisationFactor
 fromDecimalLiteral dl = do
   irat <-
     let r = DecimalLiteral.toRational dl
-     in if numerator r == 0
+     in if r <= 0
           then Nothing
           else pure r
 
-  rat <-
-    let r = 1 / irat
-     in if r < 0
-          then Nothing
-          else Just r
+  let rat = 1 / irat
 
   fac <-
     if denominator rat == 1
       then Just (numerator rat)
       else Nothing
 
-  if fac <= fromIntegral (maxBound :: Word32)
-    then Just (QuantisationFactor (fromIntegral fac))
-    else Nothing
+  case compare fac (fromIntegral (maxBound :: Word32)) of
+    GT -> Nothing
+    EQ -> Just (QuantisationFactor (fromIntegral fac))
+    LT -> Just (QuantisationFactor (fromIntegral fac))

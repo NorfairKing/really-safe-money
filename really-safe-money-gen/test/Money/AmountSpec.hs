@@ -120,6 +120,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         let pinf = read "Infinity"
          in Amount.fromDouble quantisationFactor pinf `shouldBe` Nothing
 
+    it "fails on a value way too large (10e1000)" $
+      forAllValid $ \quantisationFactor ->
+        Amount.fromDouble quantisationFactor 10e1000 `shouldBe` Nothing
+
     it "fails on -Infinity" $
       forAllValid $ \quantisationFactor ->
         let minf = read "-Infinity"
@@ -307,6 +311,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "correctly sums [1,2,3] to 6" $
       Amount.sum [Amount 1, Amount 2, Amount 3] `shouldBe` Just (Amount 6)
 
+    it "succeeds at exactly maxBound" $
+      Amount.sum [Amount maxBound, Amount 0] `shouldBe` Just (Amount maxBound)
+
     it "fails to sum above maxBound" $
       Amount.sum [Amount maxBound, Amount 1, Amount 2] `shouldBe` Nothing
 
@@ -331,6 +338,16 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "fails for 0 - maxBound" $
       Amount.subtract (Amount 0) (Amount maxBound)
         `shouldBe` Nothing
+
+    it "succeeds for x - x = 0" $
+      forAllValid $ \a ->
+        Amount.subtract a a `shouldBe` Just Amount.zero
+
+    it "succeeds for (x+1) - x = 1" $
+      forAllValid $ \a ->
+        case Amount.add a (Amount 1) of
+          Nothing -> pure () -- Fine
+          Just a' -> Amount.subtract a' a `shouldBe` Just (Amount 1)
 
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
@@ -399,6 +416,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     eqSpec @Amount.AmountDistribution
     showReadSpec @Amount.AmountDistribution
 
+    it "produces unequal chunks where the larger is strictly greater than the smaller" $
+      forAllValid $ \a ->
+        forAllValid $ \f ->
+          case Amount.distribute a f of
+            DistributedIntoUnequalChunks _ larger _ smaller ->
+              larger `shouldSatisfy` (> smaller)
+            _ -> pure () -- Fine
+    it "is invalid when the larger chunk is not larger" $
+      shouldBeInvalid (DistributedIntoUnequalChunks 1 (Amount 1) 1 (Amount 1) :: Amount.AmountDistribution)
+
+    it "is invalid when the so-called larger chunk is smaller" $
+      shouldBeInvalid (DistributedIntoUnequalChunks 1 (Amount 1) 1 (Amount 2) :: Amount.AmountDistribution)
+
     it "correctly distributes 3 into 3" $
       Amount.distribute (Amount 3) 3 `shouldBe` Amount.DistributedIntoEqualChunks 3 (Amount 1)
 
@@ -448,6 +478,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "Correctly fractions 101 with 1 % 100" $
       Amount.fraction RoundNearest (Amount 101) (1 % 100)
         `shouldBe` (Just (Amount 1), 1 % 101)
+
+    it "returns zero when the fraction is zero" $
+      forAllValid $ \rounding ->
+        forAllValid $ \a ->
+          Amount.fraction rounding a 0 `shouldBe` (Just Amount.zero, 0)
 
     it "produces valid amounts" $
       producesValid3 Amount.fraction
@@ -527,6 +562,13 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
             forAllValid $ \cr ->
               forAllValid $ \qf2 ->
                 shouldBeValid $ Amount.convert r qf1 a cr qf2
+
+  describe "validateStrictlyPositive" $ do
+    it "succeeds for Amount 1" $
+      validationIsValid (Amount.validateStrictlyPositive (Amount 1)) `shouldBe` True
+
+    it "fails for zero" $
+      validationIsValid (Amount.validateStrictlyPositive Amount.zero) `shouldBe` False
 
   describe "format" $ do
     it "formats 1 correctly with quantisation factor 1" $

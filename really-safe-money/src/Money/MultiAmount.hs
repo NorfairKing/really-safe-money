@@ -102,10 +102,7 @@ addAmount (MultiAmount m) currency amount =
     Nothing -> Just $ M.insert currency amount m
     Just a -> do
       r <- Amount.add a amount
-      Just $
-        if r == Amount.zero
-          then M.delete currency m
-          else M.insert currency r m
+      Just $ M.insert currency r m
 
 -- | Subtract an 'Amount' from a 'MultiAmount'
 subtractAmount :: (Ord currency) => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)

@@ -1,8 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 
-module Numeric.DecimalLiteral.CodecSpec (spec) where
+module Money.Autodocodec.Gen
+  ( codecSpec,
+    parseSuccessSpec,
+    parseFailSpec,
+    parseFailMessageSpec,
+  )
+where
 
 import Autodocodec
 import Autodocodec.Yaml
@@ -10,21 +15,8 @@ import Control.DeepSeq
 import Control.Exception
 import Data.Aeson.Types as JSON
 import GHC.Stack
-import Numeric.DecimalLiteral (DecimalLiteral (..))
-import Numeric.DecimalLiteral.Codec as DecimalLiteral
-import Numeric.DecimalLiteral.Gen ()
 import Test.Syd
 import Test.Syd.Validity
-
-spec :: Spec
-spec = do
-  -- 2^64 is 18446744073709551616
-  describe "DecimalLiteral" $ do
-    codecSpec @DecimalLiteral "decimal-literal" "string" DecimalLiteral.codecViaString
-    parseFailSpec DecimalLiteral.codecViaString (String "three")
-    parseFailSpec DecimalLiteral.codecViaString (String "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-    parseSuccessSpec DecimalLiteral.codecViaString (String "1") (DecimalLiteral Nothing 1 0)
-    parseSuccessSpec DecimalLiteral.codecViaString (String "18446744073709551617") (DecimalLiteral Nothing 18446744073709551617 0)
 
 codecSpec ::
   forall a.
@@ -82,3 +74,11 @@ parseFailSpec c v = withFrozenCallStack $
     case JSON.parseEither (parseJSONVia c) v of
       Left _ -> pure ()
       Right a -> expectationFailure $ unlines ["Should have failed to decode, but got", ppShow a]
+
+parseFailMessageSpec :: forall a. (HasCallStack, Show a) => JSONCodec a -> JSON.Value -> String -> Spec
+parseFailMessageSpec c v expectedErr =
+  withFrozenCallStack $
+    it (unwords ["fails to parse", show v, "with the expected error message"]) $
+      case JSON.parseEither (parseJSONVia c) v :: Either String a of
+        Left err -> err `shouldBe` expectedErr
+        Right a -> expectationFailure $ unlines ["Should have failed to decode, but got", ppShow a]

@@ -28,6 +28,14 @@ spec = do
     eqSpec @(MultiAmount Currency)
     ordSpec @(MultiAmount Currency)
 
+    it "is invalid when it contains a zero amount" $
+      forAllValid $ \(currency :: Currency) ->
+        shouldBeInvalid (MultiAmount (M.singleton currency Amount.zero))
+
+    it "is invalid when it contains a currency with a zero quantisation factor" $
+      forAllValid $ \symbol ->
+        shouldBeInvalid (MultiAmount (M.singleton (Currency symbol (QuantisationFactor 0)) (Amount 1)))
+
     describe "fromAmount" $ do
       it "produces valid amounts" $ do
         producesValid2 (MultiAmount.fromAmount @Currency)
@@ -88,11 +96,49 @@ spec = do
       it "produces valid amounts" $
         producesValid3 (MultiAmount.addAmount @Currency)
 
+      it "keeps the currency entry after adding to an existing non-zero amount" $
+        forAllValid $ \(currency :: Currency) ->
+          forAllValid $ \a1 ->
+            forAllValid $ \a2 ->
+              if a1 == Amount.zero
+                then pure () -- Would be an invalid input MultiAmount, fine
+                else case Amount.add a1 a2 of
+                  Nothing -> pure () -- Overflow, fine
+                  Just summed ->
+                    case MultiAmount.addAmount (MultiAmount (M.singleton currency a1)) currency a2 of
+                      Nothing -> expectationFailure "addAmount should have succeeded"
+                      Just result -> result `shouldBe` MultiAmount (M.singleton currency summed)
+
     describe "subtractAmount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAmount.subtractAmount @Currency)
 
+      it "removes the currency entry when subtracting the full amount" $
+        forAllValid $ \(currency :: Currency) ->
+          forAllValid $ \a ->
+            MultiAmount.subtractAmount (MultiAmount.fromAmount currency a) currency a
+              `shouldBe` Just MultiAmount.zero
+
+      it "keeps the currency entry when subtracting less than the full amount" $
+        forAllValid $ \(currency :: Currency) ->
+          forAllValid $ \a ->
+            case Amount.subtract a (Amount 1) of
+              Nothing -> pure () -- a is zero, fine
+              Just rest ->
+                case MultiAmount.subtractAmount (MultiAmount.fromAmount currency a) currency (Amount 1) of
+                  Nothing -> expectationFailure "Should have succeeded"
+                  Just result -> MultiAmount.lookupAmount currency result `shouldBe` rest
+
     describe "convertAll" $ do
+      it "succeeds when the converted total equals exactly maxBound" $
+        forAllValid $ \rounding -> do
+          let qf = QuantisationFactor 1
+              cur = Currency "USD" qf
+              ma = MultiAmount (M.singleton cur (Amount maxBound))
+              func _ = (ConversionRate.oneToOne, qf)
+              (mResult, _) = MultiAmount.convertAll rounding qf func ma
+          mResult `shouldBe` Just (Amount maxBound)
+
       it "produces the right result in this example" $ do
         forAllValid $ \rounding -> do
           let qfEur = QuantisationFactor 100

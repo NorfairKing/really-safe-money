@@ -3,9 +3,6 @@ version: 0.0.0.0
 github: "NorfairKing/really-safe-money"
 license: AllRightsReserved
 
-extra-source-files:
-- test_resources/**/*
-
 dependencies:
 - base >= 4.7 && < 5
 
@@ -16,34 +13,14 @@ library:
   - really-safe-money
 
 tests:
-  really-safe-money-autodocodec-test:
-    main: Spec.hs
-    build-tools: sydtest-discover
-    source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - aeson
-    - autodocodec
-    - autodocodec-yaml
-    - deepseq
-    - genvalidity-sydtest
-    - really-safe-money
-    - really-safe-money-autodocodec
-    - really-safe-money-gen
-    - sydtest
-
   really-safe-money-autodocodec-doctest:
     main: DocTest.hs
     source-dirs: doctest/
-    ghc-options:              
-    - -main-is DocTest     
-    - -threaded                            
-    - -rtsopts                                
+    ghc-options:
+    - -main-is DocTest
+    - -threaded
+    - -rtsopts
     - -with-rtsopts=-N
-    - -Wall        
+    - -Wall
     dependencies:
-    - doctest 
-
+    - doctest
