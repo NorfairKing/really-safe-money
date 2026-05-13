@@ -21,7 +21,7 @@
     safe-coloured-text.flake = false;
     fast-myers-diff.url = "github:NorfairKing/fast-myers-diff";
     fast-myers-diff.flake = false;
-    sydtest.url = "github:NorfairKing/sydtest";
+    sydtest.url = "github:NorfairKing/sydtest?ref=multi-suite-mutation-testing";
     sydtest.flake = false;
     opt-env-conf.url = "github:NorfairKing/opt-env-conf";
     opt-env-conf.flake = false;
@@ -77,7 +77,8 @@
           };
           backwardCompatibilityChecks = pkgs.lib.mapAttrs (_: nixpkgs: backwardCompatibilityCheckFor nixpkgs) allNixpkgs;
         in
-        backwardCompatibilityChecks // {
+        backwardCompatibilityChecks //
+        (pkgs.callPackage ./nix/mutation-checks.nix { inherit haskellPackages pkgs; }) // {
           forwardCompatibility = horizonPkgs.reallySafeMoneyRelease;
           shell = self.devShells.${system}.default;
           coverage-report = haskellPackages.dekking.makeCoverageReport {
