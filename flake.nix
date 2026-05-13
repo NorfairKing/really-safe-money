@@ -77,8 +77,17 @@
           };
           backwardCompatibilityChecks = pkgs.lib.mapAttrs (_: nixpkgs: backwardCompatibilityCheckFor nixpkgs) allNixpkgs;
         in
-        backwardCompatibilityChecks //
-        (pkgs.callPackage ./nix/mutation-checks.nix { inherit haskellPackages; }) // {
+        backwardCompatibilityChecks // {
+          mutation = (haskellPackages.sydtest.mutationCheck {
+            name = "really-safe-money";
+            libraries = [
+              "really-safe-money"
+              "really-safe-money-autodocodec"
+            ];
+            tests = [
+              "really-safe-money-gen"
+            ];
+          }).check;
           forwardCompatibility = horizonPkgs.reallySafeMoneyRelease;
           shell = self.devShells.${system}.default;
           coverage-report = haskellPackages.dekking.makeCoverageReport {
