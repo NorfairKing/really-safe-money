@@ -78,7 +78,7 @@
           backwardCompatibilityChecks = pkgs.lib.mapAttrs (_: nixpkgs: backwardCompatibilityCheckFor nixpkgs) allNixpkgs;
         in
         backwardCompatibilityChecks //
-        (pkgs.callPackage ./nix/mutation-checks.nix { inherit haskellPackages pkgs; }) // {
+        (pkgs.callPackage ./nix/mutation-checks.nix { inherit haskellPackages; }) // {
           forwardCompatibility = horizonPkgs.reallySafeMoneyRelease;
           shell = self.devShells.${system}.default;
           coverage-report = haskellPackages.dekking.makeCoverageReport {

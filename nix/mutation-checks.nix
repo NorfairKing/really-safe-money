@@ -1,9 +1,10 @@
-{ haskellPackages, pkgs }:
+{ haskellPackages }:
 
 let
-  mutationCheck = pkgs.callPackage ./mutationCheck.nix { inherit haskellPackages; };
-  assertMutationScore = haskellPackages.sydtest.assertMutationScore;
-  reallySafeMoneyReport = (mutationCheck {
+  inherit (haskellPackages.sydtest) mutationCheck;
+in
+{
+  mutation-really-safe-money = (mutationCheck {
     name = "really-safe-money";
     libraries = [
       "really-safe-money"
@@ -12,11 +13,6 @@ let
     tests = [
       "really-safe-money-gen"
     ];
-  }).report;
-in
-{
-  mutation-really-safe-money = assertMutationScore {
-    name = "mutation-really-safe-money";
-    report = reallySafeMoneyReport;
-  };
+    assertScore = true;
+  }).score;
 }

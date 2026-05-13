@@ -482,11 +482,11 @@
     "sydtest": {
       "flake": false,
       "locked": {
-        "lastModified": 1778624624,
-        "narHash": "sha256-IH/3Dmw2YuIVGMzi4CUTRAYwuvMZplvLzM3CU14dh4g=",
+        "lastModified": 1778663730,
+        "narHash": "sha256-lxWmAcdKXGn8oF3baMydBcY6DIlR7kA+z41L5D2mEYg=",
         "owner": "NorfairKing",
         "repo": "sydtest",
-        "rev": "8e25d0041be24829b0347308baafdee2fd434827",
+        "rev": "24f4d7b2c69170d5f95ae93e4aeccce33fa9e845",
         "type": "github"
       },
       "original": {
