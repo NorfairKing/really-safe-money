@@ -9,6 +9,7 @@ import Data.GenValidity.Vector ()
 import Data.Ratio
 import Data.Vector (Vector)
 import qualified Data.Vector as V
+import Data.Word (Word64)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Money.Account (Account (..), Distribution (..), Rounding (..))
 import qualified Money.Account as Account
@@ -70,6 +71,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       case Account.fromMinimalQuantisations (-1) of
         Just (Negative (Amount 1)) -> pure ()
         other -> expectationFailure $ "Expected Just (Negative (Amount 1)), got: " <> show other
+
+    it "fails for values exceeding maxBound Word64" $
+      Account.fromMinimalQuantisations (toInteger (maxBound :: Word64) + 1) `shouldBe` Nothing
+
+    it "fails for values below minBound Word64 negated" $
+      Account.fromMinimalQuantisations (negate (toInteger (maxBound :: Word64)) - 1) `shouldBe` Nothing
 
   describe "fromAmount" $ do
     it "produces valid accounts" $

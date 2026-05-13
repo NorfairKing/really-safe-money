@@ -3,12 +3,14 @@
 module Money.ConversionRateSpec (spec) where
 
 import Data.GenValidity.Vector ()
+import GHC.Real (Ratio (..))
 import Money.Amount.Gen ()
 import Money.ConversionRate
 import qualified Money.ConversionRate as ConversionRate
 import Money.ConversionRate.Gen ()
 import Money.QuantisationFactor.Gen ()
 import Numeric.DecimalLiteral.Gen ()
+import Numeric.Natural (Natural)
 import Test.Syd
 import Test.Syd.Validity
 
@@ -18,6 +20,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
 
   it "is invalid when the rate is zero" $
     shouldBeInvalid (ConversionRate 0)
+
+  it "is invalid when the rate is infinite (denominator zero)" $
+    shouldBeInvalid (ConversionRate ((1 :: Natural) :% 0))
 
   describe "Ratio" $ do
     describe "toRatio" $ do

@@ -32,6 +32,10 @@ spec = do
       forAllValid $ \(currency :: Currency) ->
         shouldBeInvalid (MultiAmount (M.singleton currency Amount.zero))
 
+    it "is invalid when it contains a currency with a zero quantisation factor" $
+      forAllValid $ \symbol ->
+        shouldBeInvalid (MultiAmount (M.singleton (Currency symbol (QuantisationFactor 0)) (Amount 1)))
+
     describe "fromAmount" $ do
       it "produces valid amounts" $ do
         producesValid2 (MultiAmount.fromAmount @Currency)

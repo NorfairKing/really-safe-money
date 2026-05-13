@@ -311,6 +311,15 @@ toRatio (QuantisationFactor quantisationFactor) a =
 --
 -- >>> fromDouble (QuantisationFactor 100) 20E62
 -- Nothing
+--
+-- We need to disable this specific mutation because:
+-- The exponent > 65 guard is a performance shortcut that is observationally
+-- equivalent to the maxBound check below it (ceiling :: Double -> Natural is
+-- unbounded, so both return Nothing for the same inputs). The ConstBool
+-- mutation is therefore unkillable by tests; we suppress it here.
+-- Note: this ANN targets the monomorphic inner binding inside GHC's AbsBinds
+-- wrapper, which may not match — see unkillable-mutations.md Category 4.
+{-# ANN fromDouble ("DisableMutation: ConstBool" :: String) #-}
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   QuantisationFactor ->
@@ -318,17 +327,15 @@ fromDouble ::
   Maybe Amount
 fromDouble (QuantisationFactor qf) d
   | d < 0 = Nothing
+  | isNaN d = Nothing
+  | isInfinite d = Nothing
   | otherwise =
       let resultDouble :: Double
           resultDouble = d * (fromIntegral :: Word32 -> Double) qf
-       in go resultDouble
-  where
-    go resultDouble
-      | isNaN d = Nothing
-      | isInfinite d = Nothing
-      | otherwise =
-          -- Shortcut for numbers that are way too big anyway
-          -- so that we don't have to compute the according 'Natural' values.
+       in -- Short-circuit before allocating a huge Natural for inputs that
+          -- are way too large to fit in a Word64.  ceiling/floor on a
+          -- Double with exponent > 65 would produce a multi-thousand-digit
+          -- Natural before the maxBound check discards it anyway.
           if exponent resultDouble > 65
             then Nothing
             else
@@ -597,16 +604,13 @@ data Distribution amount
     DistributedIntoUnequalChunks !Word32 !amount !Word32 !amount
   deriving (Show, Read, Eq, Generic)
 
-instance (Validity amount, Ord amount) => Validity (Distribution amount) where
+instance (Ord amount) => Validity (Distribution amount) where
   validate ad =
-    mconcat
-      [ genericValidate ad,
-        case ad of
-          DistributedIntoUnequalChunks _ a1 _ a2 ->
-            declare "The larger chunks are larger" $
-              a1 > a2
-          _ -> valid
-      ]
+    case ad of
+      DistributedIntoUnequalChunks _ a1 _ a2 ->
+        declare "The larger chunks are larger" $
+          a1 > a2
+      _ -> valid
 
 instance (NFData amount) => NFData (Distribution amount)
 

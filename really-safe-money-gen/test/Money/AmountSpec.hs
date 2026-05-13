@@ -120,6 +120,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         let pinf = read "Infinity"
          in Amount.fromDouble quantisationFactor pinf `shouldBe` Nothing
 
+    it "fails on a value way too large (10e1000)" $
+      forAllValid $ \quantisationFactor ->
+        Amount.fromDouble quantisationFactor 10e1000 `shouldBe` Nothing
+
     it "fails on -Infinity" $
       forAllValid $ \quantisationFactor ->
         let minf = read "-Infinity"

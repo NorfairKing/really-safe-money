@@ -33,6 +33,10 @@ spec = do
       forAllValid $ \(currency :: Currency) ->
         shouldBeInvalid (MultiAccount (M.singleton currency Account.zero))
 
+    it "is invalid when it contains a currency with a zero quantisation factor" $
+      forAllValid $ \symbol ->
+        shouldBeInvalid (MultiAccount (M.singleton (Currency symbol (QuantisationFactor 0)) (Positive (Amount 1))))
+
     describe "fromAccount" $ do
       it "produces valid amounts" $ do
         producesValid2 (MultiAccount.fromAccount @Currency)

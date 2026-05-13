@@ -4,6 +4,7 @@
 
 module Numeric.DecimalLiteralSpec (spec) where
 
+import Data.Ratio
 import GHC.Stack
 import Money.Account.Gen ()
 import Numeric.DecimalLiteral as DecimalLiteral
@@ -198,6 +199,9 @@ spec = do
     describe "toRatio" $ do
       it "renders to valid rationals" $
         producesValid DecimalLiteral.toRatio
+
+      it "gives 1 % 10 for DecimalLiteral Nothing 1 1" $
+        DecimalLiteral.toRatio (DecimalLiteral Nothing 1 1) `shouldBe` Just (1 % 10)
 
     describe "fromRatio" $ do
       it "renders to valid decimal literals" $
