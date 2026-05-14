@@ -96,6 +96,19 @@ spec = do
       it "produces valid amounts" $
         producesValid3 (MultiAmount.addAmount @Currency)
 
+      it "keeps the currency entry after adding to an existing non-zero amount" $
+        forAllValid $ \(currency :: Currency) ->
+          forAllValid $ \a1 ->
+            forAllValid $ \a2 ->
+              if a1 == Amount.zero
+                then pure () -- Would be an invalid input MultiAmount, fine
+                else case Amount.add a1 a2 of
+                  Nothing -> pure () -- Overflow, fine
+                  Just summed ->
+                    case MultiAmount.addAmount (MultiAmount (M.singleton currency a1)) currency a2 of
+                      Nothing -> expectationFailure "addAmount should have succeeded"
+                      Just result -> result `shouldBe` MultiAmount (M.singleton currency summed)
+
     describe "subtractAmount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAmount.subtractAmount @Currency)

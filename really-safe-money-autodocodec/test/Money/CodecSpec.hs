@@ -41,8 +41,11 @@ spec = do
   describe "Amount" $ do
     codecSpec @Amount "amount" "string" Amount.codecViaString
     parseFailSpec Amount.codecViaString (String "0.1")
+    parseFailMessageSpec @Amount Amount.codecViaString (String "0.1") "Error in $: Could not read string as an Amount: 0.1"
     parseFailSpec Amount.codecViaString (String "-1")
+    parseFailMessageSpec @Amount Amount.codecViaString (String "-1") "Error in $: Negative number of minimal quantisations: -1"
     parseFailSpec Amount.codecViaString (String "18446744073709551617")
+    parseFailMessageSpec @Amount Amount.codecViaString (String "18446744073709551616") "Error in $: Number of minimal quantisations is too big: 18446744073709551616"
     parseSuccessSpec Amount.codecViaString (String "1") (Amount 1)
     parseSuccessSpec Amount.codecViaString (String "18446744073709551615") (Amount 18446744073709551615)
 
@@ -71,6 +74,7 @@ spec = do
   describe "Account" $ do
     codecSpec @Account "account" "string" Account.codecViaString
     parseFailSpec Account.codecViaString (String "0.1")
+    parseFailMessageSpec @Account Account.codecViaString (String "0.1") "Error in $: Could not read string as an Account: 0.1"
     parseFailSpec Account.codecViaString (String "18446744073709551617")
     parseFailSpec Account.codecViaString (String "-18446744073709551617")
     parseSuccessSpec Account.codecViaString (String "-18446744073709551615") (Negative (Amount 18446744073709551615))
@@ -167,3 +171,11 @@ parseFailSpec c v = withFrozenCallStack $
     case JSON.parseEither (parseJSONVia c) v of
       Left _ -> pure ()
       Right a -> expectationFailure $ unlines ["Should have failed to decode, but got", ppShow a]
+
+parseFailMessageSpec :: forall a. (HasCallStack, Show a) => JSONCodec a -> JSON.Value -> String -> Spec
+parseFailMessageSpec c v expectedErr =
+  withFrozenCallStack $
+    it (unwords ["fails to parse", show v, "with the expected error message"]) $
+      case JSON.parseEither (parseJSONVia c) v :: Either String a of
+        Left err -> err `shouldBe` expectedErr
+        Right a -> expectationFailure $ unlines ["Should have failed to decode, but got", ppShow a]

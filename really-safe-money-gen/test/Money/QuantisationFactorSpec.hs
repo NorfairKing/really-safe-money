@@ -70,6 +70,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       it "succeeds on a valid quantisation factor decimal literal (e.g. 0.05 -> QuantisationFactor 20)" $
         fromDecimalLiteral (DecimalLiteral Nothing 5 2) `shouldBe` Just (QuantisationFactor 20)
 
+      it "fails on a negative literal whose reciprocal would be representable (e.g. -0.05)" $
+        fromDecimalLiteral (DecimalLiteral (Just False) 5 2) `shouldBe` Nothing
+
+      it "fails on the negative literal -1" $
+        fromDecimalLiteral (DecimalLiteral (Just False) 1 0) `shouldBe` Nothing
+
     describe "toDecimalLiteral" $ do
       it "produces valid literals" $
         producesValid toDecimalLiteral

@@ -1,9 +1,11 @@
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Numeric.DecimalLiteralSpec (spec) where
 
+import Control.Exception
 import Data.Ratio
 import GHC.Stack
 import Money.Account.Gen ()
@@ -15,6 +17,16 @@ import Test.Syd.Validity
 spec :: Spec
 spec = do
   genValidSpec @DecimalLiteral
+  describe "IsString" $ do
+    it "parses a valid literal via OverloadedStrings" $
+      ("1.5" :: DecimalLiteral) `shouldBe` DecimalLiteral Nothing 15 1
+
+    it "throws an informative error for an invalid string literal" $ do
+      result <- try (evaluate ("1E1" :: DecimalLiteral))
+      case result of
+        Left (err :: SomeException) -> show err `shouldContain` "Invalid DecimalLiteral"
+        Right _ -> expectationFailure "Should have thrown an exception"
+
   describe "examples" $ do
     exampleSpec "1" (DecimalLiteral Nothing 1 0)
     exampleSpec "+2" (DecimalLiteral (Just True) 2 0)
@@ -38,6 +50,12 @@ spec = do
     it "does the same as DecimalLiteral.fromString" $
       forAllValid $ \s ->
         DecimalLiteral.fromStringM s `shouldBe` DecimalLiteral.fromString s
+
+    it "succeeds when fromString succeeds" $
+      DecimalLiteral.fromStringM "1.5" `shouldBe` Just (DecimalLiteral Nothing 15 1)
+
+    it "fails when fromString fails" $
+      (DecimalLiteral.fromStringM "1E1" :: Maybe DecimalLiteral) `shouldBe` Nothing
 
   describe "DecimalLiteral.fromString" $ do
     it "fails to parse scientific notation" $
@@ -202,6 +220,9 @@ spec = do
 
       it "gives 1 % 10 for DecimalLiteral Nothing 1 1" $
         DecimalLiteral.toRatio (DecimalLiteral Nothing 1 1) `shouldBe` Just (1 % 10)
+
+      it "gives Nothing for a negative literal" $
+        DecimalLiteral.toRatio (DecimalLiteral (Just False) 3 1) `shouldBe` Nothing
 
     describe "fromRatio" $ do
       it "renders to valid decimal literals" $

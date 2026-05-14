@@ -215,6 +215,12 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
     it "produces valid amounts" $
       producesValid2 distribute
 
+    it "distributes 4 into 2 equal chunks of 2" $
+      case (AccountOf.fromMinimalQuantisations 4, AccountOf.fromMinimalQuantisations 2) of
+        (Just a, Just chunk) ->
+          distribute a 2 `shouldBe` DistributedIntoEqualChunks 2 chunk
+        _ -> expectationFailure "Could not construct accounts"
+
     it "produces results that sum up to the greater whole" $
       forAllValid $ \a ->
         forAllValid $ \f ->

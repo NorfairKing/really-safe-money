@@ -555,6 +555,13 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
               forAllValid $ \qf2 ->
                 shouldBeValid $ Amount.convert r qf1 a cr qf2
 
+  describe "validateStrictlyPositive" $ do
+    it "succeeds for Amount 1" $
+      validationIsValid (Amount.validateStrictlyPositive (Amount 1)) `shouldBe` True
+
+    it "fails for zero" $
+      validationIsValid (Amount.validateStrictlyPositive Amount.zero) `shouldBe` False
+
   describe "format" $ do
     it "formats 1 correctly with quantisation factor 1" $
       Amount.format (QuantisationFactor 1) (Amount 1) `shouldBe` "1"

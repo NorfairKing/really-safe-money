@@ -22,6 +22,7 @@ spec = do
   describe "DecimalLiteral" $ do
     codecSpec @DecimalLiteral "decimal-literal" "string" DecimalLiteral.codecViaString
     parseFailSpec DecimalLiteral.codecViaString (String "three")
+    parseFailMessageSpec @DecimalLiteral DecimalLiteral.codecViaString (String "not-a-number") "Error in $: Could not read string as a DecimalLiteral: not-a-number"
     parseFailSpec DecimalLiteral.codecViaString (String "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
     parseSuccessSpec DecimalLiteral.codecViaString (String "1") (DecimalLiteral Nothing 1 0)
     parseSuccessSpec DecimalLiteral.codecViaString (String "18446744073709551617") (DecimalLiteral Nothing 18446744073709551617 0)
@@ -82,3 +83,11 @@ parseFailSpec c v = withFrozenCallStack $
     case JSON.parseEither (parseJSONVia c) v of
       Left _ -> pure ()
       Right a -> expectationFailure $ unlines ["Should have failed to decode, but got", ppShow a]
+
+parseFailMessageSpec :: forall a. (HasCallStack, Show a) => JSONCodec a -> JSON.Value -> String -> Spec
+parseFailMessageSpec c v expectedErr =
+  withFrozenCallStack $
+    it (unwords ["fails to parse", show v, "with the expected error message"]) $
+      case JSON.parseEither (parseJSONVia c) v :: Either String a of
+        Left err -> err `shouldBe` expectedErr
+        Right a -> expectationFailure $ unlines ["Should have failed to decode, but got", ppShow a]

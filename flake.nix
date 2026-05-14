@@ -21,7 +21,7 @@
     safe-coloured-text.flake = false;
     fast-myers-diff.url = "github:NorfairKing/fast-myers-diff";
     fast-myers-diff.flake = false;
-    sydtest.url = "github:NorfairKing/sydtest?ref=multi-suite-mutation-testing";
+    sydtest.url = "github:NorfairKing/sydtest?ref=mutation-testing";
     sydtest.flake = false;
     opt-env-conf.url = "github:NorfairKing/opt-env-conf";
     opt-env-conf.flake = false;
@@ -78,16 +78,24 @@
           backwardCompatibilityChecks = pkgs.lib.mapAttrs (_: nixpkgs: backwardCompatibilityCheckFor nixpkgs) allNixpkgs;
         in
         backwardCompatibilityChecks // {
-          mutation = (haskellPackages.sydtest.mutationCheck {
+          mutation = haskellPackages.sydtest.mutationCheck {
             name = "really-safe-money";
             libraries = [
               "really-safe-money"
+            ];
+            packages = [
               "really-safe-money-autodocodec"
             ];
             tests = [
               "really-safe-money-gen"
             ];
-          }).check;
+            # really-safe-money-gen's benchmark inlines code from the
+            # instrumented really-safe-money library, so its bench executable
+            # needs sydtest-mutation-runtime on its link line.
+            needToBeLinkedAgainstMutationRuntime = [
+              "really-safe-money-gen"
+            ];
+          };
           forwardCompatibility = horizonPkgs.reallySafeMoneyRelease;
           shell = self.devShells.${system}.default;
           coverage-report = haskellPackages.dekking.makeCoverageReport {
