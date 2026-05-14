@@ -15,6 +15,12 @@ let
             (old: {
               doBenchmark = true;
               doCheck = false; # Only in coverage report
+              # cabal2nix maps 'license: AllRightsReserved' to
+              # lib.licenses.unfree, which makes horizon-advance's nixpkgs
+              # (no allowUnfree) refuse to evaluate. Override the Nix-level
+              # license metadata so the forwardCompatibility check can
+              # evaluate; the actual cabal license is unchanged.
+              license = lib.licenses.bsd3;
               configureFlags = (old.configureFlags or [ ]) ++ [
                 # Optimisations
                 "--ghc-options=-O2"
