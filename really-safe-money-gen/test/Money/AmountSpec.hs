@@ -311,6 +311,9 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "correctly sums [1,2,3] to 6" $
       Amount.sum [Amount 1, Amount 2, Amount 3] `shouldBe` Just (Amount 6)
 
+    it "succeeds at exactly maxBound" $
+      Amount.sum [Amount maxBound, Amount 0] `shouldBe` Just (Amount maxBound)
+
     it "fails to sum above maxBound" $
       Amount.sum [Amount maxBound, Amount 1, Amount 2] `shouldBe` Nothing
 
@@ -475,6 +478,11 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "Correctly fractions 101 with 1 % 100" $
       Amount.fraction RoundNearest (Amount 101) (1 % 100)
         `shouldBe` (Just (Amount 1), 1 % 101)
+
+    it "returns zero when the fraction is zero" $
+      forAllValid $ \rounding ->
+        forAllValid $ \a ->
+          Amount.fraction rounding a 0 `shouldBe` (Just Amount.zero, 0)
 
     it "produces valid amounts" $
       producesValid3 Amount.fraction

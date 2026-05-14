@@ -77,6 +77,17 @@ toDecimalLiteral (QuantisationFactor qfw) =
 -- Nothing
 -- >>> fromDecimalLiteral (DecimalLiteral (Just True) 2 2)
 -- Just (QuantisationFactor {unQuantisationFactor = 50})
+--
+-- [check] If you change this function, re-verify that the @EQ@ branch of the
+-- @case compare fac maxBound@ below is still unreachable, so the @DisableMutations@
+-- annotation is still justified.
+--
+-- The @EQ@ branch is unreachable: a decimal literal's @toRational@ has the
+-- form @m / 10^e@, so @fac = 10^e / m@ has only 2 and 5 as prime factors,
+-- but @maxBound :: Word32 = 4294967295 = 3 * 5 * 17 * 257 * 65537@. No input
+-- can hit the boundary, so we disable the @RemoveCase@ and @MaybeOp@
+-- mutations on that branch.
+{-# ANN fromDecimalLiteral ("DisableMutations: RemoveCase, MaybeOp" :: String) #-}
 fromDecimalLiteral :: DecimalLiteral -> Maybe QuantisationFactor
 fromDecimalLiteral dl = do
   irat <-
@@ -92,6 +103,7 @@ fromDecimalLiteral dl = do
       then Just (numerator rat)
       else Nothing
 
-  if fac <= fromIntegral (maxBound :: Word32)
-    then Just (QuantisationFactor (fromIntegral fac))
-    else Nothing
+  case compare fac (fromIntegral (maxBound :: Word32)) of
+    GT -> Nothing
+    EQ -> Just (QuantisationFactor (fromIntegral fac))
+    LT -> Just (QuantisationFactor (fromIntegral fac))

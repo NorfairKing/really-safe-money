@@ -69,7 +69,10 @@ toRatio = unConversionRate
 -- >>> fromRational (0 % 1)
 -- Nothing
 fromRational :: Rational -> Maybe ConversionRate
-fromRational r = if r < 0 then Nothing else fromRatio (realToFrac r)
+fromRational r = case compare r 0 of
+  LT -> Nothing
+  EQ -> Nothing
+  GT -> fromRatio (realToFrac r)
 
 -- | Turn a 'ConversionRate' back into a 'Rational'
 --

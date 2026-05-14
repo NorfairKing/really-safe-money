@@ -130,6 +130,15 @@ spec = do
                   Just result -> MultiAmount.lookupAmount currency result `shouldBe` rest
 
     describe "convertAll" $ do
+      it "succeeds when the converted total equals exactly maxBound" $
+        forAllValid $ \rounding -> do
+          let qf = QuantisationFactor 1
+              cur = Currency "USD" qf
+              ma = MultiAmount (M.singleton cur (Amount maxBound))
+              func _ = (ConversionRate.oneToOne, qf)
+              (mResult, _) = MultiAmount.convertAll rounding qf func ma
+          mResult `shouldBe` Just (Amount maxBound)
+
       it "produces the right result in this example" $ do
         forAllValid $ \rounding -> do
           let qfEur = QuantisationFactor 100

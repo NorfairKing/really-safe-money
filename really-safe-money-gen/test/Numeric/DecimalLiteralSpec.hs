@@ -11,6 +11,7 @@ import GHC.Stack
 import Money.Account.Gen ()
 import Numeric.DecimalLiteral as DecimalLiteral
 import Numeric.DecimalLiteral.Gen ()
+import Numeric.Natural
 import Test.Syd
 import Test.Syd.Validity
 
@@ -227,6 +228,10 @@ spec = do
     describe "fromRatio" $ do
       it "renders to valid decimal literals" $
         producesValid DecimalLiteral.fromRatio
+
+      it "fails at the 256-digit limit (1 / 2^256 needs 256 fractional digits)" $
+        DecimalLiteral.fromRatio (1 % ((2 :: Natural) ^ (256 :: Int)))
+          `shouldBe` Nothing
 
       it "can parse any rendered rational" $
         forAllValid $ \decimalLiteral -> do

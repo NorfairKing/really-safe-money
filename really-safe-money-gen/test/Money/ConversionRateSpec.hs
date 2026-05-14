@@ -74,3 +74,13 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "compose" $ do
     it "produces valid rates" $
       producesValid2 ConversionRate.compose
+
+    it "multiplies the rates" $
+      ConversionRate.compose (ConversionRate (2 :% 1)) (ConversionRate (3 :% 1))
+        `shouldBe` ConversionRate (6 :% 1)
+
+    it "results in the product of the two rates as ratios" $
+      forAllValid $ \cr1 ->
+        forAllValid $ \cr2 ->
+          ConversionRate.toRatio (ConversionRate.compose cr1 cr2)
+            `shouldBe` ConversionRate.toRatio cr1 * ConversionRate.toRatio cr2

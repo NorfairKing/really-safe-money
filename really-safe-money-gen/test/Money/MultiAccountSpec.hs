@@ -151,9 +151,33 @@ spec = do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.addAccount @Currency)
 
+      it "is a no-op when adding a positive zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.addAccount m cur (Positive (Amount 0))
+              `shouldBe` Just m
+
+      it "is a no-op when adding a negative zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.addAccount m cur (Negative (Amount 0))
+              `shouldBe` Just m
+
     describe "subtractAccount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.subtractAccount @Currency)
+
+      it "is a no-op when subtracting a positive zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.subtractAccount m cur (Positive (Amount 0))
+              `shouldBe` Just m
+
+      it "is a no-op when subtracting a negative zero account" $
+        forAllValid $ \(cur :: Currency) ->
+          forAllValid $ \m ->
+            MultiAccount.subtractAccount m cur (Negative (Amount 0))
+              `shouldBe` Just m
 
     describe "convertAll" $ do
       it "produces the right result in this example" $ do

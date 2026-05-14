@@ -312,14 +312,28 @@ toRatio (QuantisationFactor quantisationFactor) a =
 -- >>> fromDouble (QuantisationFactor 100) 20E62
 -- Nothing
 --
--- We need to disable this specific mutation because:
--- The exponent > 65 guard is a performance shortcut that is observationally
--- equivalent to the maxBound check below it (ceiling :: Double -> Natural is
--- unbounded, so both return Nothing for the same inputs). The ConstBool
--- mutation is therefore unkillable by tests; we suppress it here.
--- Note: this ANN targets the monomorphic inner binding inside GHC's AbsBinds
--- wrapper, which may not match — see unkillable-mutations.md Category 4.
-{-# ANN fromDouble ("DisableMutation: ConstBool" :: String) #-}
+-- [check] If you change this function, re-verify that the disabled mutations
+-- below are still unkillable, so the @DisableMutations@ annotation is still
+-- justified.
+--
+-- We disable these specific mutations because:
+--
+-- 1. The exponent > 65 guard is a performance shortcut: it short-circuits
+--    before allocating a multi-thousand-digit Natural for inputs like 10e1000.
+--    It is observationally equivalent to the maxBound check below it (any
+--    input with exponent >= 65 has ceiled >= 2^64, which the inner check
+--    rejects anyway), so the guard's > vs >= and True/False mutations are
+--    unkillable by tests.
+--
+-- 2. The @EQ@ branch of the @case compare ceiled maxBound@ is unreachable:
+--    @ceiled@ is the @ceiling@ of a @Double@, and doubles near @2^64@ have
+--    spacing @2^12 = 4096@ — none of them have a ceiling exactly equal to
+--    @maxBound :: Word64 = 2^64 - 1@. So the @RemoveCase@ mutation on that
+--    branch is unkillable.
+--
+-- Note: these ANNs target the monomorphic inner binding inside GHC's AbsBinds
+-- wrapper, which may not match.
+{-# ANN fromDouble ("DisableMutations: ConstBool, Cmp, RemoveCase" :: String) #-}
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   QuantisationFactor ->
@@ -344,10 +358,10 @@ fromDouble (QuantisationFactor qf) d
                   floored :: Natural
                   floored = (floor :: Double -> Natural) resultDouble
                in if ceiled == floored
-                    then
-                      if ceiled > (fromIntegral :: Word64 -> Natural) (maxBound :: Word64)
-                        then Nothing
-                        else Just $ Amount (fromIntegral ceiled)
+                    then case compare ceiled ((fromIntegral :: Word64 -> Natural) (maxBound :: Word64)) of
+                      GT -> Nothing
+                      EQ -> Just $ Amount (fromIntegral ceiled)
+                      LT -> Just $ Amount (fromIntegral ceiled)
                     else Nothing
 
 -- | Turn an amount of money into a 'Double'.

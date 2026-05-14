@@ -46,6 +46,7 @@ spec = do
     parseFailMessageSpec @Amount Amount.codecViaString (String "-1") "Error in $: Negative number of minimal quantisations: -1"
     parseFailSpec Amount.codecViaString (String "18446744073709551617")
     parseFailMessageSpec @Amount Amount.codecViaString (String "18446744073709551616") "Error in $: Number of minimal quantisations is too big: 18446744073709551616"
+    parseSuccessSpec Amount.codecViaString (String "0") (Amount 0)
     parseSuccessSpec Amount.codecViaString (String "1") (Amount 1)
     parseSuccessSpec Amount.codecViaString (String "18446744073709551615") (Amount 18446744073709551615)
 
