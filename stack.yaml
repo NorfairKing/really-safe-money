@@ -1,9 +1,26 @@
-resolver: lts-24.16
+resolver: lts-24.38
+
+# Note: `stack test` is broken on lts-24.38 inside this repo's nix devShell.
+# The nix-provided ghc-with-packages exposes attoparsec-0.14.4 globally and
+# stack 3.7.1 computes a phantom unit-id for it when configuring yaml,
+# causing yaml's configure to fail with `missing or private dependencies:
+# attoparsec ==0.14.4`. Use `nix flake check` as the feedback loop instead.
+
 packages:
 - really-safe-money
 - really-safe-money-autodocodec
 - really-safe-money-autodocodec-gen
 - really-safe-money-gen
+
+# Doctest test-suites are disabled under stack: doctest cannot find the
+# library's transitive dependencies on its load path here, so they fail to
+# evaluate `import` statements in doctest snippets. Both test-suites are still
+# built and run via `nix flake check`.
+flags:
+  really-safe-money:
+    doctest: false
+  really-safe-money-autodocodec:
+    doctest: false
 
 # These are duplicated in nix/overlay.nix
 ghc-options:

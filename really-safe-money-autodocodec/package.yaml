@@ -6,6 +6,12 @@ license: AllRightsReserved
 dependencies:
 - base >= 4.7 && < 5
 
+flags:
+  doctest:
+    description: Build the doctest test-suite. Disable under stack, where doctest cannot find the library's dependencies on its load path.
+    manual: true
+    default: true
+
 library:
   source-dirs: src
   dependencies:
@@ -22,5 +28,8 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
+    when:
+    - condition: "!flag(doctest)"
+      buildable: false
     dependencies:
     - doctest
