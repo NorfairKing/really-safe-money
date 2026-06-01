@@ -15,11 +15,6 @@ source-repository head
   type: git
   location: https://github.com/NorfairKing/really-safe-money
 
-flag doctest
-  description: Build the doctest test-suite. Disable under stack, where doctest cannot find the library's dependencies on its load path.
-  manual: True
-  default: True
-
 library
   exposed-modules:
       Money.Account.Codec
@@ -50,5 +45,3 @@ test-suite really-safe-money-autodocodec-doctest
       base >=4.7 && <5
     , doctest
   default-language: Haskell2010
-  if !flag(doctest)
-    buildable: False
