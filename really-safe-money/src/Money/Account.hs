@@ -440,16 +440,6 @@ multiply factor account =
 --
 -- >>> distribute (Positive (Amount 11)) 3
 -- DistributedIntoUnequalChunks 2 (Positive (Amount 4)) 1 (Positive (Amount 3))
---
--- [check] If you change this function, re-verify that the @EQ@ branches of
--- the @case compare a zero@ blocks below are still unreachable, so the
--- @DisableMutation@ annotation is still justified.
---
--- The @EQ@ branches are unreachable: when @a == zero@, @aa = abs a = Amount 0@,
--- and @Amount.distribute (Amount 0) _ = DistributedZero@, which is matched by
--- an earlier arm. So the comparison is only consulted for non-zero @a@. The
--- @RemoveCase@ mutation on the @EQ@ branches is therefore unkillable.
-{-# ANN distribute ("DisableMutation: RemoveCase" :: String) #-}
 distribute :: Account -> Word16 -> AccountDistribution
 distribute a f =
   let aa = abs a
@@ -496,16 +486,6 @@ type AccountDistribution = Amount.Distribution Account
 --
 -- >>> fraction RoundNearest (Positive (Amount (2^63))) 3
 -- (Nothing,3 % 1)
---
--- [check] If you change this function, re-verify that the @EQ@ branch of
--- the @ro = case compare f 0@ block is still unkillable, so the
--- @DisableMutation@ annotation is still justified.
---
--- The @EQ@ branch is unkillable: when @f == 0@, @af == 0@, and
--- @Amount.fraction _ _ 0 = (Just zero, 0)@ inside @fractionRatio@ — the
--- rounding @ro@ is never consulted. So whether the @EQ@ arm produces
--- @rounding@ or the flipped rounding produces the same observable result.
-{-# ANN fraction ("DisableMutation: RemoveCase" :: String) #-}
 fraction ::
   Rounding ->
   Account ->

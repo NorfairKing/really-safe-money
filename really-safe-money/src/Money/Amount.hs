@@ -311,29 +311,6 @@ toRatio (QuantisationFactor quantisationFactor) a =
 --
 -- >>> fromDouble (QuantisationFactor 100) 20E62
 -- Nothing
---
--- [check] If you change this function, re-verify that the disabled mutations
--- below are still unkillable, so the @DisableMutations@ annotation is still
--- justified.
---
--- We disable these specific mutations because:
---
--- 1. The exponent > 65 guard is a performance shortcut: it short-circuits
---    before allocating a multi-thousand-digit Natural for inputs like 10e1000.
---    It is observationally equivalent to the maxBound check below it (any
---    input with exponent >= 65 has ceiled >= 2^64, which the inner check
---    rejects anyway), so the guard's > vs >= and True/False mutations are
---    unkillable by tests.
---
--- 2. The @EQ@ branch of the @case compare ceiled maxBound@ is unreachable:
---    @ceiled@ is the @ceiling@ of a @Double@, and doubles near @2^64@ have
---    spacing @2^12 = 4096@ — none of them have a ceiling exactly equal to
---    @maxBound :: Word64 = 2^64 - 1@. So the @RemoveCase@ mutation on that
---    branch is unkillable.
---
--- Note: these ANNs target the monomorphic inner binding inside GHC's AbsBinds
--- wrapper, which may not match.
-{-# ANN fromDouble ("DisableMutations: ConstBool, Cmp, RemoveCase" :: String) #-}
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   QuantisationFactor ->
