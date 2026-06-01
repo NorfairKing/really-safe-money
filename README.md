@@ -1,5 +1,7 @@
 # Really safe money
 
+[![NixCI](https://staging.nix-ci.com/badge/gh:NorfairKing:really-safe-money)](https://staging.nix-ci.com/gh:NorfairKing:really-safe-money)
+
 ## Status
 
 Ready to use.
