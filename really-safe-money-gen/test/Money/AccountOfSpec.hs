@@ -8,13 +8,19 @@ import Data.GenValidity.Vector ()
 import Data.Proxy
 import Data.Vector (Vector)
 import qualified Data.Vector as V
+import Money.Account (Account (..))
 import Money.Account.Gen ()
 import Money.AccountOf (AccountOf (..), Distribution (..))
 import qualified Money.AccountOf as AccountOf
 import Money.AccountOf.Gen ()
+import Money.Amount (Amount (..))
 import Money.AmountOf.Gen ()
 import Money.ConversionRateOf.Gen ()
+import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
+import Money.QuantisationFactor (unQuantisationFactor)
+import Numeric.DecimalLiteral (DecimalLiteral (..))
+import Numeric.DecimalLiteral.Gen ()
 import Test.Syd
 import Test.Syd.Validity
 import Prelude hiding (abs, fromRational, subtract, sum, toRational)
@@ -80,6 +86,26 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
         case fromDouble (toDouble account) of
           Nothing -> pure () -- Fine
           Just account' -> toDouble account' `shouldBe` toDouble account
+
+  describe "toDecimalLiteral" $ do
+    let to = AccountOf.toDecimalLiteral :: AccountOf currency -> Maybe DecimalLiteral
+    it "produces valid decimal literals" $
+      producesValid to
+
+    it "roundtrips an account through its decimal literal" $
+      forAllValid $ \account ->
+        case to account of
+          Nothing -> expectationFailure "every account has a decimal literal"
+          Just dl -> AccountOf.fromDecimalLiteral dl `shouldBe` Just account
+
+  describe "fromDecimalLiteral" $ do
+    let from = AccountOf.fromDecimalLiteral :: DecimalLiteral -> Maybe (AccountOf currency)
+    it "produces valid accounts" $
+      producesValid from
+
+    it "parses the integer literal 1 as one whole unit" $
+      from (DecimalLiteral (Just True) 1 0)
+        `shouldBe` Just (AccountOf (Positive (Amount (fromIntegral (unQuantisationFactor (quantisationFactor (Proxy @currency)))))))
 
   let zero = AccountOf.zero @currency
   let add = AccountOf.add @currency

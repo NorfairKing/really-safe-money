@@ -61,13 +61,24 @@ newtype MultiAccount currency = MultiAccount
   deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance (Validity currency, Show currency, Ord currency) => Validity (MultiAccount currency) where
-  validate ma@(MultiAccount m) =
-    mconcat
-      [ genericValidate ma,
-        decorateMap m $ \_ a ->
-          declare "The account is not zero" $
-            a /= Account.zero
-      ]
+  validate = validateMultiAccount
+
+-- | The @"is not zero"@ message is a human-readable label, not behaviour: a
+-- validity test only forces it on the failure path and can't observe
+-- @ConstEmptyList@ blanking it, so disable that operator here.  (Pulled out of
+-- the instance because @ANN@ only attaches to top-level names.)
+{-# ANN validateMultiAccount ("DisableMutation: ConstEmptyList" :: String) #-}
+validateMultiAccount ::
+  (Validity currency, Show currency, Ord currency) =>
+  MultiAccount currency ->
+  Validation
+validateMultiAccount ma@(MultiAccount m) =
+  mconcat
+    [ genericValidate ma,
+      decorateMap m $ \_ a ->
+        declare "The account is not zero" $
+          a /= Account.zero
+    ]
 
 -- TODO no empty currencies
 

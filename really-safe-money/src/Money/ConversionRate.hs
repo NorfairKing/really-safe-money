@@ -32,11 +32,19 @@ newtype ConversionRate = ConversionRate {unConversionRate :: Ratio Natural}
   deriving (Show, Eq, Ord, Generic)
 
 instance Validity ConversionRate where
-  validate cr@(ConversionRate r) =
-    mconcat
-      [ genericValidate cr,
-        declare "The rate is nonzero" $ numerator r /= 0
-      ]
+  validate = validateConversionRate
+
+-- | The @"is nonzero"@ message is a human-readable label, not behaviour: a
+-- validity test only forces it on the failure path and can't observe
+-- @ConstEmptyList@ blanking it, so disable that operator here.  (Pulled out of
+-- the instance because @ANN@ only attaches to top-level names.)
+{-# ANN validateConversionRate ("DisableMutation: ConstEmptyList" :: String) #-}
+validateConversionRate :: ConversionRate -> Validation
+validateConversionRate cr@(ConversionRate r) =
+  mconcat
+    [ genericValidate cr,
+      declare "The rate is nonzero" $ numerator r /= 0
+    ]
 
 instance NFData ConversionRate
 

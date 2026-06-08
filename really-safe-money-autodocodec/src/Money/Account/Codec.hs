@@ -67,6 +67,11 @@ codecViaString = bimapCodec f g stringCodec <?> "Account"
 -- Just (Positive (Amount 1))
 -- >>> JSON.parseMaybe (parseJSONVia codecViaNumber) (Number 0.1) :: Maybe Account
 -- Nothing
+--
+-- The decoder's error message is a human-readable diagnostic, not behaviour, so
+-- @ConstEmptyList@ blanking it is uncoverable; disable that operator inside the
+-- local @f@ that builds it.
+{-# ANN codecViaNumber ("DisableMutationsFor f: ConstEmptyList" :: String) #-}
 codecViaNumber :: JSONCodec Account
 codecViaNumber =
   bimapCodec

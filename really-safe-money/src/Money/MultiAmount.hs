@@ -58,13 +58,24 @@ newtype MultiAmount currency = MultiAmount
   deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance (Validity currency, Show currency, Ord currency) => Validity (MultiAmount currency) where
-  validate ma@(MultiAmount m) =
-    mconcat
-      [ genericValidate ma,
-        decorateMap m $ \_ a ->
-          declare "The amount is not zero" $
-            a /= Amount.zero
-      ]
+  validate = validateMultiAmount
+
+-- | The @"is not zero"@ message is a human-readable label, not behaviour: a
+-- validity test only forces it on the failure path and can't observe
+-- @ConstEmptyList@ blanking it, so disable that operator here.  (Pulled out of
+-- the instance because @ANN@ only attaches to top-level names.)
+{-# ANN validateMultiAmount ("DisableMutation: ConstEmptyList" :: String) #-}
+validateMultiAmount ::
+  (Validity currency, Show currency, Ord currency) =>
+  MultiAmount currency ->
+  Validation
+validateMultiAmount ma@(MultiAmount m) =
+  mconcat
+    [ genericValidate ma,
+      decorateMap m $ \_ a ->
+        declare "The amount is not zero" $
+          a /= Amount.zero
+    ]
 
 instance (NFData currency) => NFData (MultiAmount currency)
 

@@ -18,6 +18,8 @@ import Money.ConversionRateOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
 import Money.QuantisationFactor
+import Numeric.DecimalLiteral (DecimalLiteral (..))
+import Numeric.DecimalLiteral.Gen ()
 import Numeric.Natural
 import Test.Syd
 import Test.Syd.Validity
@@ -155,6 +157,26 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     let to = AmountOf.toRational :: AmountOf currency -> Rational
     it "produces valid Rationals" $
       producesValid to
+
+  describe "toDecimalLiteral" $ do
+    let to = AmountOf.toDecimalLiteral :: AmountOf currency -> Maybe DecimalLiteral
+    it "produces valid decimal literals" $
+      producesValid to
+
+    it "roundtrips an amount through its decimal literal" $
+      forAllValid $ \a ->
+        case to a of
+          Nothing -> expectationFailure "every amount has a decimal literal"
+          Just dl -> AmountOf.fromDecimalLiteral dl `shouldBe` Just a
+
+  describe "fromDecimalLiteral" $ do
+    let from = AmountOf.fromDecimalLiteral :: DecimalLiteral -> Maybe (AmountOf currency)
+    it "produces valid amounts" $
+      producesValid from
+
+    it "parses the integer literal 1 as one whole unit" $
+      from (DecimalLiteral (Just True) 1 0)
+        `shouldBe` Just (AmountOf (Amount (fromIntegral (unQuantisationFactor (quantisationFactor (Proxy @currency))))))
 
   let zero = AmountOf.zero @currency
   describe "zero" $

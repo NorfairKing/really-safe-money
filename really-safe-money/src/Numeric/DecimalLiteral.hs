@@ -83,9 +83,17 @@ instance Validity DecimalLiteral
 instance NFData DecimalLiteral
 
 instance IsString DecimalLiteral where
-  fromString s = case Numeric.DecimalLiteral.fromString s of
-    Nothing -> error $ "Invalid DecimalLiteral: " <> show s
-    Just dl -> dl
+  fromString = decimalLiteralFromString
+
+-- | The error message is a human-readable diagnostic, not behaviour: no test
+-- asserts its text, so @ConstEmptyList@ blanking it is uncoverable.  Disable
+-- that operator here.  (Pulled out of the instance because @ANN@ only attaches
+-- to top-level names.)
+{-# ANN decimalLiteralFromString ("DisableMutation: ConstEmptyList" :: String) #-}
+decimalLiteralFromString :: String -> DecimalLiteral
+decimalLiteralFromString s = case Numeric.DecimalLiteral.fromString s of
+  Nothing -> error $ "Invalid DecimalLiteral: " <> show s
+  Just dl -> dl
 
 -- | Parse a decimal literal from a string
 --
@@ -108,6 +116,10 @@ fromString :: String -> Maybe DecimalLiteral
 fromString = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
 
 -- | Like 'fromString' but in a 'MonadFail'
+--
+-- The failure message is a human-readable diagnostic, not behaviour, so
+-- @ConstEmptyList@ blanking it is uncoverable; disable that operator here.
+{-# ANN fromStringM ("DisableMutation: ConstEmptyList" :: String) #-}
 fromStringM :: (MonadFail m) => String -> m DecimalLiteral
 fromStringM s = case Numeric.DecimalLiteral.fromString s of
   Nothing -> fail $ "Failed to parse decimal literal from: " <> show s
@@ -139,6 +151,10 @@ step :: Natural -> Int -> Maybe Natural
 step a digit = Just $ a * 10 + fromIntegral digit
 {-# INLINE step #-}
 
+-- | The two @fail@ messages here are human-readable diagnostics, not
+-- behaviour, so @ConstEmptyList@ blanking them is uncoverable; disable that
+-- operator for this binding.
+{-# ANN parseDigits ("DisableMutation: ConstEmptyList" :: String) #-}
 parseDigits :: (a -> Int -> Maybe a) -> a -> ReadP a
 parseDigits f z = do
   c <- ReadP.satisfy Char.isDigit

@@ -255,6 +255,13 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
                     Nothing -> expectationFailure "Should have been able to parse as an account"
                     Just a -> a `shouldBe` acc
 
+  describe "quantisationFactorFormatString" $ do
+    it "uses %f for the degenerate zero quantisation factor" $
+      Amount.quantisationFactorFormatString (QuantisationFactor 0) `shouldBe` "%f"
+
+    it "uses two decimals for hundredths" $
+      Amount.quantisationFactorFormatString (QuantisationFactor 100) `shouldBe` "%0.2f"
+
   describe "zero" $
     it "is valid" $
       shouldBeValid Amount.zero

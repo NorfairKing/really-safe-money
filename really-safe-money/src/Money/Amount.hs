@@ -337,8 +337,14 @@ fromDouble (QuantisationFactor qf) d
                in if ceiled == floored
                     then case compare ceiled ((fromIntegral :: Word64 -> Natural) (maxBound :: Word64)) of
                       GT -> Nothing
-                      EQ -> Just $ Amount (fromIntegral ceiled)
-                      LT -> Just $ Amount (fromIntegral ceiled)
+                      -- At or below 'maxBound' the value fits in an 'Amount'.
+                      -- The @EQ@ boundary is unreachable in practice: no
+                      -- 'Double' rounds to exactly @maxBound :: Word64@ (the
+                      -- representable Doubles near @2^64@ are spaced 4096 apart
+                      -- and @2^64 - 1@ is not one of them), so folding it into
+                      -- the @LT@ case keeps behaviour identical while avoiding
+                      -- an uncoverable mutation on a dead arm.
+                      _ -> Just $ Amount (fromIntegral ceiled)
                     else Nothing
 
 -- | Turn an amount of money into a 'Double'.
@@ -596,12 +602,20 @@ data Distribution amount
   deriving (Show, Read, Eq, Generic)
 
 instance (Ord amount) => Validity (Distribution amount) where
-  validate ad =
-    case ad of
-      DistributedIntoUnequalChunks _ a1 _ a2 ->
-        declare "The larger chunks are larger" $
-          a1 > a2
-      _ -> valid
+  validate = validateDistribution
+
+-- | The @"The larger chunks are larger"@ string is a human-readable label, not
+-- behaviour: a validity test only forces it on the failure path and can't
+-- observe @ConstEmptyList@ blanking it, so disable that operator here.  (Pulled
+-- out of the instance because @ANN@ only attaches to top-level names.)
+{-# ANN validateDistribution ("DisableMutation: ConstEmptyList" :: String) #-}
+validateDistribution :: (Ord amount) => Distribution amount -> Validation
+validateDistribution ad =
+  case ad of
+    DistributedIntoUnequalChunks _ a1 _ a2 ->
+      declare "The larger chunks are larger" $
+        a1 > a2
+    _ -> valid
 
 instance (NFData amount) => NFData (Distribution amount)
 
@@ -797,5 +811,9 @@ quantisationFactorFormatString (QuantisationFactor qf) =
    in printf "%%0.%df" decimals
 
 -- | Validate that an 'Amount' is strictly positive. I.e. not 'zero'.
+--
+-- The message is a human-readable label, not behaviour, so @ConstEmptyList@
+-- blanking it can't be observed by a test; disable that operator here.
+{-# ANN validateStrictlyPositive ("DisableMutation: ConstEmptyList" :: String) #-}
 validateStrictlyPositive :: Amount -> Validation
 validateStrictlyPositive amount = declare "The Amount is strictly positive" $ amount > zero

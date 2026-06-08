@@ -34,8 +34,16 @@ newtype QuantisationFactor = QuantisationFactor {unQuantisationFactor :: Word32}
   deriving (Show, Read, Eq, Ord, Data, Generic)
 
 instance Validity QuantisationFactor where
-  validate (QuantisationFactor w) =
-    declare "The quantisation factor is not zero" $ w /= 0
+  validate = validateQuantisationFactor
+
+-- | The message is a human-readable label, not behaviour: a validity test only
+-- forces it on the failure path and can't observe @ConstEmptyList@ blanking it,
+-- so disable that operator here.  (Pulled out of the instance because @ANN@ only
+-- attaches to top-level names.)
+{-# ANN validateQuantisationFactor ("DisableMutation: ConstEmptyList" :: String) #-}
+validateQuantisationFactor :: QuantisationFactor -> Validation
+validateQuantisationFactor (QuantisationFactor w) =
+  declare "The quantisation factor is not zero" $ w /= 0
 
 instance NFData QuantisationFactor
 
