@@ -119,6 +119,10 @@ subtractAmount :: (Ord currency) => MultiAccount currency -> currency -> Amount 
 subtractAmount ma cur a = subtractAccount ma cur (Positive a)
 
 -- | Add an 'Account' to a 'MultiAccount'
+--
+-- 'Account.add' is commutative, so swapping its arguments
+-- ('SwitchFunctionArguments') is an equivalent mutant.
+{-# ANN addAccount ("DisableMutation: SwitchFunctionArguments" :: String) #-}
 addAccount :: (Ord currency) => MultiAccount currency -> currency -> Account -> Maybe (MultiAccount currency)
 addAccount m _ (Positive (Amount 0)) = Just m
 addAccount m _ (Negative (Amount 0)) = Just m

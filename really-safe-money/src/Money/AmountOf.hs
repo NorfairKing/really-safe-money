@@ -182,6 +182,10 @@ fromDecimalLiteral :: forall currency. (IsCurrencyType currency) => DecimalLiter
 fromDecimalLiteral = fmap AmountOf . Amount.fromRational (quantisationFactor (Proxy :: Proxy currency)) . DecimalLiteral.toRational
 
 -- | See 'Amount.add'
+--
+-- 'Amount.add' is commutative, so swapping its arguments
+-- ('SwitchFunctionArguments') is an equivalent mutant.
+{-# ANN add ("DisableMutation: SwitchFunctionArguments" :: String) #-}
 add ::
   AmountOf currency ->
   AmountOf currency ->

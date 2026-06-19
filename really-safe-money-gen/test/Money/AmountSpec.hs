@@ -445,6 +445,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     it "correctly distributes 10 into 4" $
       Amount.distribute (Amount 10) 4 `shouldBe` Amount.DistributedIntoUnequalChunks 2 (Amount 3) 2 (Amount 2)
 
+    it "distributes a zero amount into a non-zero number of chunks as DistributedZero" $
+      Amount.distribute (Amount 0) 5 `shouldBe` DistributedZero
+
+    it "distributes into zero chunks as DistributedIntoZeroChunks" $
+      Amount.distribute (Amount 5) 0 `shouldBe` DistributedIntoZeroChunks
+
     it "produces valid amounts" $
       producesValid2 Amount.distribute
 

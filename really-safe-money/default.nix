@@ -3,7 +3,7 @@
 }:
 mkDerivation {
   pname = "really-safe-money";
-  version = "0.0.0.0";
+  version = "0.0.0.1";
   src = ./.;
   libraryHaskellDepends = [
     base containers deepseq validity validity-containers

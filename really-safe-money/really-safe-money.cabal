@@ -5,12 +5,14 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           really-safe-money
-version:        0.0.0.0
+version:        0.0.0.1
 description:    Please see the README on GitHub at <https://github.com/NorfairKing/really-safe-money#readme>
 homepage:       https://github.com/NorfairKing/really-safe-money#readme
 bug-reports:    https://github.com/NorfairKing/really-safe-money/issues
 license:        AllRightsReserved
 build-type:     Simple
+extra-source-files:
+    CHANGELOG.md
 
 source-repository head
   type: git

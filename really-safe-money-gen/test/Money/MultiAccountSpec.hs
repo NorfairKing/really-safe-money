@@ -7,6 +7,7 @@ module Money.MultiAccountSpec (spec) where
 import Data.GenValidity.Vector ()
 import qualified Data.Map.Strict as M
 import Data.Vector (Vector)
+import qualified Data.Vector as V
 import Money.Account (Account (..), Rounding (..))
 import qualified Money.Account as Account
 import Money.Amount (Amount (..))
@@ -96,9 +97,20 @@ spec = do
         forAllValid $ \a ->
           MultiAccount.subtract @Currency a MultiAccount.zero `shouldBe` Just a
 
+      it "subtracting a value from itself is zero" $
+        forAllValid $ \a ->
+          MultiAccount.subtract @Currency a a `shouldBe` Just MultiAccount.zero
+
     describe "sum" $ do
       it "produces valid amounts" $
         producesValid (MultiAccount.sum @Vector @Currency)
+
+      it "sums the empty vector to zero" $
+        MultiAccount.sum @Vector @Currency V.empty `shouldBe` Just MultiAccount.zero
+
+      it "sums a singleton to itself" $
+        forAllValid $ \a ->
+          MultiAccount.sum @Vector @Currency (V.singleton a) `shouldBe` Just a
 
     describe "lookupAccount" $ do
       it "produces valid amounts" $
@@ -112,6 +124,12 @@ spec = do
     describe "addAmount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.addAmount @Currency)
+
+      it "adds an amount to the empty account as a positive entry" $
+        forAllValid $ \cur ->
+          forAllValid $ \a ->
+            MultiAccount.addAmount @Currency MultiAccount.zero cur a
+              `shouldBe` Just (MultiAccount.fromAccount cur (Positive a))
 
       it "computes this example correctly" $
         forAllValid $ \cur ->
@@ -131,6 +149,12 @@ spec = do
     describe "subtractAmount" $ do
       it "produces valid amounts" $
         producesValid3 (MultiAccount.subtractAmount @Currency)
+
+      it "subtracts an amount from the empty account as a negative entry" $
+        forAllValid $ \cur ->
+          forAllValid $ \a ->
+            MultiAccount.subtractAmount @Currency MultiAccount.zero cur a
+              `shouldBe` Just (MultiAccount.fromAccount cur (Negative a))
 
       it "computes this example correctly" $
         forAllValid $ \cur ->

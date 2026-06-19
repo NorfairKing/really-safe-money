@@ -329,6 +329,13 @@ zero = Positive Amount.zero
 --
 -- >>> add (Negative (Amount (2 ^ 64 - 1))) (Negative (Amount 4))
 -- Nothing
+--
+-- The same-sign clauses below are an optimisation: the general clause computes
+-- the identical result via 'Integer'.  Removing them is therefore an
+-- equivalent mutant ('RemoveClause'), and 'Amount.add' is commutative so
+-- swapping its arguments ('SwitchFunctionArguments') is equivalent too.
+{-# ANN add ("DisableMutation: RemoveClause" :: String) #-}
+{-# ANN add ("DisableMutation: SwitchFunctionArguments" :: String) #-}
 add :: Account -> Account -> Maybe Account
 add (Positive a1) (Positive a2) = Positive <$> Amount.add a1 a2
 add (Negative a1) (Negative a2) = Negative <$> Amount.add a1 a2
@@ -366,6 +373,13 @@ sum = foldM add zero
 --
 -- >>> subtract (Positive (Amount (2 ^ 64 - 1))) (Negative (Amount 2))
 -- Nothing
+--
+-- The opposite-sign clauses below are an optimisation: the general clause
+-- computes the identical result via 'Integer'.  Removing them is therefore an
+-- equivalent mutant ('RemoveClause'), and 'Amount.add' is commutative so
+-- swapping its arguments ('SwitchFunctionArguments') is equivalent too.
+{-# ANN subtract ("DisableMutation: RemoveClause" :: String) #-}
+{-# ANN subtract ("DisableMutation: SwitchFunctionArguments" :: String) #-}
 subtract :: Account -> Account -> Maybe Account
 subtract (Positive a1) (Negative a2) = Positive <$> Amount.add a1 a2
 subtract (Negative a1) (Positive a2) = Negative <$> Amount.add a1 a2
@@ -415,6 +429,10 @@ negate = \case
 --
 -- >>> multiply (-2) (Positive (Amount (2 ^ 63)))
 -- Nothing
+--
+-- The result sign is @sign factor * sign account@, which is commutative, so
+-- swapping the two compared components ('TupleSwap') is an equivalent mutant.
+{-# ANN multiply ("DisableMutation: TupleSwap" :: String) #-}
 multiply :: Int32 -> Account -> Maybe Account
 multiply factor account =
   let af = (fromIntegral :: Int32 -> Word32) ((Prelude.abs :: Int32 -> Int32) factor)
@@ -443,20 +461,20 @@ multiply factor account =
 distribute :: Account -> Word16 -> AccountDistribution
 distribute a f =
   let aa = abs a
-      af = (fromIntegral :: Word16 -> Word32) (Prelude.abs f)
+      af = (fromIntegral :: Word16 -> Word32) f
    in case Amount.distribute aa af of
         DistributedIntoZeroChunks -> DistributedIntoZeroChunks
         DistributedZero -> DistributedZero
+        -- Only reached when @aa@ is non-zero, so @a@ is non-zero: it is either
+        -- strictly negative or strictly positive.
         DistributedIntoEqualChunks numberOfChunks chunk ->
           case compare a zero of
             LT -> DistributedIntoEqualChunks numberOfChunks (Negative chunk)
-            EQ -> DistributedIntoEqualChunks numberOfChunks (Positive chunk)
-            GT -> DistributedIntoEqualChunks numberOfChunks (Positive chunk)
+            _ -> DistributedIntoEqualChunks numberOfChunks (Positive chunk)
         DistributedIntoUnequalChunks numberOfLargerChunks largerChunk numberOfSmallerChunks smallerChunk ->
           case compare a zero of
             LT -> DistributedIntoUnequalChunks numberOfSmallerChunks (Negative smallerChunk) numberOfLargerChunks (Negative largerChunk)
-            EQ -> DistributedIntoUnequalChunks numberOfLargerChunks (Positive largerChunk) numberOfSmallerChunks (Positive smallerChunk)
-            GT -> DistributedIntoUnequalChunks numberOfLargerChunks (Positive largerChunk) numberOfSmallerChunks (Positive smallerChunk)
+            _ -> DistributedIntoUnequalChunks numberOfLargerChunks (Positive largerChunk) numberOfSmallerChunks (Positive smallerChunk)
 
 type AccountDistribution = Amount.Distribution Account
 
@@ -543,6 +561,7 @@ fractionRatio ro account af =
 --
 -- >>> rate (QuantisationFactor 100) (Positive (Amount 100)) (QuantisationFactor 20) (Positive (Amount 22))
 -- Just (ConversionRate {unConversionRate = 11 % 10})
+{-# ANN rate ("DisableMutation: TupleSwap" :: String) #-}
 rate ::
   QuantisationFactor ->
   Account ->
@@ -553,7 +572,10 @@ rate qf1 a1 qf2 a2 =
   let aa1 = abs a1
       aa2 = abs a2
       mr = Amount.rate qf1 aa1 qf2 aa2
-   in case (a1, a2) of
+   in -- The two mixed-sign cases both yield 'Nothing' and the two same-sign
+      -- cases both yield the (un-swapped) @mr@, so swapping the scrutinee
+      -- components ('TupleSwap') is an equivalent mutant.
+      case (a1, a2) of
         (Positive _, Positive _) -> mr
         (Positive _, Negative _) -> Nothing
         (Negative _, Positive _) -> Nothing

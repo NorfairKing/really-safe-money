@@ -7,6 +7,7 @@ module Money.MultiAmountSpec (spec) where
 import Data.GenValidity.Vector ()
 import qualified Data.Map.Strict as M
 import Data.Vector (Vector)
+import qualified Data.Vector as V
 import Money.Amount (Amount (..), Rounding (..))
 import qualified Money.Amount as Amount
 import Money.ConversionRate (ConversionRate (..))
@@ -79,9 +80,20 @@ spec = do
         forAllValid $ \a ->
           MultiAmount.subtract @Currency a MultiAmount.zero `shouldBe` Just a
 
+      it "subtracting a value from itself is zero" $
+        forAllValid $ \a ->
+          MultiAmount.subtract @Currency a a `shouldBe` Just MultiAmount.zero
+
     describe "sum" $ do
       it "produces valid amounts" $
         producesValid (MultiAmount.sum @Vector @Currency)
+
+      it "sums the empty vector to zero" $
+        MultiAmount.sum @Vector @Currency V.empty `shouldBe` Just MultiAmount.zero
+
+      it "sums a singleton to itself" $
+        forAllValid $ \a ->
+          MultiAmount.sum @Vector @Currency (V.singleton a) `shouldBe` Just a
 
     describe "lookupAmount" $ do
       it "produces valid amounts" $

@@ -64,5 +64,9 @@ invert :: ConversionRateOf from to -> ConversionRateOf from to
 invert (ConversionRateOf cr) = ConversionRateOf $ ConversionRate.invert cr
 
 -- | See 'unConversionRate.compose'
+--
+-- 'ConversionRate.compose' is multiplication and therefore commutative, so
+-- swapping its arguments ('SwitchFunctionArguments') is an equivalent mutant.
+{-# ANN compose ("DisableMutation: SwitchFunctionArguments" :: String) #-}
 compose :: ConversionRateOf a b -> ConversionRateOf b c -> ConversionRateOf a c
 compose (ConversionRateOf cr1) (ConversionRateOf cr2) = ConversionRateOf $ ConversionRate.compose cr1 cr2

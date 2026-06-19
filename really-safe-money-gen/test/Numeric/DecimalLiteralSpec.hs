@@ -186,6 +186,9 @@ spec = do
       it "renders to valid rationals" $
         producesValid DecimalLiteral.toRational
 
+      it "renders a negative literal as a negative rational" $
+        DecimalLiteral.toRational (DecimalLiteral (Just False) 3 1) `shouldBe` (-3) % 10
+
     describe "fromRational" $ do
       it "renders to valid decimal literals" $
         producesValid DecimalLiteral.fromRational
@@ -257,9 +260,18 @@ spec = do
     it "does not change an existing negative sign" $
       setSignRequired (DecimalLiteral (Just False) 5 0) `shouldBe` DecimalLiteral (Just False) 5 0
 
-  describe "setSignOptional" $
+  describe "setSignOptional" $ do
     it "produces valid values" $
       producesValid setSignOptional
+
+    it "turns a Just True sign into Nothing (positive)" $
+      setSignOptional (DecimalLiteral (Just True) 5 0) `shouldBe` DecimalLiteral Nothing 5 0
+
+    it "does not change an absent sign" $
+      setSignOptional (DecimalLiteral Nothing 5 0) `shouldBe` DecimalLiteral Nothing 5 0
+
+    it "does not change an existing negative sign" $
+      setSignOptional (DecimalLiteral (Just False) 5 0) `shouldBe` DecimalLiteral (Just False) 5 0
 
   describe "digits" $
     it "produces valid numbers of digits" $

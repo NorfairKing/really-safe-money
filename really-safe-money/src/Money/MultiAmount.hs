@@ -106,6 +106,10 @@ lookupAmount :: (Ord currency) => currency -> MultiAmount currency -> Amount
 lookupAmount currency (MultiAmount m) = fromMaybe Amount.zero $ M.lookup currency m
 
 -- | Add an 'Amount' to a 'MultiAmount'
+--
+-- 'Amount.add' is commutative, so swapping its arguments
+-- ('SwitchFunctionArguments') is an equivalent mutant.
+{-# ANN addAmount ("DisableMutation: SwitchFunctionArguments" :: String) #-}
 addAmount :: (Ord currency) => MultiAmount currency -> currency -> Amount -> Maybe (MultiAmount currency)
 addAmount m _ (Amount 0) = Just m
 addAmount (MultiAmount m) currency amount =

@@ -311,6 +311,15 @@ toRatio (QuantisationFactor quantisationFactor) a =
 --
 -- >>> fromDouble (QuantisationFactor 100) 20E62
 -- Nothing
+--
+-- The @exponent resultDouble > 65@ test below is purely a performance
+-- short-circuit: the @else@ branch computes the identical result (a 'Double'
+-- never has a binary exponent large enough for the @ceiling@/@floor@ path to
+-- disagree with this guard about fitting in a 'Word64').  Mutating the
+-- comparison ('Cmp') or replacing it with a constant ('ConstBool') is
+-- therefore an equivalent mutant that no test can observe.
+{-# ANN fromDouble ("DisableMutation: Cmp" :: String) #-}
+{-# ANN fromDouble ("DisableMutation: ConstBool" :: String) #-}
 fromDouble ::
   -- | The quantisation factor: How many minimal quantisations per unit?
   QuantisationFactor ->
@@ -667,7 +676,6 @@ fraction ::
   -- | The amount and the real rate that was used, considering the 'Rounding'
   (Maybe Amount, Ratio Natural)
 fraction _ (Amount 0) f = (Just zero, f)
-fraction _ _ 0 = (Just zero, 0)
 fraction r (Amount a) f =
   let amountAsRatio :: Ratio Natural
       amountAsRatio = (fromIntegral :: Word64 -> Ratio Natural) a
@@ -721,6 +729,11 @@ instance NFData Rounding
 --
 -- >>> rate (QuantisationFactor 100) (Amount 100) (QuantisationFactor 20) (Amount 22)
 -- Just (ConversionRate {unConversionRate = 11 % 10})
+--
+-- The @rate _ _ _ (Amount 0)@ clause is an optimisation: the general clause
+-- produces a zero numerator for a zero second amount, which 'ConversionRate.fromRatio'
+-- already rejects, so removing a clause ('RemoveClause') is an equivalent mutant.
+{-# ANN rate ("DisableMutation: RemoveClause" :: String) #-}
 rate :: QuantisationFactor -> Amount -> QuantisationFactor -> Amount -> Maybe ConversionRate
 rate _ (Amount 0) _ _ = Nothing
 rate _ _ _ (Amount 0) = Nothing

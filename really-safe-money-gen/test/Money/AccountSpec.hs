@@ -113,6 +113,12 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       forAllValid $ \quantisationFactor ->
         producesValid (Account.toRatio quantisationFactor)
 
+    it "is Just for a positive account" $
+      forAllValid $ \quantisationFactor ->
+        forAllValid $ \a ->
+          Account.toRatio quantisationFactor (Positive a)
+            `shouldBe` Just (Amount.toRatio quantisationFactor a)
+
   describe "fromRatio" $ do
     it "produces valid rational" $
       producesValid2 Account.fromRatio
@@ -142,6 +148,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
         case Account.fromDouble quantisationFactor 0 of
           Just (Positive _) -> pure ()
           other -> expectationFailure $ "Expected Just (Positive _), got: " <> show other
+
+    it "represents a negative double with a Negative sign" $
+      Account.fromDouble (QuantisationFactor 100) (-0.01)
+        `shouldBe` Just (Negative (Amount 1))
 
     it "roundtrips with toDouble back to double" $
       forAllValid $ \quantisationFactor ->
@@ -279,6 +289,18 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       Account.subtract (Negative (Amount maxBound)) (Positive (Amount maxBound))
         `shouldBe` Nothing
 
+    it "adds the magnitudes for a positive minus a negative" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 ->
+          Account.subtract (Positive a1) (Negative a2)
+            `shouldBe` (Positive <$> Amount.add a1 a2)
+
+    it "adds the magnitudes for a negative minus a positive" $
+      forAllValid $ \a1 ->
+        forAllValid $ \a2 ->
+          Account.subtract (Negative a1) (Positive a2)
+            `shouldBe` (Negative <$> Amount.add a1 a2)
+
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 -> do
@@ -406,6 +428,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
       Account.fraction RoundNearest (Positive (Amount 101)) (1 % 100)
         `shouldBe` (Just (Positive (Amount 1)), 1 % 101)
 
+    it "negates the result when fractioning a positive account by a negative fraction" $
+      Account.fraction RoundNearest (Positive (Amount 100)) ((-1) % 2)
+        `shouldBe` (Just (Negative (Amount 50)), (-1) % 2)
+
     it "preserves the Positive sign when fractioning a positive account by zero" $
       case Account.fraction RoundNearest (Positive (Amount 5)) 0 of
         (Just (Positive _), _) -> pure ()
@@ -444,6 +470,10 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
   describe "rate" $ do
     it "computes this USD to CHF rate correctly" $
       Account.rate (QuantisationFactor 100) (Negative (Amount 100)) (QuantisationFactor 20) (Negative (Amount 22))
+        `shouldBe` Just (ConversionRate (11 % 10))
+
+    it "computes this USD to CHF rate correctly for positive accounts" $
+      Account.rate (QuantisationFactor 100) (Positive (Amount 100)) (QuantisationFactor 20) (Positive (Amount 22))
         `shouldBe` Just (ConversionRate (11 % 10))
 
     it "produces valid conversion rates" $
@@ -499,9 +529,19 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
           Account.fractionRatio rounding Account.zero af
             `shouldBe` (Just Account.zero, af)
 
+    it "keeps a negative account negative" $
+      Account.fractionRatio RoundNearest (Negative (Amount 100)) (1 % 2)
+        `shouldBe` (Just (Negative (Amount 50)), 1 % 2)
+
   describe "format" $ do
     it "produces valid strings" $
       producesValid2 Account.format
+
+    it "formats a positive amount with quantisation factor 1" $
+      Account.format (QuantisationFactor 1) (Positive (Amount 1)) `shouldBe` "1"
+
+    it "formats a negative amount with quantisation factor 100" $
+      Account.format (QuantisationFactor 100) (Negative (Amount 1)) `shouldBe` "-0.01"
 
 decimalLiteralExampleSpec :: (HasCallStack) => QuantisationFactor -> DecimalLiteral -> Account -> Spec
 decimalLiteralExampleSpec qf dl a =

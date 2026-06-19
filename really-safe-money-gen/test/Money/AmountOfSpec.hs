@@ -11,9 +11,11 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import GHC.Real
 import Money.Amount (Amount (..))
-import Money.AmountOf (AmountOf (..), Distribution (..))
+import qualified Money.Amount as Amount
+import Money.AmountOf (AmountOf (..), Distribution (..), Rounding (..))
 import qualified Money.AmountOf as AmountOf
 import Money.AmountOf.Gen ()
+import Money.ConversionRateOf (ConversionRateOf (..))
 import Money.ConversionRateOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
@@ -228,6 +230,13 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     it "produces valid amounts" $
       producesValid sum
 
+    it "sums the empty vector to zero" $
+      sum V.empty `shouldBe` Just AmountOf.zero
+
+    it "sums a singleton to itself" $
+      forAllValid $ \a ->
+        sum (V.singleton a) `shouldBe` Just a
+
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \as -> do
         let errOrAmount = sum (as :: Vector (AmountOf currency))
@@ -241,6 +250,14 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
 
   describe "subtract" $ do
     let subtract = AmountOf.subtract @currency
+    it "has a right-identity: zero" $
+      forAllValid $ \a ->
+        subtract a AmountOf.zero `shouldBe` Just a
+
+    it "subtracting an amount from itself is zero" $
+      forAllValid $ \a ->
+        subtract a a `shouldBe` Just AmountOf.zero
+
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 -> do
@@ -338,18 +355,51 @@ spec = forallCurrencies $ \p@(Proxy :: Proxy currency) -> do
     it "produces valid amounts" $
       producesValid3 fraction
 
+    it "multiplying by one is the identity" $
+      forAllValid $ \a ->
+        fst (fraction RoundNearest a 1) `shouldBe` Just a
+
   forallCurrencies $ \(Proxy :: Proxy to) -> do
     describe "rate" $ do
       let rate = AmountOf.rate @currency @to
       it "produces valid amounts" $
         producesValid2 rate
 
+      it "delegates to Amount.rate" $
+        forAllValid $ \a1 ->
+          forAllValid $ \a2 ->
+            fmap unConversionRateOf (rate a1 a2)
+              `shouldBe` Amount.rate
+                (quantisationFactor (Proxy @currency))
+                (AmountOf.toAmount a1)
+                (quantisationFactor (Proxy @to))
+                (AmountOf.toAmount a2)
+
     describe "convert" $ do
       let convert = AmountOf.convert @currency @to
       it "produces valid amounts" $
         producesValid3 convert
 
+      it "delegates to Amount.convert" $
+        forAllValid $ \rounding ->
+          forAllValid $ \a ->
+            forAllValid $ \cr -> do
+              let (ma, mcr) = convert rounding a cr
+              let (ma', mcr') =
+                    Amount.convert
+                      rounding
+                      (quantisationFactor (Proxy @currency))
+                      (AmountOf.toAmount a)
+                      (unConversionRateOf cr)
+                      (quantisationFactor (Proxy @to))
+              (fmap AmountOf.toAmount ma, fmap unConversionRateOf mcr)
+                `shouldBe` (ma', mcr')
+
   describe "format" $ do
     let format = AmountOf.format @currency
     it "produces valid strings" $
       producesValid format
+
+    it "delegates to Amount.format" $
+      forAllValid $ \a ->
+        format a `shouldBe` Amount.format (quantisationFactor p) (AmountOf.toAmount a)

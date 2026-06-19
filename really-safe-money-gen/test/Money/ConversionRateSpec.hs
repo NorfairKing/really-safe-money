@@ -9,6 +9,7 @@ import Money.ConversionRate
 import qualified Money.ConversionRate as ConversionRate
 import Money.ConversionRate.Gen ()
 import Money.QuantisationFactor.Gen ()
+import Numeric.DecimalLiteral (DecimalLiteral (..))
 import Numeric.DecimalLiteral.Gen ()
 import Numeric.Natural (Natural)
 import Test.Syd
@@ -50,6 +51,8 @@ spec = modifyMaxSuccess (* 100) . modifyMaxSize (* 3) $ do
     describe "toDecimalLiteral" $ do
       it "produces valid literals" $
         producesValid ConversionRate.toDecimalLiteral
+      it "renders the one-to-one rate as 1" $
+        ConversionRate.toDecimalLiteral oneToOne `shouldBe` Just (DecimalLiteral Nothing 1 0)
     describe "fromDecimalLiteral" $ do
       it "produces valid conversion rates" $
         producesValid

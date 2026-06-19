@@ -9,12 +9,14 @@ import Data.Proxy
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Money.Account (Account (..))
+import qualified Money.Account as Account
 import Money.Account.Gen ()
-import Money.AccountOf (AccountOf (..), Distribution (..))
+import Money.AccountOf (AccountOf (..), Distribution (..), Rounding (..))
 import qualified Money.AccountOf as AccountOf
 import Money.AccountOf.Gen ()
 import Money.Amount (Amount (..))
 import Money.AmountOf.Gen ()
+import Money.ConversionRateOf (ConversionRateOf (..))
 import Money.ConversionRateOf.Gen ()
 import Money.Currency (IsCurrencyType (..))
 import Money.Currency.TestUtils
@@ -71,6 +73,11 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
           Nothing -> pure () -- Fine
           Just account' -> account' `shouldBe` account
 
+    it "delegates to Account.fromRational" $
+      forAllValid $ \r ->
+        fmap AccountOf.toAccount (fromRational r)
+          `shouldBe` Account.fromRational (quantisationFactor (Proxy @currency)) r
+
   let toDouble = AccountOf.toDouble @currency
   describe "toDouble" $ do
     it "produces valid Doubles when the quantisation factor is nonzero" $
@@ -86,6 +93,11 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
         case fromDouble (toDouble account) of
           Nothing -> pure () -- Fine
           Just account' -> toDouble account' `shouldBe` toDouble account
+
+    it "delegates to Account.fromDouble" $
+      forAllValid $ \d ->
+        fmap AccountOf.toAccount (fromDouble d)
+          `shouldBe` Account.fromDouble (quantisationFactor (Proxy @currency)) d
 
   describe "toDecimalLiteral" $ do
     let to = AccountOf.toDecimalLiteral :: AccountOf currency -> Maybe DecimalLiteral
@@ -154,6 +166,13 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
     it "produces valid amounts" $
       producesValid sum
 
+    it "sums the empty vector to zero" $
+      sum V.empty `shouldBe` Just zero
+
+    it "sums a singleton to itself" $
+      forAllValid $ \a ->
+        sum (V.singleton a) `shouldBe` Just a
+
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \as -> do
         let errOrAccount = sum as
@@ -166,6 +185,14 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
 
   let subtract = AccountOf.subtract @currency
   describe "subtract" $ do
+    it "has a right-identity: zero" $
+      forAllValid $ \a ->
+        subtract a zero `shouldBe` Just a
+
+    it "subtracting an account from itself is zero" $
+      forAllValid $ \a ->
+        subtract a a `shouldBe` Just zero
+
     it "matches what you would get with Integer, if nothing fails" $
       forAllValid $ \a1 ->
         forAllValid $ \a2 -> do
@@ -281,6 +308,10 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
     it "produces valid amounts" $
       producesValid3 fraction
 
+    it "multiplying by one is the identity" $
+      forAllValid $ \a ->
+        fst (fraction RoundNearest a 1) `shouldBe` Just a
+
     it "Produces a result that can be multiplied back" $
       forAllValid $ \rounding ->
         forAllValid $ \account ->
@@ -303,12 +334,41 @@ spec = forallCurrencies $ \(Proxy :: Proxy currency) -> do
       it "produces valid amounts" $
         producesValid2 rate
 
+      it "delegates to Account.rate" $
+        forAllValid $ \a1 ->
+          forAllValid $ \a2 ->
+            fmap unConversionRateOf (rate a1 a2)
+              `shouldBe` Account.rate
+                (quantisationFactor (Proxy @currency))
+                (AccountOf.toAccount a1)
+                (quantisationFactor (Proxy @to))
+                (AccountOf.toAccount a2)
+
     describe "convert" $ do
       let convert = AccountOf.convert @currency @to
       it "produces valid amounts" $
         producesValid3 convert
 
+      it "delegates to Account.convert" $
+        forAllValid $ \rounding ->
+          forAllValid $ \a ->
+            forAllValid $ \cr -> do
+              let (ma, mcr) = convert rounding a cr
+              let (ma', mcr') =
+                    Account.convert
+                      rounding
+                      (quantisationFactor (Proxy @currency))
+                      (AccountOf.toAccount a)
+                      (unConversionRateOf cr)
+                      (quantisationFactor (Proxy @to))
+              (fmap AccountOf.toAccount ma, fmap unConversionRateOf mcr)
+                `shouldBe` (ma', mcr')
+
   describe "format" $ do
     let format = AccountOf.format @currency
     it "produces valid strings" $
       producesValid format
+
+    it "delegates to Account.format" $
+      forAllValid $ \a ->
+        format a `shouldBe` Account.format (quantisationFactor (Proxy @currency)) (AccountOf.toAccount a)

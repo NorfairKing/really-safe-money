@@ -152,6 +152,10 @@ zero :: AccountOf currency
 zero = fromAccount Account.zero
 
 -- | See 'Account.add'
+--
+-- 'Account.add' is commutative, so swapping its arguments
+-- ('SwitchFunctionArguments') is an equivalent mutant.
+{-# ANN add ("DisableMutation: SwitchFunctionArguments" :: String) #-}
 add :: AccountOf currency -> AccountOf currency -> Maybe (AccountOf currency)
 add (AccountOf a1) (AccountOf a2) = fromAccount <$> Account.add a1 a2
 

@@ -88,8 +88,10 @@ instance IsString DecimalLiteral where
 -- | The error message is a human-readable diagnostic, not behaviour: no test
 -- asserts its text, so @ConstEmptyList@ blanking it is uncoverable.  Disable
 -- that operator here.  (Pulled out of the instance because @ANN@ only attaches
--- to top-level names.)
+-- to top-level names.)  The @show s@ in the error message is likewise
+-- uncoverable, so disable @ElideCall@ too.
 {-# ANN decimalLiteralFromString ("DisableMutation: ConstEmptyList" :: String) #-}
+{-# ANN decimalLiteralFromString ("DisableMutation: ElideCall" :: String) #-}
 decimalLiteralFromString :: String -> DecimalLiteral
 decimalLiteralFromString s = case Numeric.DecimalLiteral.fromString s of
   Nothing -> error $ "Invalid DecimalLiteral: " <> show s
@@ -119,7 +121,10 @@ fromString = fmap fst . find (null . snd) . readP_to_S decimalLiteralP
 --
 -- The failure message is a human-readable diagnostic, not behaviour, so
 -- @ConstEmptyList@ blanking it is uncoverable; disable that operator here.
+-- The @show s@ in the failure message is likewise uncoverable, so disable
+-- @ElideCall@ too.
 {-# ANN fromStringM ("DisableMutation: ConstEmptyList" :: String) #-}
+{-# ANN fromStringM ("DisableMutation: ElideCall" :: String) #-}
 fromStringM :: (MonadFail m) => String -> m DecimalLiteral
 fromStringM s = case Numeric.DecimalLiteral.fromString s of
   Nothing -> fail $ "Failed to parse decimal literal from: " <> show s
@@ -187,6 +192,10 @@ parseDigits f z = do
 -- "+0.00090"
 -- >>> toString (DecimalLiteral (Just False) 100 7)
 -- "-0.0000100"
+--
+-- The empty string for an absent sign is literally @[]@, so @ConstEmptyList@
+-- blanking it is a no-op equivalent mutant; disable that operator here.
+{-# ANN toString ("DisableMutation: ConstEmptyList" :: String) #-}
 toString :: DecimalLiteral -> String
 toString = \case
   DecimalLiteral s m 0 -> sign s ++ show m
@@ -236,7 +245,10 @@ fromRational (n :% d)
 -- (-3) % 10
 toRational :: DecimalLiteral -> Rational
 toRational (DecimalLiteral mSign m e) =
-  signSignum mSign (fromIntegral m / (10 ^ e))
+  let magnitude = fromIntegral m / (10 ^ e)
+   in case mSign of
+        Just False -> negate magnitude
+        _ -> magnitude
 
 -- | Parse a 'DecimalLiteral' from a 'Ratio Natural'
 --
@@ -248,6 +260,12 @@ toRational (DecimalLiteral mSign m e) =
 -- Just (DecimalLiteral Nothing 1 0)
 -- >>> fromRatio (1 % 3)
 -- Nothing
+--
+-- The @S.insert@ that records seen remainders only feeds the repetend check;
+-- eliding it ('ElideCall') just makes a repeating decimal terminate via the
+-- digit limit instead, with the identical 'Nothing' result, so it is an
+-- equivalent mutant.
+{-# ANN fromRatio ("DisableMutation: ElideCall" :: String) #-}
 fromRatio :: Ratio Natural -> Maybe DecimalLiteral
 fromRatio = fromRationalRepetendLimited 256
   where
@@ -258,9 +276,10 @@ fromRatio = fromRationalRepetendLimited 256
       Maybe DecimalLiteral
     fromRationalRepetendLimited l rational
       | d == 0 = Nothing
-      | otherwise = toLiteral Nothing <$> longDiv num
+      | otherwise = toLiteral <$> longDiv num
       where
-        toLiteral mSign (m, e) = DecimalLiteral mSign m (fromIntegral e)
+        -- The sign is always absent here: 'fromRational' adds it afterwards.
+        toLiteral (m, e) = DecimalLiteral Nothing m (fromIntegral e)
         d = denominator rational
         num = numerator rational
 
