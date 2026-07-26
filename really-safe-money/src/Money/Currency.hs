@@ -20,12 +20,12 @@ import Money.QuantisationFactor
 --
 -- > data USD
 -- >  deriving (Generic, Typeable)
--- > instance Currency USD where
+-- > instance IsCurrencyType USD where
 -- >   quantisationFactor Proxy = 100
 --
 -- > data BTC
 -- >  deriving (Generic, Typeable)
--- > instance Currency BTC where
+-- > instance IsCurrencyType BTC where
 -- >   quantisationFactor Proxy = 100_000_000
 class IsCurrencyType (currency :: k) where
   quantisationFactor :: Proxy currency -> QuantisationFactor
