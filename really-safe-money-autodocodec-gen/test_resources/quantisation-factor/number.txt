@@ -1,2 +1,1 @@
-[36mdef: QuantisationFactor[m
 [33m<integer>[m # [32m32 bit unsigned integer[m

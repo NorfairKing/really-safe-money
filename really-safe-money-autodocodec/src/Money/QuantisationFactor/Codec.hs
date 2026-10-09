@@ -37,11 +37,10 @@ import qualified Money.QuantisationFactor as QuantisationFactor
 {-# ANN codecViaNumber ("DisableMutationsFor f: ConstEmptyList" :: String) #-}
 codecViaNumber :: JSONCodec QuantisationFactor
 codecViaNumber =
-  named "QuantisationFactor" $
-    bimapCodec
-      f
-      unQuantisationFactor
-      codec
+  bimapCodec
+    f
+    unQuantisationFactor
+    codec
   where
     f w = case QuantisationFactor.fromWord32 w of
       Nothing -> Left $ "Unable to parse as a quantisation factor: " <> show w
