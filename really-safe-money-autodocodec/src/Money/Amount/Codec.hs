@@ -40,7 +40,7 @@ import Text.Read (readMaybe)
 -- >>> JSON.parseMaybe (parseJSONVia codecViaString) (String "0.1") :: Maybe Amount
 -- Nothing
 codecViaString :: JSONCodec Amount
-codecViaString = bimapCodec f g stringCodec <?> "Amount"
+codecViaString = bimapCodec f g stringCodec
   where
     f :: String -> Either String Amount
     f s = case readMaybe s of
@@ -75,4 +75,3 @@ codecViaNumber =
     Amount.fromMinimalQuantisations
     Amount.toMinimalQuantisations
     codec
-    <?> "Amount"
